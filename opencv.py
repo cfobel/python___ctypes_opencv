@@ -458,8 +458,6 @@ CV_MAX_ARR = 10
 CV_NO_DEPTH_CHECK = 1
 CV_NO_CN_CHECK = 2
 CV_NO_SIZE_CHECK = 4
-CV_FRONT = 1
-CV_BACK = 0
 CV_GRAPH_VERTEX = 1
 CV_GRAPH_TREE_EDGE = 2
 CV_GRAPH_BACK_EDGE = 4
@@ -1795,7 +1793,7 @@ def cvFree(ptr):
     """void cvFree(CvArr* ptr)
 
     Deallocates memory buffer. 
-    [ctypes-opencv] You don't need to call this method explicitly.
+    [ctypes-opencv] You don't need to call this method explicitly, unless you want to free some space.
     """
     z = getattr(ptr, '_done', None)
     if z is not None:
@@ -3696,9 +3694,16 @@ _cvReleaseMemStorage = cfunc('cvReleaseMemStorage', _cxDLL, None,
     ('storage', POINTER(POINTER(CvMemStorage)), 1), # CvMemStorage** storage 
 )
 
-def _my_cvReleaseMemStorage(storage):
+def _my_cvReleaseMemStorage(storage, check_parent=True):
+    if not storage:
+        return
+    if check_parent:
+        z = getattr(storage.contents.parent, '_children_list', None)
+        if z is not None:
+            z.remove(storage)
+                
     for z in storage._children_list:
-        _my_cvReleaseMemStorage(z)
+        _my_cvReleaseMemStorage(z, check_parent=False)
     _cvReleaseMemStorage(storage)
 
 
@@ -3781,8 +3786,6 @@ cvMemStorageAllocString.__doc__ = """CvString cvMemStorageAllocString(CvMemStora
 Allocates text string in the storage
 """
 
-
-
     
 #-----------------------------------------------------------------------------
 # Dynamic Data Structure: Sequences
@@ -3799,6 +3802,193 @@ cvSliceLength.__doc__ = """int cvSliceLength( CvSlice slice, const CvSeq* seq )
 
 Performs forward or inverse Discrete Cosine transform of 1D or 2D floating-point array
 """
+
+# Creates sequence
+cvCreateSeq = cfunc('cvCreateSeq', _cxDLL, POINTER(CvSeq),
+    ('seq_flags', c_int, 1), # int seq_flags
+    ('header_size', c_int, 1), # int header_size
+    ('elem_size', c_int, 1), # int elem_size
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+)
+cvCreateSeq.__doc__ = """CvSeq* cvCreateSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage)
+
+Creates sequence
+"""
+
+# Sets up sequence block size
+cvSetSeqBlockSize = cfunc('cvSetSeqBlockSize', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('delta_elems', c_int, 1), # int delta_elems 
+)
+cvSetSeqBlockSize.__doc__ = """void cvSetSeqBlockSize(CvSeq* seq, int delta_elems)
+
+Sets up sequence block size
+"""
+
+# Adds element to sequence end
+cvSeqPush = cfunc('cvSeqPush', _cxDLL, c_void_p,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('element', c_void_p, 1, None), # void* element
+)
+cvSeqPush.__doc__ = """char* cvSeqPush(CvSeq* seq, void* element=NULL)
+
+Adds element to sequence end
+"""
+
+# Adds element to sequence beginning
+cvSeqPushFront = cfunc('cvSeqPushFront', _cxDLL, c_void_p,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('element', c_void_p, 1, None), # void* element
+)
+cvSeqPushFront.__doc__ = """char* cvSeqPushFront(CvSeq* seq, void* element=NULL)
+
+Adds element to sequence beginning
+"""
+
+# Removes element from sequence end
+cvSeqPop = cfunc('cvSeqPop', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('element', c_void_p, 1, None), # void* element
+)
+cvSeqPop.__doc__ = """void cvSeqPop(CvSeq* seq, void* element=NULL)
+
+Removes element from sequence end
+"""
+
+# Removes element from sequence beginning
+cvSeqPopFront = cfunc('cvSeqPopFront', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('element', c_void_p, 1, None), # void* element
+)
+cvSeqPopFront.__doc__ = """void cvSeqPopFront(CvSeq* seq, void* element=NULL)
+
+Removes element from sequence beginning
+"""
+
+CV_FRONT = 1
+CV_BACK = 0
+
+# Pushes several elements to the either end of sequence
+cvSeqPushMulti = cfunc('cvSeqPushMulti', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('elements', c_void_p, 1), # void* elements
+    ('count', c_int, 1), # int count
+    ('in_front', c_int, 1, 0), # int in_front
+)
+cvSeqPushMulti.__doc__ = """void cvSeqPushMulti(CvSeq* seq, void* elements, int count, int in_front=0)
+
+Pushes several elements to the either end of sequence
+"""
+
+# Removes several elements from the either end of sequence
+cvSeqPopMulti = cfunc('cvSeqPopMulti', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('elements', c_void_p, 1), # void* elements
+    ('count', c_int, 1), # int count
+    ('in_front', c_int, 1, 0), # int in_front
+)
+cvSeqPopMulti.__doc__ = """void cvSeqPopMulti(CvSeq* seq, void* elements, int count, int in_front=0)
+
+Removes several elements from the either end of sequence
+"""
+
+# Inserts element in sequence middle
+cvSeqInsert = cfunc('cvSeqInsert', _cxDLL, c_void_p,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('before_index', c_int, 1), # int before_index
+    ('element', c_void_p, 1, None), # void* element
+)
+cvSeqInsert.__doc__ = """char* cvSeqInsert(CvSeq* seq, int before_index, void* element=NULL)
+
+Inserts element in sequence middle
+"""
+
+# Removes element from sequence middle
+cvSeqRemove = cfunc('cvSeqRemove', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('index', c_int, 1), # int index 
+)
+cvSeqRemove.__doc__ = """void cvSeqRemove(CvSeq* seq, int index)
+
+Removes element from sequence middle
+"""
+
+# Clears sequence
+cvClearSeq = cfunc('cvClearSeq', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq 
+)
+cvClearSeq.__doc__ = """void cvClearSeq(CvSeq* seq)
+
+Clears sequence
+"""
+
+# Returns POINTER to sequence element by its index
+cvGetSeqElem = cfunc('cvGetSeqElem', _cxDLL, c_void_p,
+    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+    ('index', c_int, 1), # int index 
+)
+cvGetSeqElem.__doc__ = """char* cvGetSeqElem(const CvSeq* seq, int index)
+
+Returns POINTER to sequence element by its index
+"""
+
+def CV_GET_SEQ_ELEM(TYPE, seq, index):
+    result = cvGetSeqElem(seq)
+    return cast(result, POINTER(TYPE))
+
+# Returns index of concrete sequence element
+cvSeqElemIdx = cfunc('cvSeqElemIdx', _cxDLL, c_int,
+    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+    ('element', c_void_p, 1), # const void* element
+    ('block', POINTER(POINTER(CvSeqBlock)), 1, None), # CvSeqBlock** block
+)
+cvSeqElemIdx.__doc__ = """int cvSeqElemIdx(const CvSeq* seq, const void* element, CvSeqBlock** block=NULL)
+
+Returns index of concrete sequence element
+"""
+
+# Initializes process of writing data to sequence
+cvStartAppendToSeq = cfunc('cvStartAppendToSeq', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
+)
+cvStartAppendToSeq.__doc__ = """void cvStartAppendToSeq(CvSeq* seq, CvSeqWriter* writer)
+
+Initializes process of writing data to sequence
+"""
+
+# Creates new sequence and initializes writer for it
+cvStartWriteSeq = cfunc('cvStartWriteSeq', _cxDLL, None,
+    ('seq_flags', c_int, 1), # int seq_flags
+    ('header_size', c_int, 1), # int header_size
+    ('elem_size', c_int, 1), # int elem_size
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
+)
+cvStartWriteSeq.__doc__ = """void cvStartWriteSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage, CvSeqWriter* writer)
+
+Creates new sequence and initializes writer for it
+"""
+
+# Finishes process of writing sequence
+cvEndWriteSeq = cfunc('cvEndWriteSeq', _cxDLL, POINTER(CvSeq),
+    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
+)
+cvEndWriteSeq.__doc__ = """CvSeq* cvEndWriteSeq(CvSeqWriter* writer)
+
+Finishes process of writing sequence
+"""
+
+# Updates sequence headers from the writer state
+cvFlushSeqWriter = cfunc('cvFlushSeqWriter', _cxDLL, None,
+    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
+)
+cvFlushSeqWriter.__doc__ = """void cvFlushSeqWriter(CvSeqWriter* writer)
+
+Updates sequence headers from the writer state
+"""
+
+
 
 
 
@@ -4191,95 +4381,6 @@ cvLUT = cfunc('cvLUT', _cxDLL, None,
 
 # --- 2.2 Sequences ----------------------------------------------------------
 
-# Creates sequence
-cvCreateSeq = cfunc('cvCreateSeq', _cxDLL, POINTER(CvSeq),
-    ('seq_flags', c_int, 1), # int seq_flags
-    ('header_size', c_int, 1), # int header_size
-    ('elem_size', c_int, 1), # int elem_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
-)
-
-# Sets up sequence block size
-cvSetSeqBlockSize = cfunc('cvSetSeqBlockSize', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('delta_elems', c_int, 1), # int delta_elems 
-)
-
-# Adds element to sequence end
-cvSeqPush = cfunc('cvSeqPush', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('element', c_void_p, 1, None), # void* element
-)
-
-# Removes element from sequence end
-cvSeqPop = cfunc('cvSeqPop', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('element', c_void_p, 1, None), # void* element
-)
-
-# Adds element to sequence beginning
-cvSeqPushFront = cfunc('cvSeqPushFront', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('element', c_void_p, 1, None), # void* element
-)
-
-# Removes element from sequence beginning
-cvSeqPopFront = cfunc('cvSeqPopFront', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('element', c_void_p, 1, None), # void* element
-)
-
-# Pushes several elements to the either end of sequence
-cvSeqPushMulti = cfunc('cvSeqPushMulti', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('elements', c_void_p, 1), # void* elements
-    ('count', c_int, 1), # int count
-    ('in_front', c_int, 1, 0), # int in_front
-)
-
-# Removes several elements from the either end of sequence
-cvSeqPopMulti = cfunc('cvSeqPopMulti', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('elements', c_void_p, 1), # void* elements
-    ('count', c_int, 1), # int count
-    ('in_front', c_int, 1, 0), # int in_front
-)
-
-# Inserts element in sequence middle
-cvSeqInsert = cfunc('cvSeqInsert', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('before_index', c_int, 1), # int before_index
-    ('element', c_void_p, 1, None), # void* element
-)
-
-# Removes element from sequence middle
-cvSeqRemove = cfunc('cvSeqRemove', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('index', c_int, 1), # int index 
-)
-
-# Clears sequence
-cvClearSeq = cfunc('cvClearSeq', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq 
-)
-
-# Returns POINTER to sequence element by its index
-cvGetSeqElem = cfunc('cvGetSeqElem', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
-    ('index', c_int, 1), # int index 
-)
-
-def CV_GET_SEQ_ELEM(TYPE, seq, index):
-    result = cvGetSeqElem(seq)
-    return cast(result, POINTER(TYPE))
-
-# Returns index of concrete sequence element
-cvSeqElemIdx = cfunc('cvSeqElemIdx', _cxDLL, c_int,
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
-    ('element', c_void_p, 1), # const void* element
-    ('block', POINTER(POINTER(CvSeqBlock)), 1, None), # CvSeqBlock** block
-)
-
 # Copies sequence to one continuous block of memory
 cvCvtSeqToArray = cfunc('cvCvtSeqToArray', _cxDLL, c_void_p,
     ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
@@ -4345,31 +4446,6 @@ cvSeqSearch = cfunc('cvSeqSearch', _cxDLL, c_void_p,
     ('is_sorted', c_int, 1), # int is_sorted
     ('elem_idx', POINTER(c_int), 1), # int* elem_idx
     ('userdata', c_void_p, 1, None), # void* userdata
-)
-
-# Initializes process of writing data to sequence
-cvStartAppendToSeq = cfunc('cvStartAppendToSeq', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
-)
-
-# Creates new sequence and initializes writer for it
-cvStartWriteSeq = cfunc('cvStartWriteSeq', _cxDLL, None,
-    ('seq_flags', c_int, 1), # int seq_flags
-    ('header_size', c_int, 1), # int header_size
-    ('elem_size', c_int, 1), # int elem_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
-)
-
-# Finishes process of writing sequence
-cvEndWriteSeq = cfunc('cvEndWriteSeq', _cxDLL, POINTER(CvSeq),
-    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
-)
-
-# Updates sequence headers from the writer state
-cvFlushSeqWriter = cfunc('cvFlushSeqWriter', _cxDLL, None,
-    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
 )
 
 # Initializes process of sequential reading from sequence
@@ -6718,71 +6794,6 @@ cvLUT.__doc__ = """void cvLUT(const CvArr* src, CvArr* dst, const CvArr* lut)
 Performs look-up table transform of array
 """
 
-cvCreateSeq.__doc__ = """CvSeq* cvCreateSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage)
-
-Creates sequence
-"""
-
-cvSetSeqBlockSize.__doc__ = """void cvSetSeqBlockSize(CvSeq* seq, int delta_elems)
-
-Sets up sequence block size
-"""
-
-cvSeqPush.__doc__ = """char* cvSeqPush(CvSeq* seq, void* element=NULL)
-
-Adds element to sequence end
-"""
-
-cvSeqPop.__doc__ = """void cvSeqPop(CvSeq* seq, void* element=NULL)
-
-Removes element from sequence end
-"""
-
-cvSeqPushFront.__doc__ = """char* cvSeqPushFront(CvSeq* seq, void* element=NULL)
-
-Adds element to sequence beginning
-"""
-
-cvSeqPopFront.__doc__ = """void cvSeqPopFront(CvSeq* seq, void* element=NULL)
-
-Removes element from sequence beginning
-"""
-
-cvSeqPushMulti.__doc__ = """void cvSeqPushMulti(CvSeq* seq, void* elements, int count, int in_front=0)
-
-Pushes several elements to the either end of sequence
-"""
-
-cvSeqPopMulti.__doc__ = """void cvSeqPopMulti(CvSeq* seq, void* elements, int count, int in_front=0)
-
-Removes several elements from the either end of sequence
-"""
-
-cvSeqInsert.__doc__ = """char* cvSeqInsert(CvSeq* seq, int before_index, void* element=NULL)
-
-Inserts element in sequence middle
-"""
-
-cvSeqRemove.__doc__ = """void cvSeqRemove(CvSeq* seq, int index)
-
-Removes element from sequence middle
-"""
-
-cvClearSeq.__doc__ = """void cvClearSeq(CvSeq* seq)
-
-Clears sequence
-"""
-
-cvGetSeqElem.__doc__ = """char* cvGetSeqElem(const CvSeq* seq, int index)
-
-Returns POINTER to sequence element by its index
-"""
-
-cvSeqElemIdx.__doc__ = """int cvSeqElemIdx(const CvSeq* seq, const void* element, CvSeqBlock** block=NULL)
-
-Returns index of concrete sequence element
-"""
-
 cvCvtSeqToArray.__doc__ = """void* cvCvtSeqToArray(const CvSeq* seq, void* elements, CvSlice slice=CV_WHOLE_SEQ)
 
 Copies sequence to one continuous block of memory
@@ -6821,26 +6832,6 @@ Sorts sequence element using the specified comparison function
 cvSeqSearch.__doc__ = """char* cvSeqSearch(CvSeq* seq, const void* elem, CvCmpFunc func, int is_sorted, int* elem_idx, void* userdata=NULL)
 
 Searches element in sequence
-"""
-
-cvStartAppendToSeq.__doc__ = """void cvStartAppendToSeq(CvSeq* seq, CvSeqWriter* writer)
-
-Initializes process of writing data to sequence
-"""
-
-cvStartWriteSeq.__doc__ = """void cvStartWriteSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage, CvSeqWriter* writer)
-
-Creates new sequence and initializes writer for it
-"""
-
-cvEndWriteSeq.__doc__ = """CvSeq* cvEndWriteSeq(CvSeqWriter* writer)
-
-Finishes process of writing sequence
-"""
-
-cvFlushSeqWriter.__doc__ = """void cvFlushSeqWriter(CvSeqWriter* writer)
-
-Updates sequence headers from the writer state
 """
 
 cvStartReadSeq.__doc__ = """void cvStartReadSeq(const CvSeq* seq, CvSeqReader* reader, int reverse=0)
