@@ -454,30 +454,10 @@ CV_CAP_PROP_GAIN = 14
 CV_CAP_PROP_CONVERT_RGB = 15
 
 # --- CONSTANTS AND STUFF FROM cxcore.h ----
-CV_AUTOSTEP = 0x7fffffff
 CV_MAX_ARR = 10
 CV_NO_DEPTH_CHECK = 1
 CV_NO_CN_CHECK = 2
 CV_NO_SIZE_CHECK = 4
-CV_CMP_EQ = 0
-CV_CMP_GT = 1
-CV_CMP_GE = 2
-CV_CMP_LT = 3
-CV_CMP_LE = 4
-CV_CMP_NE = 5
-CV_CHECK_RANGE = 1
-CV_CHECK_QUIET = 2
-CV_RAND_UNI = 0
-CV_RAND_NORMAL = 1
-CV_GEMM_A_T = 1
-CV_GEMM_B_T = 2
-CV_GEMM_C_T = 4
-CV_SVD_MODIFY_A = 1
-CV_SVD_U_T = 2
-CV_SVD_V_T = 4
-CV_LU = 0
-CV_SVD = 1
-CV_SVD_SYM = 2
 CV_COVAR_SCRAMBLED = 0
 CV_COVAR_NORMAL = 1
 CV_COVAR_USE_AVG = 2
@@ -704,7 +684,7 @@ def cvRandInt(rng):
     return c_uint32(temp).value
     
 def cvRandReal(rng):
-    """double cvRandInt( CvRNG* rng )
+    """double cvRandReal( CvRNG* rng )
     
     Returns random floating-point number between 0 and 1.
     """
@@ -2068,6 +2048,8 @@ def cvCreateMatHeader(*args):
     _add_autoclean(z, _cvReleaseMat)
     return z
 
+CV_AUTOSTEP = 0x7fffffff
+
 # Initializes matrix header
 cvInitMatHeader = cfunc('cvInitMatHeader', _cxDLL, POINTER(CvMat),
     ('mat', POINTER(CvMat), 1), # CvMat* mat
@@ -2297,6 +2279,1158 @@ def cvGetDims(arr):
     return tuple(sz[:ndims])
 
 
+# Return POINTER to the particular array element
+cvPtr1D = cfunc('cvPtr1D', _cxDLL, c_void_p,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('type', POINTER(c_int), 1, None), # int* type
+)
+cvPtr1D.__doc__ = """uchar* cvPtr1D(const CvArr* arr, int idx0, int* type=NULL)
+
+Return POINTER to the particular array element
+"""
+
+cvPtr2D = cfunc('cvPtr2D', _cxDLL, c_void_p,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('idx1', c_int, 1), # int idx1
+    ('type', POINTER(c_int), 1, None), # int* type
+)
+cvPtr2D.__doc__ = """uchar* cvPtr2D(const CvArr* arr, int idx0, int idx1, int idx2, int* type=NULL)
+
+Return POINTER to the particular array element
+"""
+
+cvPtr3D = cfunc('cvPtr3D', _cxDLL, c_void_p,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('idx1', c_int, 1), # int idx1
+    ('idx2', c_int, 1), # int idx2
+    ('type', POINTER(c_int), 1, None), # int* type
+)
+cvPtr3D.__doc__ = """uchar* cvPtr3D(const CvArr* arr, int idx0, int idx1, int idx2, int* type=NULL)
+
+Return POINTER to the particular array element
+"""
+
+
+cvPtrND = cfunc('cvPtrND', _cxDLL, c_void_p,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx', POINTER(c_int), 1), # int* idx
+    ('type', POINTER(c_int), 1, None), # int* type
+    ('create_node', c_int, 1, 1), # int create_node
+    ('precalc_hashval', POINTER(c_uint32), 1, None), # unsigned* precalc_hashval
+)
+cvPtrND.__doc__ = """uchar* cvPtrND(const CvArr* arr, int* idx, int* type=NULL, int create_node=1, int* precalc_hashval=NULL)
+
+Return POINTER to the particular array element
+"""
+
+
+# Return the particular array element
+cvGet1D = cfunc('cvGet1D', _cxDLL, CvScalar,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx0', c_int, 1), # int idx0 
+)
+cvGet1D.__doc__ = """CvScalar cvGet1D(const CvArr* arr, int idx0)
+
+Return the particular array element
+"""
+
+cvGet2D = cfunc('cvGet2D', _cxDLL, CvScalar,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('idx1', c_int, 1), # int idx1 
+)
+cvGet2D.__doc__ = """CvScalar cvGet2D(const CvArr* arr, int idx0, int idx1)
+
+Return the particular array element
+"""
+
+cvGet3D = cfunc('cvGet3D', _cxDLL, CvScalar,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('idx1', c_int, 1), # int idx1
+    ('idx2', c_int, 1), # int idx2 
+)
+cvGet3D.__doc__ = """CvScalar cvGet3D(const CvArr* arr, int idx0, int idx1, int idx2)
+
+Return the particular array element
+"""
+
+cvGetND = cfunc('cvGetND', _cxDLL, CvScalar,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx', POINTER(c_int), 1), # int* idx 
+)
+cvGetND.__doc__ = """CvScalar cvGetND(const CvArr* arr, int* idx)
+
+Return the particular array element
+"""
+
+# Return the particular element of single-channel array
+cvGetReal1D = cfunc('cvGetReal1D', _cxDLL, c_double,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx0', c_int, 1), # int idx0 
+)
+cvGetReal1D.__doc__ = """double cvGetReal1D(const CvArr* arr, int idx0)
+
+Return the particular element of single-channel array
+"""
+
+cvGetReal2D = cfunc('cvGetReal2D', _cxDLL, c_double,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('idx1', c_int, 1), # int idx1 
+)
+cvGetReal2D.__doc__ = """double cvGetReal2D(const CvArr* arr, int idx0, int idx1)
+
+Return the particular element of single-channel array
+"""
+
+cvGetReal3D = cfunc('cvGetReal3D', _cxDLL, c_double,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('idx1', c_int, 1), # int idx1
+    ('idx2', c_int, 1), # int idx2 
+)
+cvGetReal3D.__doc__ = """double cvGetReal3D(const CvArr* arr, int idx0, int idx1, int idx2)
+
+Return the particular element of single-channel array
+"""
+
+cvGetRealND = cfunc('cvGetRealND', _cxDLL, c_double,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('idx', POINTER(c_int), 1), # int* idx 
+)
+cvGetRealND.__doc__ = """double cvGetRealND(const CvArr* arr, int* idx)
+
+Return the particular element of single-channel array
+"""
+
+# Change the particular array element
+cvSet1D = cfunc('cvSet1D', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('value', CvScalar, 1), # CvScalar value 
+)
+cvSet1D.__doc__ = """void cvSet1D(CvArr* arr, int idx0, CvScalar value)
+
+Change the particular array element
+"""
+
+cvSet2D = cfunc('cvSet2D', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('idx1', c_int, 1), # int idx1
+    ('value', CvScalar, 1), # CvScalar value 
+)
+cvSet2D.__doc__ = """void cvSet2D(CvArr* arr, int idx0, int idx1, CvScalar value)
+
+Change the particular array element
+"""
+
+cvSet3D = cfunc('cvSet3D', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('idx1', c_int, 1), # int idx1
+    ('idx2', c_int, 1), # int idx2
+    ('value', CvScalar, 1), # CvScalar value 
+)
+cvSet3D.__doc__ = """void cvSet3D(CvArr* arr, int idx0, int idx1, int idx2, CvScalar value)
+
+Change the particular array element
+"""
+
+cvSetND = cfunc('cvSetND', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('idx', POINTER(c_int), 1), # int* idx
+    ('value', CvScalar, 1), # CvScalar value 
+)
+cvSetND.__doc__ = """void cvSetND(CvArr* arr, int* idx, CvScalar value)
+
+Change the particular array element
+"""
+
+# Change the particular array element
+cvSetReal1D = cfunc('cvSetReal1D', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('value', c_double, 1), # double value 
+)
+cvSetReal1D.__doc__ = """void cvSetReal1D(CvArr* arr, int idx0, double value)
+
+Change the particular array element
+"""
+
+cvSetReal2D = cfunc('cvSetReal2D', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('idx1', c_int, 1), # int idx1
+    ('value', c_double, 1), # double value 
+)
+cvSetReal2D.__doc__ = """void cvSetReal2D(CvArr* arr, int idx0, int idx1, double value)
+
+Change the particular array element
+"""
+
+cvSetReal3D = cfunc('cvSetReal3D', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('idx0', c_int, 1), # int idx0
+    ('idx1', c_int, 1), # int idx1
+    ('idx2', c_int, 1), # int idx2
+    ('value', c_double, 1), # double value 
+)
+cvSetReal3D.__doc__ = """void cvSetReal3D(CvArr* arr, int idx0, int idx1, int idx2, double value)
+
+Change the particular array element
+"""
+
+cvSetRealND = cfunc('cvSetRealND', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('idx', POINTER(c_int), 1), # int* idx
+    ('value', c_double, 1), # double value 
+)
+cvSetRealND.__doc__ = """void cvSetRealND(CvArr* arr, int* idx, double value)
+
+Change the particular array element
+"""
+
+# Clears the particular array element
+cvClearND = cfunc('cvClearND', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('idx', POINTER(c_int), 1), # int* idx 
+)
+cvClearND.__doc__ = """void cvClearND(CvArr* arr, int* idx)
+
+Clears the particular array element
+"""
+
+# Returns matrix header for arbitrary array
+cvGetMat = cfunc('cvGetMat', _cxDLL, POINTER(CvMat),
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('header', POINTER(CvMat), 1), # CvMat* header
+    ('coi', POINTER(c_int), 1, None), # int* coi
+    ('allowND', c_int, 1, 0), # int allowND
+)
+cvGetMat.__doc__ = """CvMat* cvGetMat(const CvArr* arr, CvMat* header, int* coi=NULL, int allowND=0)
+
+Returns matrix header for arbitrary array
+"""
+
+# Returns image header for arbitrary array
+cvGetImage = cfunc('cvGetImage', _cxDLL, POINTER(IplImage),
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('image_header', POINTER(IplImage), 1), # IplImage* image_header 
+)
+cvGetImage.__doc__ = """IplImage* cvGetImage(const CvArr* arr, IplImage* image_header)
+
+Returns image header for arbitrary array
+"""
+
+
+#-----------------------------------------------------------------------------
+# Transforms and Permutations
+#-----------------------------------------------------------------------------
+
+
+# Changes shape of multi-dimensional array w/o copying data
+cvReshapeMatND = cfunc('cvReshapeMatND', _cxDLL, c_void_p,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('sizeof_header', c_int, 1), # int sizeof_header
+    ('header', CvArr_p, 1), # CvArr* header
+    ('new_cn', c_int, 1), # int new_cn
+    ('new_dims', c_int, 1), # int new_dims
+    ('new_sizes', POINTER(c_int), 1), # int* new_sizes 
+)
+cvReshapeMatND.__doc__ = """CvArr* cvReshapeMatND(const CvArr* arr, int sizeof_header, CvArr* header, int new_cn, int new_dims, int* new_sizes)
+
+Changes shape of multi-dimensional array w/o copying data
+"""
+
+# Changes shape of matrix/image without copying data
+cvReshape = cfunc('cvReshape', _cxDLL, POINTER(CvMat),
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('header', POINTER(CvMat), 1), # CvMat* header
+    ('new_cn', c_int, 1), # int new_cn
+    ('new_rows', c_int, 1, 0), # int new_rows
+)
+cvReshape.__doc__ = """CvMat* cvReshape(const CvArr* arr, CvMat* header, int new_cn, int new_rows=0)
+
+Changes shape of matrix/image without copying data
+"""
+
+# Fill destination array with tiled source array
+cvRepeat = cfunc('cvRepeat', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvRepeat.__doc__ = """void cvRepeat(const CvArr* src, CvArr* dst)
+
+Fill destination array with tiled source array
+"""
+
+
+#-----------------------------------------------------------------------------
+# Manipulating the data of a CvArr
+#-----------------------------------------------------------------------------
+
+
+# Allocates array data
+cvCreateData = cfunc('cvCreateData', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr 
+)
+cvCreateData.__doc__ = """void cvCreateData(CvArr* arr)
+
+Allocates array data
+"""
+
+# Releases array data
+cvReleaseData = cfunc('cvReleaseData', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr 
+)
+cvReleaseData.__doc__ = """void cvReleaseData(CvArr* arr)
+
+Releases array data
+"""
+
+# Assigns user data to the array header
+cvSetData = cfunc('cvSetData', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('data', c_void_p, 1), # void* data
+    ('step', c_int, 1), # int step 
+)
+cvSetData.__doc__ = """void cvSetData(CvArr* arr, void* data, int step)
+
+Assigns user data to the array header
+"""
+
+# Retrieves low-level information about the array
+cvGetRawData = cfunc('cvGetRawData', _cxDLL, None,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('data', POINTER(POINTER(c_byte)), 1), # uchar** data
+    ('step', POINTER(c_int), 1, None), # int* step
+    ('roi_size', POINTER(CvSize), 1, None), # CvSize* roi_size
+)
+cvGetRawData.__doc__ = """void cvGetRawData(const CvArr* arr, uchar** data, int* step=NULL, CvSize* roi_size=NULL)
+
+Retrieves low-level information about the array
+"""
+
+# Returns size of matrix or image ROI
+cvGetSize = cfunc('cvGetSize', _cxDLL, CvSize,
+    ('arr', CvArr_p, 1), # const CvArr* arr 
+)
+cvGetSize.__doc__ = """CvSize cvGetSize(const CvArr* arr)
+
+Returns size of matrix or image ROI
+"""
+
+
+#-----------------------------------------------------------------------------
+# Copying and Filling
+#-----------------------------------------------------------------------------
+
+# Copies one array to another
+cvCopy = cfunc('cvCopy', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvCopy.__doc__ = """void cvCopy(const CvArr* src, CvArr* dst, const CvArr* mask=NULL)
+
+Copies one array to another
+"""
+
+# Sets every element of array to given value
+cvSet = cfunc('cvSet', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('value', CvScalar, 1), # CvScalar value
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvSet.__doc__ = """void cvSet(CvArr* arr, CvScalar value, const CvArr* mask=NULL)
+
+Sets every element of array to given value
+"""
+
+# Clears the array
+cvSetZero = cfunc('cvSetZero', _cxDLL, None,
+    ('arr', CvArr_p, 1), # CvArr* arr 
+)
+cvSetZero.__doc__ = """void cvSetZero(CvArr* arr)
+
+Clears the array
+"""
+
+cvZero = cvSetZero
+
+
+#-----------------------------------------------------------------------------
+# Manipulating channels
+#-----------------------------------------------------------------------------
+
+
+# Divides multi-channel array into several single-channel arrays or extracts a single channel from the array
+cvSplit = cfunc('cvSplit', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst0', CvArr_p, 1, None), # CvArr* dst0
+    ('dst1', CvArr_p, 1, None), # CvArr* dst1
+    ('dst2', CvArr_p, 1, None), # CvArr* dst2
+    ('dst3', CvArr_p, 1, None), # CvArr* dst3
+)
+cvSplit.__doc__ = """void cvSplit(const CvArr* src, CvArr* dst0, CvArr* dst1, CvArr* dst2, CvArr* dst3)
+
+Divides multi-channel array into several single-channel arrays or extracts a single channel from the array
+"""
+
+# Composes multi-channel array from several single-channel arrays or inserts a single channel into the array
+cvMerge = cfunc('cvMerge', _cxDLL, None,
+    ('src0', CvArr_p, 1), # const CvArr* src0
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('src3', CvArr_p, 1), # const CvArr* src3
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvMerge.__doc__ = """void cvMerge(const CvArr* src0, const CvArr* src1, const CvArr* src2, const CvArr* src3, CvArr* dst)
+
+Composes multi-channel array from several single-channel arrays or inserts a single channel into the array
+"""
+
+# TODO: to implement a wrapper for cvMixChannels()
+
+
+#-----------------------------------------------------------------------------
+# Image conversion with scaling
+#-----------------------------------------------------------------------------
+
+# Converts one array to another with optional linear transformation
+cvConvertScale = cfunc('cvConvertScale', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('scale', c_double, 1, 1), # double scale
+    ('shift', c_double, 1, 0), # double shift
+)
+cvConvertScale.__doc__ = """void cvConvertScale(const CvArr* src, CvArr* dst, double scale=1, double shift=0)
+
+Converts one array to another with optional linear transformation
+"""
+
+cvCvtScale = cvConvertScale
+
+cvScale = cvConvertScale
+
+def cvConvert(src, dst):
+    cvConvertScale(src, dst, 1, 0)
+
+# Converts input array elements to 8-bit unsigned integer another with optional linear transformation
+cvConvertScaleAbs = cfunc('cvConvertScaleAbs', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('scale', c_double, 1, 1), # double scale
+    ('shift', c_double, 1, 0), # double shift
+)
+cvConvertScaleAbs.__doc__ = """void cvConvertScaleAbs(const CvArr* src, CvArr* dst, double scale=1, double shift=0)
+
+Converts input array elements to 8-bit unsigned integer another with optional linear transformation
+"""
+
+cvCvtScaleAbs = cvConvertScaleAbs
+
+
+#-----------------------------------------------------------------------------
+# Termination Criteria
+#-----------------------------------------------------------------------------
+
+# checks termination criteria validity and sets eps to default_eps (if it is not set),
+# max_iter to default_max_iters (if it is not set)
+cvCheckTermCriteria = cfunc('cvCheckTermCriteria', _cxDLL, CvTermCriteria,
+    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
+    ('default_eps', c_double, 1), # double default_eps
+    ('default_max_iters', c_int, 1), # int default_max_iters
+)
+
+
+#-----------------------------------------------------------------------------
+# Arithmetic, Logic and Comparison
+#-----------------------------------------------------------------------------
+
+# Computes per-element sum of two arrays
+cvAdd = cfunc('cvAdd', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvAdd.__doc__ = """void cvAdd(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
+
+Computes per-element sum of two arrays
+"""
+
+# Computes sum of array and scalar
+cvAddS = cfunc('cvAddS', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('value', CvScalar, 1), # CvScalar value
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvAddS.__doc__ = """void cvAddS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
+
+Computes sum of array and scalar
+"""
+
+# Computes per-element difference between two arrays
+cvSub = cfunc('cvSub', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvSub.__doc__ = """void cvSub(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
+
+Computes per-element difference between two arrays
+"""
+
+# Computes difference between array and scalar
+def cvSubS(src, value, dst, mask=None):
+    """void cvSubS( const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL )
+
+    Computes difference between array and scalar
+    """
+    # dst(mask) = src(mask) - value = src(mask) + (-value)
+    cvAddS(src, cvScalar( -value.val[0], -value.val[1], -value.val[2], -value.val[3]), dst, mask)
+
+# Computes difference between scalar and array
+cvSubRS = cfunc('cvSubRS', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('value', CvScalar, 1), # CvScalar value
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvSubRS.__doc__ = """void cvSubRS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
+
+Computes difference between scalar and array
+"""
+
+# Calculates per-element product of two arrays
+cvMul = cfunc('cvMul', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('scale', c_double, 1, 1), # double scale
+)
+cvMul.__doc__ = """void cvMul(const CvArr* src1, const CvArr* src2, CvArr* dst, double scale=1)
+
+Calculates per-element product of two arrays
+"""
+
+# Performs per-element division of two arrays
+cvDiv = cfunc('cvDiv', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('scale', c_double, 1, 1), # double scale
+)
+cvDiv.__doc__ = """void cvDiv(const CvArr* src1, const CvArr* src2, CvArr* dst, double scale=1)
+
+Performs per-element division of two arrays
+"""
+
+# Calculates sum of scaled array and another array
+cvScaleAdd = cfunc('cvScaleAdd', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('scale', CvScalar, 1), # CvScalar scale
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+
+cvScaleAdd.__doc__ = """void cvScaleAdd(const CvArr* src1, CvScalar scale, const CvArr* src2, CvArr* dst)
+
+Calculates sum of scaled array and another array
+"""
+
+# Computes weighted sum of two arrays
+cvAddWeighted = cfunc('cvAddWeighted', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('alpha', c_double, 1), # double alpha
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('beta', c_double, 1), # double beta
+    ('gamma', c_double, 1), # double gamma
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvAddWeighted.__doc__ = """void cvAddWeighted(const CvArr* src1, double alpha, const CvArr* src2, double beta, double gamma, CvArr* dst)
+
+Computes weighted sum of two arrays
+"""
+
+# Calculates dot product of two arrays in Euclidian metrics
+cvDotProduct = cfunc('cvDotProduct', _cxDLL, c_double,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2 
+)
+cvDotProduct.__doc__ = """double cvDotProduct(const CvArr* src1, const CvArr* src2)
+
+Calculates dot product of two arrays in Euclidian metrics
+"""
+
+# Calculates per-element bit-wise conjunction of two arrays
+cvAnd = cfunc('cvAnd', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvAnd.__doc__ = """void cvAnd(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
+
+Calculates per-element bit-wise conjunction of two arrays
+"""
+
+# Calculates per-element bit-wise conjunction of array and scalar
+cvAndS = cfunc('cvAndS', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('value', CvScalar, 1), # CvScalar value
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvAndS.__doc__ = """void cvAndS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
+
+Calculates per-element bit-wise conjunction of array and scalar
+"""
+
+# Calculates per-element bit-wise disjunction of two arrays
+cvOr = cfunc('cvOr', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvOr.__doc__ = """void cvOr(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
+
+Calculates per-element bit-wise disjunction of two arrays
+"""
+
+# Calculates per-element bit-wise disjunction of array and scalar
+cvOrS = cfunc('cvOrS', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('value', CvScalar, 1), # CvScalar value
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvOrS.__doc__ = """void cvOrS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
+
+Calculates per-element bit-wise disjunction of array and scalar
+"""
+
+# Performs per-element bit-wise "exclusive or" operation on two arrays
+cvXor = cfunc('cvXor', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvXor.__doc__ = """void cvXor(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
+
+Performs per-element bit-wise "exclusive or" operation on two arrays
+"""
+
+# Performs per-element bit-wise "exclusive or" operation on array and scalar
+cvXorS = cfunc('cvXorS', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('value', CvScalar, 1), # CvScalar value
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvXorS.__doc__ = """void cvXorS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
+
+Performs per-element bit-wise "exclusive or" operation on array and scalar
+"""
+
+# Performs per-element bit-wise inversion of array elements
+cvNot = cfunc('cvNot', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvNot.__doc__ = """void cvNot(const CvArr* src, CvArr* dst)
+
+Performs per-element bit-wise inversion of array elements
+"""
+
+# Checks that array elements lie between elements of two other arrays
+cvInRange = cfunc('cvInRange', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('lower', CvArr_p, 1), # const CvArr* lower
+    ('upper', CvArr_p, 1), # const CvArr* upper
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvInRange.__doc__ = """void cvInRange(const CvArr* src, const CvArr* lower, const CvArr* upper, CvArr* dst)
+
+Checks that array elements lie between elements of two other arrays
+"""
+
+# Checks that array elements lie between two scalars
+cvInRangeS = cfunc('cvInRangeS', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('lower', CvScalar, 1), # CvScalar lower
+    ('upper', CvScalar, 1), # CvScalar upper
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvInRangeS.__doc__ = """void cvInRangeS(const CvArr* src, CvScalar lower, CvScalar upper, CvArr* dst)
+
+Checks that array elements lie between two scalars
+"""
+
+CV_CMP_EQ = 0
+CV_CMP_GT = 1
+CV_CMP_GE = 2
+CV_CMP_LT = 3
+CV_CMP_LE = 4
+CV_CMP_NE = 5
+
+# Performs per-element comparison of two arrays
+cvCmp = cfunc('cvCmp', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('cmp_op', c_int, 1), # int cmp_op 
+)
+cvCmp.__doc__ = """void cvCmp(const CvArr* src1, const CvArr* src2, CvArr* dst, int cmp_op)
+
+Performs per-element comparison of two arrays
+"""
+
+# Performs per-element comparison of array and scalar
+cvCmpS = cfunc('cvCmpS', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('value', c_double, 1), # double value
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('cmp_op', c_int, 1), # int cmp_op 
+)
+cvCmpS.__doc__ = """void cvCmpS(const CvArr* src, double value, CvArr* dst, int cmp_op)
+
+Performs per-element comparison of array and scalar
+"""
+
+# Finds per-element minimum of two arrays
+cvMin = cfunc('cvMin', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvMin.__doc__ = """void cvMin(const CvArr* src1, const CvArr* src2, CvArr* dst)
+
+Finds per-element minimum of two arrays
+"""
+
+# Finds per-element maximum of two arrays
+cvMax = cfunc('cvMax', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvMax.__doc__ = """void cvMax(const CvArr* src1, const CvArr* src2, CvArr* dst)
+
+Finds per-element maximum of two arrays
+"""
+
+# Finds per-element minimum of array and scalar
+cvMinS = cfunc('cvMinS', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('value', c_double, 1), # double value
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvMinS.__doc__ = """void cvMinS(const CvArr* src, double value, CvArr* dst)
+
+Finds per-element minimum of array and scalar
+"""
+
+# Finds per-element maximum of array and scalar
+cvMaxS = cfunc('cvMaxS', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('value', c_double, 1), # double value
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvMaxS.__doc__ = """void cvMaxS(const CvArr* src, double value, CvArr* dst)
+
+Finds per-element maximum of array and scalar
+"""
+
+# Calculates absolute difference between two arrays
+cvAbsDiff = cfunc('cvAbsDiff', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvAbsDiff.__doc__ = """void cvAbsDiff(const CvArr* src1, const CvArr* src2, CvArr* dst)
+
+Calculates absolute difference between two arrays
+"""
+
+# Calculates absolute difference between array and scalar
+cvAbsDiffS = cfunc('cvAbsDiffS', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('value', CvScalar, 1), # CvScalar value 
+)
+cvAbsDiffS.__doc__ = """void cvAbsDiffS(const CvArr* src, CvArr* dst, CvScalar value)
+
+Calculates absolute difference between array and scalar
+"""
+
+def cvAbs(src, dst):
+    """void cvAbsDiffS(const CvArr* src, CvArr* dst)
+    
+    Calculates absolute value of every element in array
+    """
+    cvAbsDiffS(src, dst, cvScalar(0))
+
+    
+#-----------------------------------------------------------------------------
+# Math operations
+#-----------------------------------------------------------------------------
+
+# Calculates magnitude and/or angle of 2d vectors
+cvCartToPolar = cfunc('cvCartToPolar', _cxDLL, None,
+    ('x', CvArr_p, 1), # const CvArr* x
+    ('y', CvArr_p, 1), # const CvArr* y
+    ('magnitude', CvArr_p, 1), # CvArr* magnitude
+    ('angle', CvArr_p, 1, None), # CvArr* angle
+    ('angle_in_degrees', c_int, 1, 0), # int angle_in_degrees
+)
+cvCartToPolar.__doc__ = """void cvCartToPolar(const CvArr* x, const CvArr* y, CvArr* magnitude, CvArr* angle=NULL, int angle_in_degrees=0)
+
+Calculates magnitude and/or angle of 2d vectors
+"""
+
+# Calculates cartesian coordinates of 2d vectors represented in polar form
+cvPolarToCart = cfunc('cvPolarToCart', _cxDLL, None,
+    ('magnitude', CvArr_p, 1), # const CvArr* magnitude
+    ('angle', CvArr_p, 1), # const CvArr* angle
+    ('x', CvArr_p, 1), # CvArr* x
+    ('y', CvArr_p, 1), # CvArr* y
+    ('angle_in_degrees', c_int, 1, 0), # int angle_in_degrees
+)
+cvPolarToCart.__doc__ = """void cvPolarToCart(const CvArr* magnitude, const CvArr* angle, CvArr* x, CvArr* y, int angle_in_degrees=0)
+
+Calculates cartesian coordinates of 2d vectors represented in polar form
+"""
+
+# Raises every array element to power
+cvPow = cfunc('cvPow', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('power', c_double, 1), # double power 
+)
+cvPow.__doc__ = """void cvPow(const CvArr* src, CvArr* dst, double power)
+
+Raises every array element to power
+"""
+
+# Calculates exponent of every array element
+cvExp = cfunc('cvExp', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvExp.__doc__ = """void cvExp(const CvArr* src, CvArr* dst)
+
+Calculates exponent of every array element
+"""
+
+# Calculates natural logarithm of every array element absolute value
+cvLog = cfunc('cvLog', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvLog.__doc__ = """void cvLog(const CvArr* src, CvArr* dst)
+
+Calculates natural logarithm of every array element absolute value
+"""
+
+# Calculates angle of 2D vector
+cvFastArctan = cfunc('cvFastArctan', _cxDLL, c_float,
+    ('y', c_float, 1), # float y
+    ('x', c_float, 1), # float x 
+)
+cvFastArctan.__doc__ = """float cvFastArctan(float y, float x)
+
+Calculates angle of 2D vector
+"""
+
+# Calculates cubic root
+cvCbrt = cfunc('cvCbrt', _cxDLL, c_float,
+    ('value', c_float, 1), # float value 
+)
+cvCbrt.__doc__ = """float cvCbrt(float value)
+
+Calculates cubic root
+"""
+
+CV_CHECK_RANGE = 1
+CV_CHECK_QUIET = 2
+
+# Checks every element of input array for invalid values
+cvCheckArr = cfunc('cvCheckArr', _cxDLL, c_int,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('flags', c_int, 1, 0), # int flags
+    ('min_val', c_double, 1, 0), # double min_val
+    ('max_val', c_double, 1, 0), # double max_val
+)
+cvCheckArr.__doc__ = """int cvCheckArr(const CvArr* arr, int flags=0, double min_val=0, double max_val=)
+
+Checks every element of input array for invalid values
+"""
+
+cvCheckArray = cvCheckArr
+
+CV_RAND_UNI = 0
+CV_RAND_NORMAL = 1
+
+# Fills array with random numbers and updates the RNG state
+cvRandArr = cfunc('cvRandArr', _cxDLL, None,
+    ('rng', POINTER(CvRNG), 1), # CvRNG* rng
+    ('arr', CvArr_p, 1), # CvArr* arr
+    ('dist_type', c_int, 1), # int dist_type
+    ('param1', CvScalar, 1), # CvScalar param1
+    ('param2', CvScalar, 1), # CvScalar param2 
+)
+cvRandArr.__doc__ = """void cvRandArr(CvRNG* rng, CvArr* arr, int dist_type, CvScalar param1, CvScalar param2)
+
+Fills array with random numbers and updates the RNG state
+"""
+
+# Shuffles the matrix by swapping randomly chosen pairs of the matrix elements on each iteration
+cvRandShuffle = cfunc('cvRandShuffle', _cxDLL, None,
+    ('mat', CvArr_p, 1), # CvArr* arr
+    ('rng', POINTER(CvRNG), 1), # CvRNG* rng
+    ('iter_factor', c_double, 1, 1.0), # double iter_factor=1
+)
+cvRandShuffle.__doc__ = """void cvRandShuffle( CvArr* mat, CvRNG* rng, double iter_factor=1. )
+
+Shuffles the matrix by swapping randomly chosen pairs of the matrix elements on each iteration
+"""
+
+# Finds real roots of a cubic equation
+cvSolveCubic = cfunc('cvSolveCubic', _cxDLL, None,
+    ('coeffs', CvArr_p, 1), # const CvArr* coeffs
+    ('roots', CvArr_p, 1), # CvArr* roots 
+)
+cvSolveCubic.__doc__ = """void cvSolveCubic(const CvArr* coeffs, CvArr* roots)
+
+Finds real roots of a cubic equation
+"""
+
+    
+#-----------------------------------------------------------------------------
+# Matrix operations
+#-----------------------------------------------------------------------------
+
+# Calculates cross product of two 3D vectors
+cvCrossProduct = cfunc('cvCrossProduct', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvCrossProduct.__doc__ = """void cvCrossProduct(const CvArr* src1, const CvArr* src2, CvArr* dst)
+
+Calculates cross product of two 3D vectors
+"""
+
+CV_GEMM_A_T = 1
+CV_GEMM_B_T = 2
+CV_GEMM_C_T = 4
+
+# Performs generalized matrix multiplication
+cvGEMM = cfunc('cvGEMM', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('alpha', c_double, 1), # double alpha
+    ('src3', CvArr_p, 1), # const CvArr* src3
+    ('beta', c_double, 1), # double beta
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('tABC', c_int, 1, 0), # int tABC
+)
+cvGEMM.__doc__ = """void cvGEMM(const CvArr* src1, const CvArr* src2, double alpha, const CvArr* src3, double beta, CvArr* dst, int tABC=0)
+
+Performs generalized matrix multiplication
+"""
+
+cvMatMulAddEx = cvGEMM
+
+def cvMatMulAdd(src1, src2, src3, dst):
+    cvGEMM(src1, src2, 1, src3, 1, dst, 0)
+
+def cvMatMul(src1, src2, dst):
+    cvMatMulAdd(src1, src2, 0, dst)
+
+# Performs matrix transform of every array element
+cvTransform = cfunc('cvTransform', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('transmat', POINTER(CvMat), 1), # const CvMat* transmat
+    ('shiftvec', POINTER(CvMat), 1, None), # const CvMat* shiftvec
+)
+cvTransform.__doc__ = """void cvTransform(const CvArr* src, CvArr* dst, const CvMat* transmat, const CvMat* shiftvec=NULL)
+
+Performs matrix transform of every array element
+"""
+
+# Performs perspective matrix transform of vector array
+cvPerspectiveTransform = cfunc('cvPerspectiveTransform', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('mat', POINTER(CvMat), 1), # const CvMat* mat 
+)
+cvPerspectiveTransform.__doc__ = """void cvPerspectiveTransform(const CvArr* src, CvArr* dst, const CvMat* mat)
+
+Performs perspective matrix transform of vector array
+"""
+
+# Calculates product of array and transposed array
+cvMulTransposed = cfunc('cvMulTransposed', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('order', c_int, 1), # int order
+    ('delta', CvArr_p, 1, None), # const CvArr* delta
+)
+cvMulTransposed.__doc__ = """void cvMulTransposed(const CvArr* src, CvArr* dst, int order, const CvArr* delta=NULL)
+
+Calculates product of array and transposed array
+"""
+
+# Transposes matrix
+cvTranspose = cfunc('cvTranspose', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvTranspose.__doc__ = """void cvTranspose(const CvArr* src, CvArr* dst)
+
+Transposes matrix
+"""
+
+cvT = cvTranspose
+
+# Flip a 2D array around vertical, horizontall or both axises
+cvFlip = cfunc('cvFlip', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1, None), # CvArr* dst
+    ('flip_mode', c_int, 1, 0), # int flip_mode
+)
+cvFlip.__doc__ = """void cvFlip(const CvArr* src, CvArr* dst=NULL, int flip_mode=)
+
+Flip a 2D array around vertical, horizontall or both axises
+"""
+
+cvMirror = cvFlip
+
+CV_SVD_MODIFY_A = 1
+CV_SVD_U_T = 2
+CV_SVD_V_T = 4
+
+# Performs singular value decomposition of real floating-point matrix
+cvSVD = cfunc('cvSVD', _cxDLL, None,
+    ('A', CvArr_p, 1), # CvArr* A
+    ('W', CvArr_p, 1), # CvArr* W
+    ('U', CvArr_p, 1, None), # CvArr* U
+    ('V', CvArr_p, 1, None), # CvArr* V
+    ('flags', c_int, 1, 0), # int flags
+)
+cvSVD.__doc__ = """void cvSVD(CvArr* A, CvArr* W, CvArr* U=NULL, CvArr* V=NULL, int flags=0)
+
+Performs singular value decomposition of real floating-point matrix
+"""
+
+# Performs singular value back substitution
+cvSVBkSb = cfunc('cvSVBkSb', _cxDLL, None,
+    ('W', CvArr_p, 1), # const CvArr* W
+    ('U', CvArr_p, 1), # const CvArr* U
+    ('V', CvArr_p, 1), # const CvArr* V
+    ('B', CvArr_p, 1), # const CvArr* B
+    ('X', CvArr_p, 1), # CvArr* X
+    ('flags', c_int, 1), # int flags 
+)
+cvSVBkSb.__doc__ = """void cvSVBkSb(const CvArr* W, const CvArr* U, const CvArr* V, const CvArr* B, CvArr* X, int flags)
+
+Performs singular value back substitution
+"""
+
+CV_LU = 0
+CV_SVD = 1
+CV_SVD_SYM = 2
+
+# Finds inverse or pseudo-inverse of matrix
+cvInvert = cfunc('cvInvert', _cxDLL, c_double,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('method', c_int, 1), # int method
+)
+cvInvert.__doc__ = """double cvInvert(const CvArr* src, CvArr* dst, int method=CV_LU)
+
+Finds inverse or pseudo-inverse of matrix
+"""
+
+cvInv = cvInvert
+
+# Solves linear system or least-squares problem
+cvSolve = cfunc('cvSolve', _cxDLL, c_int,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('method', c_int, 1), # int method
+)
+cvSolve.__doc__ = """int cvSolve(const CvArr* src1, const CvArr* src2, CvArr* dst, int method=CV_LU)
+
+Solves linear system or least-squares problem
+"""
+
+# Returns determinant of matrix
+cvDet = cfunc('cvDet', _cxDLL, c_double,
+    ('mat', CvArr_p, 1), # const CvArr* mat 
+)
+cvDet.__doc__ = """double cvDet(const CvArr* mat)
+
+Returns determinant of matrix
+"""
+
+# Returns trace of matrix
+cvTrace = cfunc('cvTrace', _cxDLL, CvScalar,
+    ('mat', CvArr_p, 1), # const CvArr* mat 
+)
+cvTrace.__doc__ = """CvScalar cvTrace(const CvArr* mat)
+
+Returns trace of matrix
+"""
+
+# Computes eigenvalues and eigenvectors of symmetric matrix
+cvEigenVV = cfunc('cvEigenVV', _cxDLL, None,
+    ('mat', CvArr_p, 1), # CvArr* mat
+    ('evects', CvArr_p, 1), # CvArr* evects
+    ('evals', CvArr_p, 1), # CvArr* evals
+    ('eps', c_double, 1, 0), # double eps
+)
+cvEigenVV.__doc__ = """void cvEigenVV(CvArr* mat, CvArr* evects, CvArr* evals, double eps=0)
+
+Computes eigenvalues and eigenvectors of symmetric matrix
+"""
+
+# Initializes scaled identity matrix
+cvSetIdentity = cfunc('cvSetIdentity', _cxDLL, None,
+    ('mat', CvArr_p, 1), # CvArr* mat
+    ('value', CvScalar, 1), # CvScalar value
+)
+cvSetIdentity.__doc__ = """void cvSetIdentity(CvArr* mat, CvScalar value=cvRealScalar(1))
+
+Initializes scaled identity matrix
+"""
+
+# Fills matrix with given range of numbers
+cvRange = cfunc('cvRange', _cxDLL, None,
+    ('mat', CvArr_p, 1), # CvArr* mat
+    ('start', c_double, 1), # double start
+    ('end', c_double, 1), # double end
+)
+cvRange.__doc__ = """void cvRange( CvArr* mat, double start, double end )
+
+Fills matrix with given range of numbers
+"""
+
+
 # here, start from here
 
 
@@ -2312,77 +3446,6 @@ def cvGetDims(arr):
 
 
 
-
-
-# A user *should* not call this function directly.
-# Releases array data
-_cvReleaseData = cfunc('cvReleaseData', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr 
-)
-_cvReleaseData.__doc__ = """void cvReleaseData(CvArr* arr)
-
-Releases array data
-"""
-
-
-# Allocates array data
-cvCreateData = cfunc('cvCreateData', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr 
-)
-
-# Assigns user data to the array header
-cvSetData = cfunc('cvSetData', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('data', c_void_p, 1), # void* data
-    ('step', c_int, 1), # int step 
-)
-
-# Retrieves low-level information about the array
-cvGetRawData = cfunc('cvGetRawData', _cxDLL, None,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('data', POINTER(POINTER(c_byte)), 1), # uchar** data
-    ('step', POINTER(c_int), 1, None), # int* step
-    ('roi_size', POINTER(CvSize), 1, None), # CvSize* roi_size
-)
-
-# Returns matrix header for arbitrary array
-cvGetMat = cfunc('cvGetMat', _cxDLL, POINTER(CvMat),
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('header', POINTER(CvMat), 1), # CvMat* header
-    ('coi', POINTER(c_int), 1, None), # int* coi
-    ('allowND', c_int, 1, 0), # int allowND
-)
-
-# Returns image header for arbitrary array
-cvGetImage = cfunc('cvGetImage', _cxDLL, POINTER(IplImage),
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('image_header', POINTER(IplImage), 1), # IplImage* image_header 
-)
-
-cvCreateData.__doc__ = """void cvCreateData(CvArr* arr)
-
-Allocates array data
-"""
-
-cvSetData.__doc__ = """void cvSetData(CvArr* arr, void* data, int step)
-
-Assigns user data to the array header
-"""
-
-cvGetRawData.__doc__ = """void cvGetRawData(const CvArr* arr, uchar** data, int* step=NULL, CvSize* roi_size=NULL)
-
-Retrieves low-level information about the array
-"""
-
-cvGetMat.__doc__ = """CvMat* cvGetMat(const CvArr* arr, CvMat* header, int* coi=NULL, int allowND=0)
-
-Returns matrix header for arbitrary array
-"""
-
-cvGetImage.__doc__ = """IplImage* cvGetImage(const CvArr* arr, IplImage* image_header)
-
-Returns image header for arbitrary array
-"""
 
 
 # Font
@@ -2690,9 +3753,9 @@ class CvAvgComp(_Structure):
 
 
     
-# =========================================
-# End of addition by Minh-Tri Pham
-# =========================================
+#=============================================================================
+# End of modification + addition by Minh-Tri Pham
+#=============================================================================
 
 
 # not implemented yet
@@ -2727,225 +3790,9 @@ class CvChainPtReader(_Structure):
 
 # --- 1.2 Accessing Elements and sub-Arrays ----------------------------------
 
-# Returns size of matrix or image ROI
-cvGetSize = cfunc('cvGetSize', _cxDLL, CvSize,
-    ('arr', CvArr_p, 1), # const CvArr* arr 
-)
-
-# Return POINTER to the particular array element
-cvPtr1D = cfunc('cvPtr1D', _cxDLL, c_void_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('type', POINTER(c_int), 1, None), # int* type
-)
-
-cvPtr2D = cfunc('cvPtr2D', _cxDLL, c_void_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('idx1', c_int, 1), # int idx1
-    ('type', POINTER(c_int), 1, None), # int* type
-)
-
-cvPtr3D = cfunc('cvPtr3D', _cxDLL, c_void_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('idx1', c_int, 1), # int idx1
-    ('idx2', c_int, 1), # int idx2
-    ('type', POINTER(c_int), 1, None), # int* type
-)
-
-cvPtrND = cfunc('cvPtrND', _cxDLL, c_void_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx
-    ('type', POINTER(c_int), 1, None), # int* type
-    ('create_node', c_int, 1, 1), # int create_node
-    ('precalc_hashval', POINTER(c_uint32), 1, None), # unsigned* precalc_hashval
-)
-
-# Return the particular array element
-cvGet1D = cfunc('cvGet1D', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx0', c_int, 1), # int idx0 
-)
-
-cvGet2D = cfunc('cvGet2D', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('idx1', c_int, 1), # int idx1 
-)
-
-cvGet3D = cfunc('cvGet3D', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('idx1', c_int, 1), # int idx1
-    ('idx2', c_int, 1), # int idx2 
-)
-
-cvGetND = cfunc('cvGetND', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx 
-)
-
-# Return the particular element of single-channel array
-cvGetReal1D = cfunc('cvGetReal1D', _cxDLL, c_double,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx0', c_int, 1), # int idx0 
-)
-
-cvGetReal2D = cfunc('cvGetReal2D', _cxDLL, c_double,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('idx1', c_int, 1), # int idx1 
-)
-
-cvGetReal3D = cfunc('cvGetReal3D', _cxDLL, c_double,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('idx1', c_int, 1), # int idx1
-    ('idx2', c_int, 1), # int idx2 
-)
-
-cvGetRealND = cfunc('cvGetRealND', _cxDLL, c_double,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx 
-)
-
-# Change the particular array element
-cvSet1D = cfunc('cvSet1D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('value', CvScalar, 1), # CvScalar value 
-)
-
-cvSet2D = cfunc('cvSet2D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('idx1', c_int, 1), # int idx1
-    ('value', CvScalar, 1), # CvScalar value 
-)
-
-cvSet3D = cfunc('cvSet3D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('idx1', c_int, 1), # int idx1
-    ('idx2', c_int, 1), # int idx2
-    ('value', CvScalar, 1), # CvScalar value 
-)
-
-cvSetND = cfunc('cvSetND', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx
-    ('value', CvScalar, 1), # CvScalar value 
-)
-
-# Change the particular array element
-cvSetReal1D = cfunc('cvSetReal1D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('value', c_double, 1), # double value 
-)
-
-cvSetReal2D = cfunc('cvSetReal2D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('idx1', c_int, 1), # int idx1
-    ('value', c_double, 1), # double value 
-)
-
-cvSetReal3D = cfunc('cvSetReal3D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx0', c_int, 1), # int idx0
-    ('idx1', c_int, 1), # int idx1
-    ('idx2', c_int, 1), # int idx2
-    ('value', c_double, 1), # double value 
-)
-
-cvSetRealND = cfunc('cvSetRealND', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx
-    ('value', c_double, 1), # double value 
-)
-
-# Clears the particular array element
-cvClearND = cfunc('cvClearND', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx 
-)
-
-
 # --- 1.3 Copying and Filling ------------------------------------------------
 
-# Copies one array to another
-cvCopy = cfunc('cvCopy', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Sets every element of array to given value
-cvSet = cfunc('cvSet', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('value', CvScalar, 1), # CvScalar value
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Clears the array
-cvSetZero = cfunc('cvSetZero', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr 
-)
-
-cvZero = cvSetZero
-
 # --- 1.4 Transforms and Permutations ----------------------------------------
-
-# Changes shape of matrix/image without copying data
-cvReshape = cfunc('cvReshape', _cxDLL, POINTER(CvMat),
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('header', POINTER(CvMat), 1), # CvMat* header
-    ('new_cn', c_int, 1), # int new_cn
-    ('new_rows', c_int, 1, 0), # int new_rows
-)
-
-# Changes shape of multi-dimensional array w/o copying data
-cvReshapeMatND = cfunc('cvReshapeMatND', _cxDLL, c_void_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('sizeof_header', c_int, 1), # int sizeof_header
-    ('header', CvArr_p, 1), # CvArr* header
-    ('new_cn', c_int, 1), # int new_cn
-    ('new_dims', c_int, 1), # int new_dims
-    ('new_sizes', POINTER(c_int), 1), # int* new_sizes 
-)
-
-# Fill destination array with tiled source array
-cvRepeat = cfunc('cvRepeat', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Flip a 2D array around vertical, horizontall or both axises
-cvFlip = cfunc('cvFlip', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1, None), # CvArr* dst
-    ('flip_mode', c_int, 1, 0), # int flip_mode
-)
-
-# Divides multi-channel array into several single-channel arrays or extracts a single channel from the array
-cvSplit = cfunc('cvSplit', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst0', CvArr_p, 1, None), # CvArr* dst0
-    ('dst1', CvArr_p, 1, None), # CvArr* dst1
-    ('dst2', CvArr_p, 1, None), # CvArr* dst2
-    ('dst3', CvArr_p, 1, None), # CvArr* dst3
-)
-
-# Composes multi-channel array from several single-channel arrays or inserts a single channel into the array
-cvMerge = cfunc('cvMerge', _cxDLL, None,
-    ('src0', CvArr_p, 1), # const CvArr* src0
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('src3', CvArr_p, 1), # const CvArr* src3
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
 
 # --- 1.5 Arithmetic, Logic and Comparison -----------------------------------
 
@@ -2955,225 +3802,6 @@ cvLUT = cfunc('cvLUT', _cxDLL, None,
     ('dst', CvArr_p, 1), # CvArr* dst
     ('lut', CvArr_p, 1), # const CvArr* lut 
 )
-
-# Converts one array to another with optional linear transformation
-cvConvertScale = cfunc('cvConvertScale', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('scale', c_double, 1, 1), # double scale
-    ('shift', c_double, 1, 0), # double shift
-)
-
-cvCvtScale = cvConvertScale
-
-cvScale = cvConvertScale
-
-def cvConvert(src, dst):
-    cvConvertScale(src, dst, 1, 0)
-
-# Converts input array elements to 8-bit unsigned integer another with optional linear transformation
-cvConvertScaleAbs = cfunc('cvConvertScaleAbs', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('scale', c_double, 1, 1), # double scale
-    ('shift', c_double, 1, 0), # double shift
-)
-
-cvCvtScaleAbs = cvConvertScaleAbs
-
-# Computes per-element sum of two arrays
-cvAdd = cfunc('cvAdd', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Computes sum of array and scalar
-cvAddS = cfunc('cvAddS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('value', CvScalar, 1), # CvScalar value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Computes weighted sum of two arrays
-cvAddWeighted = cfunc('cvAddWeighted', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('alpha', c_double, 1), # double alpha
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('beta', c_double, 1), # double beta
-    ('gamma', c_double, 1), # double gamma
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Computes per-element difference between two arrays
-cvSub = cfunc('cvSub', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Computes difference between scalar and array
-cvSubRS = cfunc('cvSubRS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('value', CvScalar, 1), # CvScalar value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Calculates per-element product of two arrays
-cvMul = cfunc('cvMul', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('scale', c_double, 1, 1), # double scale
-)
-
-# Performs per-element division of two arrays
-cvDiv = cfunc('cvDiv', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('scale', c_double, 1, 1), # double scale
-)
-
-# Calculates per-element bit-wise conjunction of two arrays
-cvAnd = cfunc('cvAnd', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Calculates per-element bit-wise conjunction of array and scalar
-cvAndS = cfunc('cvAndS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('value', CvScalar, 1), # CvScalar value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Calculates per-element bit-wise disjunction of two arrays
-cvOr = cfunc('cvOr', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Calculates per-element bit-wise disjunction of array and scalar
-cvOrS = cfunc('cvOrS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('value', CvScalar, 1), # CvScalar value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Performs per-element bit-wise "exclusive or" operation on two arrays
-cvXor = cfunc('cvXor', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Performs per-element bit-wise "exclusive or" operation on array and scalar
-cvXorS = cfunc('cvXorS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('value', CvScalar, 1), # CvScalar value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Performs per-element bit-wise inversion of array elements
-cvNot = cfunc('cvNot', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Performs per-element comparison of two arrays
-cvCmp = cfunc('cvCmp', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('cmp_op', c_int, 1), # int cmp_op 
-)
-
-# Performs per-element comparison of array and scalar
-cvCmpS = cfunc('cvCmpS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('value', c_double, 1), # double value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('cmp_op', c_int, 1), # int cmp_op 
-)
-
-# Checks that array elements lie between elements of two other arrays
-cvInRange = cfunc('cvInRange', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('lower', CvArr_p, 1), # const CvArr* lower
-    ('upper', CvArr_p, 1), # const CvArr* upper
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Checks that array elements lie between two scalars
-cvInRangeS = cfunc('cvInRangeS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('lower', CvScalar, 1), # CvScalar lower
-    ('upper', CvScalar, 1), # CvScalar upper
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Finds per-element maximum of two arrays
-cvMax = cfunc('cvMax', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Finds per-element maximum of array and scalar
-cvMaxS = cfunc('cvMaxS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('value', c_double, 1), # double value
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Finds per-element minimum of two arrays
-cvMin = cfunc('cvMin', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Finds per-element minimum of array and scalar
-cvMinS = cfunc('cvMinS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('value', c_double, 1), # double value
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Calculates absolute difference between two arrays
-cvAbsDiff = cfunc('cvAbsDiff', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Calculates absolute difference between array and scalar
-cvAbsDiffS = cfunc('cvAbsDiffS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('value', CvScalar, 1), # CvScalar value 
-)
-
-def cvAbs(src, dst):
-    value = CvScalar()
-    value.val[0] = 0.0
-    value.val[1] = 0.0
-    value.val[2] = 0.0
-    value.val[3] = 0.0
-    cvAbsDiffS(src, dst, value)
 
 # --- 1.6 Statistics ---------------------------------------------------------
 
@@ -3232,131 +3860,6 @@ cvNorm = cfunc('cvNorm', _cxDLL, c_double,
 
 # --- 1.7 Linear Algebra -----------------------------------------------------
 
-# Initializes scaled identity matrix
-cvSetIdentity = cfunc('cvSetIdentity', _cxDLL, None,
-    ('mat', CvArr_p, 1), # CvArr* mat
-    ('value', CvScalar, 1), # CvScalar value
-)
-
-# Calculates dot product of two arrays in Euclidian metrics
-cvDotProduct = cfunc('cvDotProduct', _cxDLL, c_double,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2 
-)
-
-# Calculates cross product of two 3D vectors
-cvCrossProduct = cfunc('cvCrossProduct', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Calculates sum of scaled array and another array
-cvScaleAdd = cfunc('cvScaleAdd', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('scale', CvScalar, 1), # CvScalar scale
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Performs generalized matrix multiplication
-cvGEMM = cfunc('cvGEMM', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('alpha', c_double, 1), # double alpha
-    ('src3', CvArr_p, 1), # const CvArr* src3
-    ('beta', c_double, 1), # double beta
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('tABC', c_int, 1, 0), # int tABC
-)
-
-def cvMatMulAdd(src1, src2, src3, dst):
-    cvGEMM(src1, src2, 1, src3, 1, dst, 0)
-
-def cvMatMul(src1, src2, dst):
-    cvMatMulAdd(src1, src2, 0, dst)
-
-# Performs matrix transform of every array element
-cvTransform = cfunc('cvTransform', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('transmat', POINTER(CvMat), 1), # const CvMat* transmat
-    ('shiftvec', POINTER(CvMat), 1, None), # const CvMat* shiftvec
-)
-
-# Performs perspective matrix transform of vector array
-cvPerspectiveTransform = cfunc('cvPerspectiveTransform', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mat', POINTER(CvMat), 1), # const CvMat* mat 
-)
-
-# Calculates product of array and transposed array
-cvMulTransposed = cfunc('cvMulTransposed', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('order', c_int, 1), # int order
-    ('delta', CvArr_p, 1, None), # const CvArr* delta
-)
-
-# Returns trace of matrix
-cvTrace = cfunc('cvTrace', _cxDLL, CvScalar,
-    ('mat', CvArr_p, 1), # const CvArr* mat 
-)
-
-# Transposes matrix
-cvTranspose = cfunc('cvTranspose', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Returns determinant of matrix
-cvDet = cfunc('cvDet', _cxDLL, c_double,
-    ('mat', CvArr_p, 1), # const CvArr* mat 
-)
-
-# Finds inverse or pseudo-inverse of matrix
-cvInvert = cfunc('cvInvert', _cxDLL, c_double,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('method', c_int, 1), # int method
-)
-
-# Solves linear system or least-squares problem
-cvSolve = cfunc('cvSolve', _cxDLL, c_int,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('method', c_int, 1), # int method
-)
-
-# Performs singular value decomposition of real floating-point matrix
-cvSVD = cfunc('cvSVD', _cxDLL, None,
-    ('A', CvArr_p, 1), # CvArr* A
-    ('W', CvArr_p, 1), # CvArr* W
-    ('U', CvArr_p, 1, None), # CvArr* U
-    ('V', CvArr_p, 1, None), # CvArr* V
-    ('flags', c_int, 1, 0), # int flags
-)
-
-# Performs singular value back substitution
-cvSVBkSb = cfunc('cvSVBkSb', _cxDLL, None,
-    ('W', CvArr_p, 1), # const CvArr* W
-    ('U', CvArr_p, 1), # const CvArr* U
-    ('V', CvArr_p, 1), # const CvArr* V
-    ('B', CvArr_p, 1), # const CvArr* B
-    ('X', CvArr_p, 1), # CvArr* X
-    ('flags', c_int, 1), # int flags 
-)
-
-# Computes eigenvalues and eigenvectors of symmetric matrix
-cvEigenVV = cfunc('cvEigenVV', _cxDLL, None,
-    ('mat', CvArr_p, 1), # CvArr* mat
-    ('evects', CvArr_p, 1), # CvArr* evects
-    ('evals', CvArr_p, 1), # CvArr* evals
-    ('eps', c_double, 1, 0), # double eps
-)
-
 # Calculates covariation matrix of the set of vectors
 cvCalcCovarMatrix = cfunc('cvCalcCovarMatrix', _cxDLL, None,
     ('vects', POINTER(c_void_p), 1), # const CvArr** vects
@@ -3375,77 +3878,7 @@ cvMahalanobis = cfunc('cvMahalanobis', _cxDLL, c_double,
 
 # --- 1.8 Math Functions -----------------------------------------------------
 
-# Calculates cubic root
-cvCbrt = cfunc('cvCbrt', _cxDLL, c_float,
-    ('value', c_float, 1), # float value 
-)
-
-# Calculates angle of 2D vector
-cvFastArctan = cfunc('cvFastArctan', _cxDLL, c_float,
-    ('y', c_float, 1), # float y
-    ('x', c_float, 1), # float x 
-)
-
-# Calculates magnitude and/or angle of 2d vectors
-cvCartToPolar = cfunc('cvCartToPolar', _cxDLL, None,
-    ('x', CvArr_p, 1), # const CvArr* x
-    ('y', CvArr_p, 1), # const CvArr* y
-    ('magnitude', CvArr_p, 1), # CvArr* magnitude
-    ('angle', CvArr_p, 1, None), # CvArr* angle
-    ('angle_in_degrees', c_int, 1, 0), # int angle_in_degrees
-)
-
-# Calculates cartesian coordinates of 2d vectors represented in polar form
-cvPolarToCart = cfunc('cvPolarToCart', _cxDLL, None,
-    ('magnitude', CvArr_p, 1), # const CvArr* magnitude
-    ('angle', CvArr_p, 1), # const CvArr* angle
-    ('x', CvArr_p, 1), # CvArr* x
-    ('y', CvArr_p, 1), # CvArr* y
-    ('angle_in_degrees', c_int, 1, 0), # int angle_in_degrees
-)
-
-# Raises every array element to power
-cvPow = cfunc('cvPow', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('power', c_double, 1), # double power 
-)
-
-# Calculates exponent of every array element
-cvExp = cfunc('cvExp', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Calculates natural logarithm of every array element absolute value
-cvLog = cfunc('cvLog', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
-# Finds real roots of a cubic equation
-cvSolveCubic = cfunc('cvSolveCubic', _cxDLL, None,
-    ('coeffs', CvArr_p, 1), # const CvArr* coeffs
-    ('roots', CvArr_p, 1), # CvArr* roots 
-)
-
 # --- 1.9 Random Number Generation -------------------------------------------
-
-# Fills array with random numbers and updates the RNG state
-cvRandArr = cfunc('cvRandArr', _cxDLL, None,
-    ('rng', POINTER(CvRNG), 1), # CvRNG* rng
-    ('arr', CvArr_p, 1), # CvArr* arr
-    ('dist_type', c_int, 1), # int dist_type
-    ('param1', CvScalar, 1), # CvScalar param1
-    ('param2', CvScalar, 1), # CvScalar param2 
-)
-
-# Shuffles the matrix by swapping randomly chosen pairs of the matrix elements on each iteration -- added by Minh-Tri Pham
-cvRandShuffle = cfunc('cvRandShuffle', _cxDLL, None,
-    ('mat', CvArr_p, 1), # CvArr* arr
-    ('rng', POINTER(CvRNG), 1), # CvRNG* rng
-    ('iter_factor', c_double, 1, 1.0), # double iter_factor=1
-)
 
 # --- 1.10 Discrete Transforms -----------------------------------------------
 
@@ -4310,16 +4743,6 @@ def cvLoadCast(filename, ctype):
 
 
 # --- 5 Miscellaneous Functions ----------------------------------------------
-
-# Checks every element of input array for invalid values
-cvCheckArr = cfunc('cvCheckArr', _cxDLL, c_int,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('flags', c_int, 1, 0), # int flags
-    ('min_val', c_double, 1, 0), # double min_val
-    ('max_val', c_double, 1, 0), # double max_val
-)
-
-cvCheckArray = cvCheckArr
 
 # Splits set of vectors by given number of clusters
 cvKMeans2 = cfunc('cvKMeans2', _cxDLL, None,
@@ -6071,219 +6494,9 @@ except ImportError:
 
 # --- Dokumentationsstrings --------------------------------------------------
 
-cvGetSize.__doc__ = """CvSize cvGetSize(const CvArr* arr)
-
-Returns size of matrix or image ROI
-"""
-
-cvPtr1D.__doc__ = """uchar* cvPtr1D(const CvArr* arr, int idx0, int* type=NULL)
-
-Return POINTER to the particular array element
-"""
-
-cvGet1D.__doc__ = """CvScalar cvGet1D(const CvArr* arr, int idx0)
-
-Return the particular array element
-"""
-
-cvGetReal1D.__doc__ = """double cvGetReal1D(const CvArr* arr, int idx0)
-
-Return the particular element of single-channel array
-"""
-
-cvSet1D.__doc__ = """void cvSet1D(CvArr* arr, int idx0, CvScalar value)
-
-Change the particular array element
-"""
-
-cvSetReal1D.__doc__ = """void cvSetReal1D(CvArr* arr, int idx0, double value)
-
-Change the particular array element
-"""
-
-cvClearND.__doc__ = """void cvClearND(CvArr* arr, int* idx)
-
-Clears the particular array element
-"""
-
-cvCopy.__doc__ = """void cvCopy(const CvArr* src, CvArr* dst, const CvArr* mask=NULL)
-
-Copies one array to another
-"""
-
-cvSet.__doc__ = """void cvSet(CvArr* arr, CvScalar value, const CvArr* mask=NULL)
-
-Sets every element of array to given value
-"""
-
-cvSetZero.__doc__ = """void cvSetZero(CvArr* arr)
-
-Clears the array
-"""
-
-cvReshape.__doc__ = """CvMat* cvReshape(const CvArr* arr, CvMat* header, int new_cn, int new_rows=0)
-
-Changes shape of matrix/image without copying data
-"""
-
-cvReshapeMatND.__doc__ = """CvArr* cvReshapeMatND(const CvArr* arr, int sizeof_header, CvArr* header, int new_cn, int new_dims, int* new_sizes)
-
-Changes shape of multi-dimensional array w/o copying data
-"""
-
-cvRepeat.__doc__ = """void cvRepeat(const CvArr* src, CvArr* dst)
-
-Fill destination array with tiled source array
-"""
-
-cvFlip.__doc__ = """void cvFlip(const CvArr* src, CvArr* dst=NULL, int flip_mode=)
-
-Flip a 2D array around vertical, horizontall or both axises
-"""
-
-cvSplit.__doc__ = """void cvSplit(const CvArr* src, CvArr* dst0, CvArr* dst1, CvArr* dst2, CvArr* dst3)
-
-Divides multi-channel array into several single-channel arrays or extracts a single channel from the array
-"""
-
-cvMerge.__doc__ = """void cvMerge(const CvArr* src0, const CvArr* src1, const CvArr* src2, const CvArr* src3, CvArr* dst)
-
-Composes multi-channel array from several single-channel arrays or inserts a single channel into the array
-"""
-
 cvLUT.__doc__ = """void cvLUT(const CvArr* src, CvArr* dst, const CvArr* lut)
 
 Performs look-up table transform of array
-"""
-
-cvConvertScale.__doc__ = """void cvConvertScale(const CvArr* src, CvArr* dst, double scale=1, double shift=0)
-
-Converts one array to another with optional linear transformation
-"""
-
-cvConvertScaleAbs.__doc__ = """void cvConvertScaleAbs(const CvArr* src, CvArr* dst, double scale=1, double shift=0)
-
-Converts input array elements to 8-bit unsigned integer another with optional linear transformation
-"""
-
-cvAdd.__doc__ = """void cvAdd(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
-
-Computes per-element sum of two arrays
-"""
-
-cvAddS.__doc__ = """void cvAddS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
-
-Computes sum of array and scalar
-"""
-
-cvAddWeighted.__doc__ = """void cvAddWeighted(const CvArr* src1, double alpha, const CvArr* src2, double beta, double gamma, CvArr* dst)
-
-Computes weighted sum of two arrays
-"""
-
-cvSub.__doc__ = """void cvSub(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
-
-Computes per-element difference between two arrays
-"""
-
-cvSubRS.__doc__ = """void cvSubRS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
-
-Computes difference between scalar and array
-"""
-
-cvMul.__doc__ = """void cvMul(const CvArr* src1, const CvArr* src2, CvArr* dst, double scale=1)
-
-Calculates per-element product of two arrays
-"""
-
-cvDiv.__doc__ = """void cvDiv(const CvArr* src1, const CvArr* src2, CvArr* dst, double scale=1)
-
-Performs per-element division of two arrays
-"""
-
-cvAnd.__doc__ = """void cvAnd(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
-
-Calculates per-element bit-wise conjunction of two arrays
-"""
-
-cvAndS.__doc__ = """void cvAndS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
-
-Calculates per-element bit-wise conjunction of array and scalar
-"""
-
-cvOr.__doc__ = """void cvOr(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
-
-Calculates per-element bit-wise disjunction of two arrays
-"""
-
-cvOrS.__doc__ = """void cvOrS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
-
-Calculates per-element bit-wise disjunction of array and scalar
-"""
-
-cvXor.__doc__ = """void cvXor(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
-
-Performs per-element bit-wise "exclusive or" operation on two arrays
-"""
-
-cvXorS.__doc__ = """void cvXorS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
-
-Performs per-element bit-wise "exclusive or" operation on array and scalar
-"""
-
-cvNot.__doc__ = """void cvNot(const CvArr* src, CvArr* dst)
-
-Performs per-element bit-wise inversion of array elements
-"""
-
-cvCmp.__doc__ = """void cvCmp(const CvArr* src1, const CvArr* src2, CvArr* dst, int cmp_op)
-
-Performs per-element comparison of two arrays
-"""
-
-cvCmpS.__doc__ = """void cvCmpS(const CvArr* src, double value, CvArr* dst, int cmp_op)
-
-Performs per-element comparison of array and scalar
-"""
-
-cvInRange.__doc__ = """void cvInRange(const CvArr* src, const CvArr* lower, const CvArr* upper, CvArr* dst)
-
-Checks that array elements lie between elements of two other arrays
-"""
-
-cvInRangeS.__doc__ = """void cvInRangeS(const CvArr* src, CvScalar lower, CvScalar upper, CvArr* dst)
-
-Checks that array elements lie between two scalars
-"""
-
-cvMax.__doc__ = """void cvMax(const CvArr* src1, const CvArr* src2, CvArr* dst)
-
-Finds per-element maximum of two arrays
-"""
-
-cvMaxS.__doc__ = """void cvMaxS(const CvArr* src, double value, CvArr* dst)
-
-Finds per-element maximum of array and scalar
-"""
-
-cvMin.__doc__ = """void cvMin(const CvArr* src1, const CvArr* src2, CvArr* dst)
-
-Finds per-element minimum of two arrays
-"""
-
-cvMinS.__doc__ = """void cvMinS(const CvArr* src, double value, CvArr* dst)
-
-Finds per-element minimum of array and scalar
-"""
-
-cvAbsDiff.__doc__ = """void cvAbsDiff(const CvArr* src1, const CvArr* src2, CvArr* dst)
-
-Calculates absolute difference between two arrays
-"""
-
-cvAbsDiffS.__doc__ = """void cvAbsDiffS(const CvArr* src, CvArr* dst, CvScalar value)
-
-Calculates absolute difference between array and scalar
 """
 
 cvCountNonZero.__doc__ = """int cvCountNonZero(const CvArr* arr)
@@ -6316,86 +6529,6 @@ cvNorm.__doc__ = """double cvNorm(const CvArr* arr1, const CvArr* arr2=NULL, int
 Calculates absolute array norm, absolute difference norm or relative difference norm
 """
 
-cvSetIdentity.__doc__ = """void cvSetIdentity(CvArr* mat, CvScalar value=cvRealScalar(1)
-
-Initializes scaled identity matrix
-"""
-
-cvDotProduct.__doc__ = """double cvDotProduct(const CvArr* src1, const CvArr* src2)
-
-Calculates dot product of two arrays in Euclidian metrics
-"""
-
-cvCrossProduct.__doc__ = """void cvCrossProduct(const CvArr* src1, const CvArr* src2, CvArr* dst)
-
-Calculates cross product of two 3D vectors
-"""
-
-cvScaleAdd.__doc__ = """void cvScaleAdd(const CvArr* src1, CvScalar scale, const CvArr* src2, CvArr* dst)
-
-Calculates sum of scaled array and another array
-"""
-
-cvGEMM.__doc__ = """void cvGEMM(const CvArr* src1, const CvArr* src2, double alpha, const CvArr* src3, double beta, CvArr* dst, int tABC=0)
-
-Performs generalized matrix multiplication
-"""
-
-cvTransform.__doc__ = """void cvTransform(const CvArr* src, CvArr* dst, const CvMat* transmat, const CvMat* shiftvec=NULL)
-
-Performs matrix transform of every array element
-"""
-
-cvPerspectiveTransform.__doc__ = """void cvPerspectiveTransform(const CvArr* src, CvArr* dst, const CvMat* mat)
-
-Performs perspective matrix transform of vector array
-"""
-
-cvMulTransposed.__doc__ = """void cvMulTransposed(const CvArr* src, CvArr* dst, int order, const CvArr* delta=NULL)
-
-Calculates product of array and transposed array
-"""
-
-cvTrace.__doc__ = """CvScalar cvTrace(const CvArr* mat)
-
-Returns trace of matrix
-"""
-
-cvTranspose.__doc__ = """void cvTranspose(const CvArr* src, CvArr* dst)
-
-Transposes matrix
-"""
-
-cvDet.__doc__ = """double cvDet(const CvArr* mat)
-
-Returns determinant of matrix
-"""
-
-cvInvert.__doc__ = """double cvInvert(const CvArr* src, CvArr* dst, int method=CV_LU)
-
-Finds inverse or pseudo-inverse of matrix
-"""
-
-cvSolve.__doc__ = """int cvSolve(const CvArr* src1, const CvArr* src2, CvArr* dst, int method=CV_LU)
-
-Solves linear system or least-squares problem
-"""
-
-cvSVD.__doc__ = """void cvSVD(CvArr* A, CvArr* W, CvArr* U=NULL, CvArr* V=NULL, int flags=0)
-
-Performs singular value decomposition of real floating-point matrix
-"""
-
-cvSVBkSb.__doc__ = """void cvSVBkSb(const CvArr* W, const CvArr* U, const CvArr* V, const CvArr* B, CvArr* X, int flags)
-
-Performs singular value back substitution
-"""
-
-cvEigenVV.__doc__ = """void cvEigenVV(CvArr* mat, CvArr* evects, CvArr* evals, double eps=0)
-
-Computes eigenvalues and eigenvectors of symmetric matrix
-"""
-
 cvCalcCovarMatrix.__doc__ = """void cvCalcCovarMatrix(const CvArr** vects, int count, CvArr* cov_mat, CvArr* avg, int flags)
 
 Calculates covariation matrix of the set of vectors
@@ -6404,56 +6537,6 @@ Calculates covariation matrix of the set of vectors
 cvMahalanobis.__doc__ = """double cvMahalanobis(const CvArr* vec1, const CvArr* vec2, CvArr* mat)
 
 Calculates Mahalonobis distance between two vectors
-"""
-
-cvCbrt.__doc__ = """float cvCbrt(float value)
-
-Calculates cubic root
-"""
-
-cvFastArctan.__doc__ = """float cvFastArctan(float y, float x)
-
-Calculates angle of 2D vector
-"""
-
-cvCartToPolar.__doc__ = """void cvCartToPolar(const CvArr* x, const CvArr* y, CvArr* magnitude, CvArr* angle=NULL, int angle_in_degrees=0)
-
-Calculates magnitude and/or angle of 2d vectors
-"""
-
-cvPolarToCart.__doc__ = """void cvPolarToCart(const CvArr* magnitude, const CvArr* angle, CvArr* x, CvArr* y, int angle_in_degrees=0)
-
-Calculates cartesian coordinates of 2d vectors represented in polar form
-"""
-
-cvPow.__doc__ = """void cvPow(const CvArr* src, CvArr* dst, double power)
-
-Raises every array element to power
-"""
-
-cvExp.__doc__ = """void cvExp(const CvArr* src, CvArr* dst)
-
-Calculates exponent of every array element
-"""
-
-cvLog.__doc__ = """void cvLog(const CvArr* src, CvArr* dst)
-
-Calculates natural logarithm of every array element absolute value
-"""
-
-cvSolveCubic.__doc__ = """void cvSolveCubic(const CvArr* coeffs, CvArr* roots)
-
-Finds real roots of a cubic equation
-"""
-
-cvRandArr.__doc__ = """void cvRandArr(CvRNG* rng, CvArr* arr, int dist_type, CvScalar param1, CvScalar param2)
-
-Fills array with random numbers and updates the RNG state
-"""
-
-cvRandShuffle.__doc__ = """void cvRandShuffle( CvArr* mat, CvRNG* rng, double iter_factor=1. )
-
-Shuffles the matrix by swapping randomly chosen pairs of the matrix elements on each iteration
 """
 
 cvGetOptimalDFTSize.__doc__ = """int cvGetOptimalDFTSize(int size0)
@@ -6999,11 +7082,6 @@ Saves object to file
 cvLoad.__doc__ = """void* cvLoad(const char* filename, CvMemStorage* memstorage=NULL, const char* name=NULL, const char** real_name=NULL)
 
 Loads object from file
-"""
-
-cvCheckArr.__doc__ = """int cvCheckArr(const CvArr* arr, int flags=0, double min_val=0, double max_val=)
-
-Checks every element of input array for invalid values
 """
 
 cvKMeans2.__doc__ = """void cvKMeans2(const CvArr* samples, int cluster_count, CvArr* labels, CvTermCriteria termcrit)
@@ -7879,11 +7957,7 @@ cvCvtScale = cvConvertScale
 cvScale = cvConvertScale
 cvCvtScaleAbs = cvConvertScaleAbs
 cvCheckArray = cvCheckArr
-cvMatMulAddEx = cvGEMM
 cvMatMulAddS = cvTransform
-cvT = cvTranspose
-cvMirror = cvFlip
-cvInv = cvInvert
 cvMahalonobis = cvMahalanobis
 cvFFT = cvDFT
 cvGraphFindEdge = cvFindGraphEdge
