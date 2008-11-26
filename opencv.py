@@ -3791,7 +3791,6 @@ Allocates text string in the storage
 # Dynamic Data Structure: Sequences
 #-----------------------------------------------------------------------------
 
-# --------- Sequences ------------------------------
 
 # Calculates the sequence slice length
 cvSliceLength = cfunc('cvSliceLength', _cxDLL, c_int,
@@ -3987,6 +3986,227 @@ cvFlushSeqWriter.__doc__ = """void cvFlushSeqWriter(CvSeqWriter* writer)
 
 Updates sequence headers from the writer state
 """
+
+# Initializes process of sequential reading from sequence
+cvStartReadSeq = cfunc('cvStartReadSeq', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader
+    ('reverse', c_int, 1, 0), # int reverse
+)
+cvStartReadSeq.__doc__ = """void cvStartReadSeq(const CvSeq* seq, CvSeqReader* reader, int reverse=0)
+
+Initializes process of sequential reading from sequence
+"""
+
+# Returns the current reader position
+cvGetSeqReaderPos = cfunc('cvGetSeqReaderPos', _cxDLL, c_int,
+    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader 
+)
+cvGetSeqReaderPos.__doc__ = """int cvGetSeqReaderPos(CvSeqReader* reader)
+
+Returns the current reader position
+"""
+
+# Moves the reader to specified position
+cvSetSeqReaderPos = cfunc('cvSetSeqReaderPos', _cxDLL, None,
+    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader
+    ('index', c_int, 1), # int index
+    ('is_relative', c_int, 1, 0), # int is_relative
+)
+cvSetSeqReaderPos.__doc__ = """void cvSetSeqReaderPos(CvSeqReader* reader, int index, int is_relative=0)
+
+Moves the reader to specified position
+"""
+
+# Copies sequence to one continuous block of memory
+cvCvtSeqToArray = cfunc('cvCvtSeqToArray', _cxDLL, c_void_p,
+    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+    ('elements', c_void_p, 1), # void* elements
+    ('slice', CvSlice, 1), # CvSlice slice
+)
+cvCvtSeqToArray.__doc__ = """void* cvCvtSeqToArray(const CvSeq* seq, void* elements, CvSlice slice=CV_WHOLE_SEQ)
+
+Copies sequence to one continuous block of memory
+"""
+
+# Constructs sequence from array
+cvMakeSeqHeaderForArray = cfunc('cvMakeSeqHeaderForArray', _cxDLL, POINTER(CvSeq),
+    ('seq_type', c_int, 1), # int seq_type
+    ('header_size', c_int, 1), # int header_size
+    ('elem_size', c_int, 1), # int elem_size
+    ('elements', c_void_p, 1), # void* elements
+    ('total', c_int, 1), # int total
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('block', POINTER(CvSeqBlock), 1), # CvSeqBlock* block 
+)
+cvMakeSeqHeaderForArray.__doc__ = """CvSeq* cvMakeSeqHeaderForArray(int seq_type, int header_size, int elem_size,                                void* elements, int total,                                CvSeq* seq, CvSeqBlock* block)
+
+Constructs sequence from array
+"""
+
+# Makes separate header for the sequence slice
+cvSeqSlice = cfunc('cvSeqSlice', _cxDLL, POINTER(CvSeq),
+    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+    ('slice', CvSlice, 1), # CvSlice slice
+    ('storage', POINTER(CvMemStorage), 1, None), # CvMemStorage* storage
+    ('copy_data', c_int, 1, 0), # int copy_data
+)
+cvSeqSlice.__doc__ = """CvSeq* cvSeqSlice(const CvSeq* seq, CvSlice slice,                   CvMemStorage* storage=NULL, int copy_data=0)
+
+Makes separate header for the sequence slice
+"""
+
+# Creates a copy of sequence
+def cvCloneSeq(seq, storage=None):
+    """CvSeq* cvCloneSeq( const CvSeq* seq, CvMemStorage* storage=NULL )
+
+    Creates a copy of sequence
+    """
+    return cvSeqSlice(seq, CV_WHOLE_SEQ, storage, 1)
+
+# Removes sequence slice
+cvSeqRemoveSlice = cfunc('cvSeqRemoveSlice', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('slice', CvSlice, 1), # CvSlice slice 
+)
+cvSeqRemoveSlice.__doc__ = """void cvSeqRemoveSlice(CvSeq* seq, CvSlice slice)
+
+Removes sequence slice
+"""
+
+# Inserts array in the middle of sequence
+cvSeqInsertSlice = cfunc('cvSeqInsertSlice', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('before_index', c_int, 1), # int before_index
+    ('from_arr', CvArr_p, 1), # const CvArr* from_arr 
+)
+cvSeqInsertSlice.__doc__ = """void cvSeqInsertSlice(CvSeq* seq, int before_index, const CvArr* from_arr)
+
+Inserts array in the middle of sequence
+"""
+
+# a < b ? -1 : a > b ? 1 : 0
+CvCmpFunc = CFUNCTYPE(c_int, # int
+    c_void_p, # const void* a
+    c_void_p, # const void* b
+    c_void_p) # void* userdata
+
+# Sorts sequence element using the specified comparison function
+cvSeqSort = cfunc('cvSeqSort', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('func', CvCmpFunc, 1), # CvCmpFunc func
+    ('userdata', c_void_p, 1, None), # void* userdata
+)
+cvSeqSort.__doc__ = """void cvSeqSort(CvSeq* seq, CvCmpFunc func, void* userdata=NULL)
+
+Sorts sequence element using the specified comparison function
+"""
+
+# Searches element in sequence
+cvSeqSearch = cfunc('cvSeqSearch', _cxDLL, c_void_p,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('elem', c_void_p, 1), # const void* elem
+    ('func', CvCmpFunc, 1), # CvCmpFunc func
+    ('is_sorted', c_int, 1), # int is_sorted
+    ('elem_idx', POINTER(c_int), 1), # int* elem_idx
+    ('userdata', c_void_p, 1, None), # void* userdata
+)
+cvSeqSearch.__doc__ = """char* cvSeqSearch(CvSeq* seq, const void* elem, CvCmpFunc func, int is_sorted, int* elem_idx, void* userdata=NULL)
+
+Searches element in sequence
+"""
+
+# Reverses the order of sequence elements
+cvSeqInvert = cfunc('cvSeqInvert', _cxDLL, None,
+    ('seq', POINTER(CvSeq), 1), # CvSeq* seq 
+)
+cvSeqInvert.__doc__ = """void cvSeqInvert(CvSeq* seq)
+
+Reverses the order of sequence elements
+"""
+
+# Splits sequence into equivalency classes
+cvSeqPartition = cfunc('cvSeqPartition', _cxDLL, c_int,
+    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('labels', POINTER(POINTER(CvSeq)), 1), # CvSeq** labels
+    ('is_equal', CvCmpFunc, 1), # CvCmpFunc is_equal
+    ('userdata', c_void_p, 1), # void* userdata 
+)
+cvSeqPartition.__doc__ = """int cvSeqPartition(const CvSeq* seq, CvMemStorage* storage, CvSeq** labels, CvCmpFunc is_equal, void* userdata)
+
+Splits sequence into equivalency classes
+"""
+
+    
+#-----------------------------------------------------------------------------
+# Dynamic Data Structure: Sets
+#-----------------------------------------------------------------------------
+
+
+# Creates empty set
+cvCreateSet = cfunc('cvCreateSet', _cxDLL, POINTER(CvSet),
+    ('set_flags', c_int, 1), # int set_flags
+    ('header_size', c_int, 1), # int header_size
+    ('elem_size', c_int, 1), # int elem_size
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+)
+cvCreateSet.__doc__ = """CvSet* cvCreateSet(int set_flags, int header_size, int elem_size, CvMemStorage* storage)
+
+Creates empty set
+"""
+
+# Occupies a node in the set
+cvSetAdd = cfunc('cvSetAdd', _cxDLL, c_int,
+    ('set_header', POINTER(CvSet), 1), # CvSet* set_header
+    ('elem', POINTER(CvSetElem), 1, None), # CvSetElem* elem
+    ('inserted_elem', POINTER(POINTER(CvSetElem)), 1, None), # CvSetElem** inserted_elem
+)
+cvSetAdd.__doc__ = """int cvSetAdd(CvSet* set_header, CvSetElem* elem=NULL, CvSetElem** inserted_elem=NULL)
+
+Occupies a node in the set
+"""
+
+# Adds element to set (fast variant)
+def cvSetNew(set_header):
+    """CvSetElem* cvSetNew( CvSet* set_header )
+    
+    Adds element to set (fast variant)
+    """
+    elem = set_header.contents.free_elem
+    if elem:
+        set_header.contents.free_elems = elem.contents.next_free
+        elem.contents.flags &= CV_SET_ELEM_IDX_MASK
+        set_header.contents.active_count += 1
+    else:
+        cvSetAdd( set_header, None, elem )
+    return elem
+
+# Removes element from set
+cvSetRemove = cfunc('cvSetRemove', _cxDLL, None,
+    ('set_header', POINTER(CvSet), 1), # CvSet* set_header
+    ('index', c_int, 1), # int index 
+)
+cvSetRemove.__doc__ = """void cvSetRemove(CvSet* set_header, int index)
+
+Removes element from set
+"""
+
+# Removes set element given its pointer
+# TODO: implement this cvSetRemoveByPtr()
+
+# Clears set
+cvClearSet = cfunc('cvClearSet', _cxDLL, None,
+    ('set_header', POINTER(CvSet), 1), # CvSet* set_header 
+)
+cvClearSet.__doc__ = """void cvClearSet(CvSet* set_header)
+
+Clears set
+"""
+
+
+
+
 
 
 
@@ -4381,119 +4601,7 @@ cvLUT = cfunc('cvLUT', _cxDLL, None,
 
 # --- 2.2 Sequences ----------------------------------------------------------
 
-# Copies sequence to one continuous block of memory
-cvCvtSeqToArray = cfunc('cvCvtSeqToArray', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
-    ('elements', c_void_p, 1), # void* elements
-    ('slice', CvSlice, 1), # CvSlice slice
-)
-
-# Constructs sequence from array
-cvMakeSeqHeaderForArray = cfunc('cvMakeSeqHeaderForArray', _cxDLL, POINTER(CvSeq),
-    ('seq_type', c_int, 1), # int seq_type
-    ('header_size', c_int, 1), # int header_size
-    ('elem_size', c_int, 1), # int elem_size
-    ('elements', c_void_p, 1), # void* elements
-    ('total', c_int, 1), # int total
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('block', POINTER(CvSeqBlock), 1), # CvSeqBlock* block 
-)
-
-# Makes separate header for the sequence slice
-cvSeqSlice = cfunc('cvSeqSlice', _cxDLL, POINTER(CvSeq),
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
-    ('slice', CvSlice, 1), # CvSlice slice
-    ('storage', POINTER(CvMemStorage), 1, None), # CvMemStorage* storage
-    ('copy_data', c_int, 1, 0), # int copy_data
-)
-
-# Removes sequence slice
-cvSeqRemoveSlice = cfunc('cvSeqRemoveSlice', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('slice', CvSlice, 1), # CvSlice slice 
-)
-
-# Inserts array in the middle of sequence
-cvSeqInsertSlice = cfunc('cvSeqInsertSlice', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('before_index', c_int, 1), # int before_index
-    ('from_arr', CvArr_p, 1), # const CvArr* from_arr 
-)
-
-# Reverses the order of sequence elements
-cvSeqInvert = cfunc('cvSeqInvert', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq 
-)
-
-# a < b ? -1 : a > b ? 1 : 0
-CvCmpFunc = CFUNCTYPE(c_int, # int
-    c_void_p, # const void* a
-    c_void_p, # const void* b
-    c_void_p) # void* userdata
-
-# Sorts sequence element using the specified comparison function
-cvSeqSort = cfunc('cvSeqSort', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('func', CvCmpFunc, 1), # CvCmpFunc func
-    ('userdata', c_void_p, 1, None), # void* userdata
-)
-
-# Searches element in sequence
-cvSeqSearch = cfunc('cvSeqSearch', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('elem', c_void_p, 1), # const void* elem
-    ('func', CvCmpFunc, 1), # CvCmpFunc func
-    ('is_sorted', c_int, 1), # int is_sorted
-    ('elem_idx', POINTER(c_int), 1), # int* elem_idx
-    ('userdata', c_void_p, 1, None), # void* userdata
-)
-
-# Initializes process of sequential reading from sequence
-cvStartReadSeq = cfunc('cvStartReadSeq', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
-    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader
-    ('reverse', c_int, 1, 0), # int reverse
-)
-
-# Returns the current reader position
-cvGetSeqReaderPos = cfunc('cvGetSeqReaderPos', _cxDLL, c_int,
-    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader 
-)
-
-# Moves the reader to specified position
-cvSetSeqReaderPos = cfunc('cvSetSeqReaderPos', _cxDLL, None,
-    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader
-    ('index', c_int, 1), # int index
-    ('is_relative', c_int, 1, 0), # int is_relative
-)
-
 # --- 2.3 Sets ---------------------------------------------------------------
-
-# Creates empty set
-cvCreateSet = cfunc('cvCreateSet', _cxDLL, POINTER(CvSet),
-    ('set_flags', c_int, 1), # int set_flags
-    ('header_size', c_int, 1), # int header_size
-    ('elem_size', c_int, 1), # int elem_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
-)
-
-# Occupies a node in the set
-cvSetAdd = cfunc('cvSetAdd', _cxDLL, c_int,
-    ('set_header', POINTER(CvSet), 1), # CvSet* set_header
-    ('elem', POINTER(CvSetElem), 1, None), # CvSetElem* elem
-    ('inserted_elem', POINTER(POINTER(CvSetElem)), 1, None), # CvSetElem** inserted_elem
-)
-
-# Removes element from set
-cvSetRemove = cfunc('cvSetRemove', _cxDLL, None,
-    ('set_header', POINTER(CvSet), 1), # CvSet* set_header
-    ('index', c_int, 1), # int index 
-)
-
-# Clears set
-cvClearSet = cfunc('cvClearSet', _cxDLL, None,
-    ('set_header', POINTER(CvSet), 1), # CvSet* set_header 
-)
 
 # --- 2.4 Graphs -------------------------------------------------------------
 
@@ -5045,15 +5153,6 @@ cvKMeans2 = cfunc('cvKMeans2', _cxDLL, None,
     ('cluster_count', c_int, 1), # int cluster_count
     ('labels', CvArr_p, 1), # CvArr* labels
     ('termcrit', CvTermCriteria, 1), # CvTermCriteria termcrit 
-)
-
-# Splits sequence into equivalency classes
-cvSeqPartition = cfunc('cvSeqPartition', _cxDLL, c_int,
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('labels', POINTER(POINTER(CvSeq)), 1), # CvSeq** labels
-    ('is_equal', CvCmpFunc, 1), # CvCmpFunc is_equal
-    ('userdata', c_void_p, 1), # void* userdata 
 )
 
 # --- 6 Error Handling and System Functions ----------------------------------
@@ -6794,81 +6893,6 @@ cvLUT.__doc__ = """void cvLUT(const CvArr* src, CvArr* dst, const CvArr* lut)
 Performs look-up table transform of array
 """
 
-cvCvtSeqToArray.__doc__ = """void* cvCvtSeqToArray(const CvSeq* seq, void* elements, CvSlice slice=CV_WHOLE_SEQ)
-
-Copies sequence to one continuous block of memory
-"""
-
-cvMakeSeqHeaderForArray.__doc__ = """CvSeq* cvMakeSeqHeaderForArray(int seq_type, int header_size, int elem_size,                                void* elements, int total,                                CvSeq* seq, CvSeqBlock* block)
-
-Constructs sequence from array
-"""
-
-cvSeqSlice.__doc__ = """CvSeq* cvSeqSlice(const CvSeq* seq, CvSlice slice,                   CvMemStorage* storage=NULL, int copy_data=0)
-
-Makes separate header for the sequence slice
-"""
-
-cvSeqRemoveSlice.__doc__ = """void cvSeqRemoveSlice(CvSeq* seq, CvSlice slice)
-
-Removes sequence slice
-"""
-
-cvSeqInsertSlice.__doc__ = """void cvSeqInsertSlice(CvSeq* seq, int before_index, const CvArr* from_arr)
-
-Inserts array in the middle of sequence
-"""
-
-cvSeqInvert.__doc__ = """void cvSeqInvert(CvSeq* seq)
-
-Reverses the order of sequence elements
-"""
-
-cvSeqSort.__doc__ = """void cvSeqSort(CvSeq* seq, CvCmpFunc func, void* userdata=NULL)
-
-Sorts sequence element using the specified comparison function
-"""
-
-cvSeqSearch.__doc__ = """char* cvSeqSearch(CvSeq* seq, const void* elem, CvCmpFunc func, int is_sorted, int* elem_idx, void* userdata=NULL)
-
-Searches element in sequence
-"""
-
-cvStartReadSeq.__doc__ = """void cvStartReadSeq(const CvSeq* seq, CvSeqReader* reader, int reverse=0)
-
-Initializes process of sequential reading from sequence
-"""
-
-cvGetSeqReaderPos.__doc__ = """int cvGetSeqReaderPos(CvSeqReader* reader)
-
-Returns the current reader position
-"""
-
-cvSetSeqReaderPos.__doc__ = """void cvSetSeqReaderPos(CvSeqReader* reader, int index, int is_relative=0)
-
-Moves the reader to specified position
-"""
-
-cvCreateSet.__doc__ = """CvSet* cvCreateSet(int set_flags, int header_size, int elem_size, CvMemStorage* storage)
-
-Creates empty set
-"""
-
-cvSetAdd.__doc__ = """int cvSetAdd(CvSet* set_header, CvSetElem* elem=NULL, CvSetElem** inserted_elem=NULL)
-
-Occupies a node in the set
-"""
-
-cvSetRemove.__doc__ = """void cvSetRemove(CvSet* set_header, int index)
-
-Removes element from set
-"""
-
-cvClearSet.__doc__ = """void cvClearSet(CvSet* set_header)
-
-Clears set
-"""
-
 cvCreateGraph.__doc__ = """CvGraph* cvCreateGraph(int graph_flags, int header_size, int vtx_size, int edge_size, CvMemStorage* storage)
 
 Creates empty graph
@@ -7207,11 +7231,6 @@ Loads object from file
 cvKMeans2.__doc__ = """void cvKMeans2(const CvArr* samples, int cluster_count, CvArr* labels, CvTermCriteria termcrit)
 
 Splits set of vectors by given number of clusters
-"""
-
-cvSeqPartition.__doc__ = """int cvSeqPartition(const CvSeq* seq, CvMemStorage* storage, CvSeq** labels, CvCmpFunc is_equal, void* userdata)
-
-Splits sequence into equivalency classes
 """
 
 cvGetErrStatus.__doc__ = """int cvGetErrStatus(void)
