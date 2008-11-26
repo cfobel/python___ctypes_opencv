@@ -458,15 +458,6 @@ CV_MAX_ARR = 10
 CV_NO_DEPTH_CHECK = 1
 CV_NO_CN_CHECK = 2
 CV_NO_SIZE_CHECK = 4
-CV_COVAR_SCRAMBLED = 0
-CV_COVAR_NORMAL = 1
-CV_COVAR_USE_AVG = 2
-CV_COVAR_SCALE = 4
-CV_COVAR_ROWS = 8
-CV_COVAR_COLS = 16
-CV_PCA_DATA_AS_ROW = 0
-CV_PCA_DATA_AS_COL = 1
-CV_PCA_USE_AVG = 2
 CV_C = 1
 CV_L1 = 2
 CV_L2 = 4
@@ -2630,6 +2621,7 @@ Returns size of matrix or image ROI
 # Copying and Filling
 #-----------------------------------------------------------------------------
 
+
 # Copies one array to another
 cvCopy = cfunc('cvCopy', _cxDLL, None,
     ('src', CvArr_p, 1), # const CvArr* src
@@ -2702,6 +2694,7 @@ Composes multi-channel array from several single-channel arrays or inserts a sin
 # Image conversion with scaling
 #-----------------------------------------------------------------------------
 
+
 # Converts one array to another with optional linear transformation
 cvConvertScale = cfunc('cvConvertScale', _cxDLL, None,
     ('src', CvArr_p, 1), # const CvArr* src
@@ -2740,6 +2733,7 @@ cvCvtScaleAbs = cvConvertScaleAbs
 # Termination Criteria
 #-----------------------------------------------------------------------------
 
+
 # checks termination criteria validity and sets eps to default_eps (if it is not set),
 # max_iter to default_max_iters (if it is not set)
 cvCheckTermCriteria = cfunc('cvCheckTermCriteria', _cxDLL, CvTermCriteria,
@@ -2752,6 +2746,7 @@ cvCheckTermCriteria = cfunc('cvCheckTermCriteria', _cxDLL, CvTermCriteria,
 #-----------------------------------------------------------------------------
 # Arithmetic, Logic and Comparison
 #-----------------------------------------------------------------------------
+
 
 # Computes per-element sum of two arrays
 cvAdd = cfunc('cvAdd', _cxDLL, None,
@@ -3086,6 +3081,7 @@ def cvAbs(src, dst):
 # Math operations
 #-----------------------------------------------------------------------------
 
+
 # Calculates magnitude and/or angle of 2d vectors
 cvCartToPolar = cfunc('cvCartToPolar', _cxDLL, None,
     ('x', CvArr_p, 1), # const CvArr* x
@@ -3220,6 +3216,7 @@ Finds real roots of a cubic equation
 #-----------------------------------------------------------------------------
 # Matrix operations
 #-----------------------------------------------------------------------------
+
 
 # Calculates cross product of two 3D vectors
 cvCrossProduct = cfunc('cvCrossProduct', _cxDLL, None,
@@ -3429,6 +3426,85 @@ cvRange.__doc__ = """void cvRange( CvArr* mat, double start, double end )
 
 Fills matrix with given range of numbers
 """
+
+CV_COVAR_SCRAMBLED = 0
+CV_COVAR_NORMAL = 1
+CV_COVAR_USE_AVG = 2
+CV_COVAR_SCALE = 4
+CV_COVAR_ROWS = 8
+CV_COVAR_COLS = 16
+
+# Calculates covariation matrix of the set of vectors
+cvCalcCovarMatrix = cfunc('cvCalcCovarMatrix', _cxDLL, None,
+    ('vects', POINTER(c_void_p), 1), # const CvArr** vects
+    ('count', c_int, 1), # int count
+    ('cov_mat', CvArr_p, 1), # CvArr* cov_mat
+    ('avg', CvArr_p, 1), # CvArr* avg
+    ('flags', c_int, 1), # int flags 
+)
+cvCalcCovarMatrix.__doc__ = """void cvCalcCovarMatrix(const CvArr** vects, int count, CvArr* cov_mat, CvArr* avg, int flags)
+
+Calculates covariation matrix of the set of vectors
+"""
+
+CV_PCA_DATA_AS_ROW = 0
+CV_PCA_DATA_AS_COL = 1
+CV_PCA_USE_AVG = 2
+
+# Performs Principal Component Analysis of a vector set
+cvCalcPCA = cfunc('cvCalcPCA', _cxDLL, None,
+    ('data', CvArr_p, 1), # CvArr* data
+    ('mean', CvArr_p, 1), # CvArr* mean
+    ('eigenvalues', CvArr_p, 1), # CvArr* eigenvalues
+    ('eigenvectors', CvArr_p, 1), # CvArr* eigenvectors
+    ('flags', c_int, 1), # int flags
+)
+cvCalcPCA.__doc__ = """void cvCalcPCA( const CvArr* data, CvArr* avg, CvArr* eigenvalues, CvArr* eigenvectors, int flags )
+
+Performs Principal Component Analysis of a vector set
+"""
+
+# Projects vectors to the specified subspace
+cvProjectPCA = cfunc('cvProjectPCA', _cxDLL, None,
+    ('data', CvArr_p, 1), # CvArr* data
+    ('mean', CvArr_p, 1), # CvArr* mean
+    ('eigenvectors', CvArr_p, 1), # CvArr* eigenvectors
+    ('result', CvArr_p, 1), # CvArr* result
+)
+cvProjectPCA.__doc__ = """void cvProjectPCA( const CvArr* data, const CvArr* avg, const CvArr* eigenvectors, CvArr* result )
+
+Projects vectors to the specified subspace
+"""
+
+# Reconstructs the original vectors from the projection coefficients
+cvBackProjectPCA = cfunc('cvBackProjectPCA', _cxDLL, None,
+    ('proj', CvArr_p, 1), # CvArr* proj
+    ('mean', CvArr_p, 1), # CvArr* mean
+    ('eigenvectors', CvArr_p, 1), # CvArr* eigenvectors
+    ('result', CvArr_p, 1), # CvArr* result
+)
+cvBackProjectPCA.__doc__ = """void cvBackProjectPCA( const CvArr* proj, const CvArr* avg, const CvArr* eigenvectors, CvArr* result )
+
+Reconstructs the original vectors from the projection coefficients
+"""
+
+# Calculates Mahalonobis distance between two vectors
+cvMahalanobis = cfunc('cvMahalanobis', _cxDLL, c_double,
+    ('vec1', CvArr_p, 1), # const CvArr* vec1
+    ('vec2', CvArr_p, 1), # const CvArr* vec2
+    ('mat', CvArr_p, 1), # CvArr* mat 
+)
+cvMahalanobis.__doc__ = """double cvMahalanobis(const CvArr* vec1, const CvArr* vec2, CvArr* mat)
+
+Calculates Mahalonobis distance between two vectors
+"""
+
+    
+#-----------------------------------------------------------------------------
+# Array Statistics
+#-----------------------------------------------------------------------------
+
+
 
 
 # here, start from here
@@ -3859,22 +3935,6 @@ cvNorm = cfunc('cvNorm', _cxDLL, c_double,
 )
 
 # --- 1.7 Linear Algebra -----------------------------------------------------
-
-# Calculates covariation matrix of the set of vectors
-cvCalcCovarMatrix = cfunc('cvCalcCovarMatrix', _cxDLL, None,
-    ('vects', POINTER(c_void_p), 1), # const CvArr** vects
-    ('count', c_int, 1), # int count
-    ('cov_mat', CvArr_p, 1), # CvArr* cov_mat
-    ('avg', CvArr_p, 1), # CvArr* avg
-    ('flags', c_int, 1), # int flags 
-)
-
-# Calculates Mahalonobis distance between two vectors
-cvMahalanobis = cfunc('cvMahalanobis', _cxDLL, c_double,
-    ('vec1', CvArr_p, 1), # const CvArr* vec1
-    ('vec2', CvArr_p, 1), # const CvArr* vec2
-    ('mat', CvArr_p, 1), # CvArr* mat 
-)
 
 # --- 1.8 Math Functions -----------------------------------------------------
 
@@ -6527,16 +6587,6 @@ Finds global minimum and maximum in array or subarray
 cvNorm.__doc__ = """double cvNorm(const CvArr* arr1, const CvArr* arr2=NULL, int norm_type=CV_L2, const CvArr* mask=NULL)
 
 Calculates absolute array norm, absolute difference norm or relative difference norm
-"""
-
-cvCalcCovarMatrix.__doc__ = """void cvCalcCovarMatrix(const CvArr** vects, int count, CvArr* cov_mat, CvArr* avg, int flags)
-
-Calculates covariation matrix of the set of vectors
-"""
-
-cvMahalanobis.__doc__ = """double cvMahalanobis(const CvArr* vec1, const CvArr* vec2, CvArr* mat)
-
-Calculates Mahalonobis distance between two vectors
 """
 
 cvGetOptimalDFTSize.__doc__ = """int cvGetOptimalDFTSize(int size0)
