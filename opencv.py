@@ -458,23 +458,6 @@ CV_MAX_ARR = 10
 CV_NO_DEPTH_CHECK = 1
 CV_NO_CN_CHECK = 2
 CV_NO_SIZE_CHECK = 4
-CV_C = 1
-CV_L1 = 2
-CV_L2 = 4
-CV_NORM_MASK = 7
-CV_RELATIVE = 8
-CV_DIFF = 16
-CV_MINMAX = 32
-CV_DIFF_C = (CV_DIFF | CV_C)
-CV_DIFF_L1 = (CV_DIFF | CV_L1)
-CV_DIFF_L2 = (CV_DIFF | CV_L2)
-CV_RELATIVE_C = (CV_RELATIVE | CV_C)
-CV_RELATIVE_L1 = (CV_RELATIVE | CV_L1)
-CV_RELATIVE_L2 = (CV_RELATIVE | CV_L2)
-CV_REDUCE_SUM = 0
-CV_REDUCE_AVG = 1
-CV_REDUCE_MAX = 2
-CV_REDUCE_MIN = 3
 CV_DXT_FORWARD = 0
 CV_DXT_INVERSE = 1
 CV_DXT_SCALE = 2     # divide result by size of array
@@ -1760,7 +1743,7 @@ _hack_cvmat(POINTER(CvMat))
 
 
 #-----------------------------------------------------------------------------
-# Add an auto-clean capability to an object
+# Add an auto-clean feature to an object
 #-----------------------------------------------------------------------------
 def _add_autoclean(obj, _clean):
     '''Add an auto-clean capability to an object
@@ -1776,7 +1759,7 @@ def _add_autoclean(obj, _clean):
             obj._clean(obj)
             obj._allocated = False
         else:
-            raise Warning, "The content this pointer points to is deleted more than once."
+            raise Warning, "The content pointed to by this pointer is deleted more than once."
             
     def _my__del__(obj):
         if obj._allocated is True:
@@ -3070,7 +3053,7 @@ Calculates absolute difference between array and scalar
 """
 
 def cvAbs(src, dst):
-    """void cvAbsDiffS(const CvArr* src, CvArr* dst)
+    """void cvAbs(const CvArr* src, CvArr* dst)
     
     Calculates absolute value of every element in array
     """
@@ -3251,9 +3234,17 @@ Performs generalized matrix multiplication
 cvMatMulAddEx = cvGEMM
 
 def cvMatMulAdd(src1, src2, src3, dst):
+    """void cvMatMulAdd(const CvArr* src1, const CvArr* src2, const CvArr* src3, CvArr* dst)
+    
+    Performs dst = src1*src2+src3
+    """
     cvGEMM(src1, src2, 1, src3, 1, dst, 0)
 
 def cvMatMul(src1, src2, dst):
+    """void cvMatMul(const CvArr* src1, const CvArr* src2, CvArr* dst)
+    
+    Performs dst = src1*src2
+    """
     cvMatMulAdd(src1, src2, 0, dst)
 
 # Performs matrix transform of every array element
@@ -3504,6 +3495,131 @@ Calculates Mahalonobis distance between two vectors
 # Array Statistics
 #-----------------------------------------------------------------------------
 
+
+# Summarizes array elements
+cvSum = cfunc('cvSum', _cxDLL, CvScalar,
+    ('arr', CvArr_p, 1), # const CvArr* arr 
+)
+cvSum.__doc__ = """CvScalar cvSum(const CvArr* arr)
+
+Summarizes array elements
+"""
+
+# Counts non-zero array elements
+cvCountNonZero = cfunc('cvCountNonZero', _cxDLL, c_int,
+    ('arr', CvArr_p, 1), # const CvArr* arr 
+)
+cvCountNonZero.__doc__ = """int cvCountNonZero(const CvArr* arr)
+
+Counts non-zero array elements
+"""
+
+# Calculates average (mean) of array elements
+cvAvg = cfunc('cvAvg', _cxDLL, CvScalar,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvAvg.__doc__ = """CvScalar cvAvg(const CvArr* arr, const CvArr* mask=NULL)
+
+Calculates average (mean) of array elements
+"""
+
+# Calculates average (mean) of array elements
+cvAvgSdv = cfunc('cvAvgSdv', _cxDLL, None,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('mean', POINTER(CvScalar), 1), # CvScalar* mean
+    ('std_dev', POINTER(CvScalar), 1), # CvScalar* std_dev
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvAvgSdv.__doc__ = """void cvAvgSdv(const CvArr* arr, CvScalar* mean, CvScalar* std_dev, const CvArr* mask=NULL)
+
+Calculates average (mean) of array elements
+"""
+
+# Finds global minimum and maximum in array or subarray
+## cvMinMaxLoc = _cxDLL.cvMinMaxLoc
+## cvMinMaxLoc.restype = None # void
+## cvMinMaxLoc.argtypes = [
+##     c_void_p, # const CvArr* arr
+##     c_void_p, # double* min_val
+##     c_void_p, # double* max_val
+##     c_void_p, # CvPoint* min_loc=NULL
+##     c_void_p, # CvPoint* max_loc=NULL
+##     c_void_p # const CvArr* mask=NULL
+##     ]
+
+cvMinMaxLoc = cfunc('cvMinMaxLoc', _cxDLL, None,
+                    ('image', POINTER(IplImage), 1),
+                    ('min_val', POINTER(c_double), 2),
+                    ('max_val', POINTER(c_double), 2),
+                    ('min_loc', POINTER(CvPoint), 2),
+                    ('max_loc', POINTER(CvPoint), 2),
+                    ('mask', c_void_p, 1, None))
+cvMinMaxLoc.__doc__ = """void cvMinMaxLoc(const CvArr* arr, double* min_val, double* max_val, CvPoint* min_loc=NULL, CvPoint* max_loc=NULL, const CvArr* mask=NULL)
+
+Finds global minimum and maximum in array or subarray
+"""
+
+CV_C = 1
+CV_L1 = 2
+CV_L2 = 4
+CV_NORM_MASK = 7
+CV_RELATIVE = 8
+CV_DIFF = 16
+CV_MINMAX = 32
+CV_DIFF_C = (CV_DIFF | CV_C)
+CV_DIFF_L1 = (CV_DIFF | CV_L1)
+CV_DIFF_L2 = (CV_DIFF | CV_L2)
+CV_RELATIVE_C = (CV_RELATIVE | CV_C)
+CV_RELATIVE_L1 = (CV_RELATIVE | CV_L1)
+CV_RELATIVE_L2 = (CV_RELATIVE | CV_L2)
+
+# Calculates absolute array norm, absolute difference norm or relative difference norm
+cvNorm = cfunc('cvNorm', _cxDLL, c_double,
+    ('arr1', CvArr_p, 1), # const CvArr* arr1
+    ('arr2', CvArr_p, 1, None), # const CvArr* arr2
+    ('norm_type', c_int, 1, CV_L2), # int norm_type
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvNorm.__doc__ = """double cvNorm(const CvArr* arr1, const CvArr* arr2=NULL, int norm_type=CV_L2, const CvArr* mask=NULL)
+
+Calculates absolute array norm, absolute difference norm or relative difference norm
+"""
+
+# Normalizes array to a certain norm or value range
+cvNormalize = cfunc('cvNormalize', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # const CvArr* dst
+    ('a', c_double, 1, 1), # double a
+    ('b', c_double, 1, 0), # double b
+    ('norm_type', c_int, 1, CV_L2), # int norm_type
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvNormalize.__doc__ = """void cvNormalize( const CvArr* src, CvArr* dst, double a=1, double b=0, int norm_type=CV_L2, const CvArr* mask=NULL )
+
+Normalizes array to a certain norm or value range
+"""
+
+CV_REDUCE_SUM = 0
+CV_REDUCE_AVG = 1
+CV_REDUCE_MAX = 2
+CV_REDUCE_MIN = 3
+
+# Reduces matrix to a vector
+cvReduce = cfunc('cvReduce', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # const CvArr* dst
+    ('op', c_int, 1, CV_REDUCE_SUM), # int op
+)
+cvReduce.__doc__ = """void cvReduce( const CvArr* src, CvArr* dst, int op=CV_REDUCE_SUM )
+
+Reduces matrix to a vector
+"""
+
+    
+#-----------------------------------------------------------------------------
+# Array Statistics
+#-----------------------------------------------------------------------------
 
 
 
@@ -3880,59 +3996,6 @@ cvLUT = cfunc('cvLUT', _cxDLL, None,
 )
 
 # --- 1.6 Statistics ---------------------------------------------------------
-
-# Counts non-zero array elements
-cvCountNonZero = cfunc('cvCountNonZero', _cxDLL, c_int,
-    ('arr', CvArr_p, 1), # const CvArr* arr 
-)
-
-# Summarizes array elements
-cvSum = cfunc('cvSum', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr 
-)
-
-# Calculates average (mean) of array elements
-cvAvg = cfunc('cvAvg', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Calculates average (mean) of array elements
-cvAvgSdv = cfunc('cvAvgSdv', _cxDLL, None,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('mean', POINTER(CvScalar), 1), # CvScalar* mean
-    ('std_dev', POINTER(CvScalar), 1), # CvScalar* std_dev
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Finds global minimum and maximum in array or subarray
-## cvMinMaxLoc = _cxDLL.cvMinMaxLoc
-## cvMinMaxLoc.restype = None # void
-## cvMinMaxLoc.argtypes = [
-##     c_void_p, # const CvArr* arr
-##     c_void_p, # double* min_val
-##     c_void_p, # double* max_val
-##     c_void_p, # CvPoint* min_loc=NULL
-##     c_void_p, # CvPoint* max_loc=NULL
-##     c_void_p # const CvArr* mask=NULL
-##     ]
-
-cvMinMaxLoc = cfunc('cvMinMaxLoc', _cxDLL, None,
-                    ('image', POINTER(IplImage), 1),
-                    ('min_val', POINTER(c_double), 2),
-                    ('max_val', POINTER(c_double), 2),
-                    ('min_loc', POINTER(CvPoint), 2),
-                    ('max_loc', POINTER(CvPoint), 2),
-                    ('mask', c_void_p, 1, None))
-
-
-# Calculates absolute array norm, absolute difference norm or relative difference norm
-cvNorm = cfunc('cvNorm', _cxDLL, c_double,
-    ('arr1', CvArr_p, 1), # const CvArr* arr1
-    ('arr2', CvArr_p, 1, None), # const CvArr* arr2
-    ('norm_type', c_int, 1), # int norm_type
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
 
 # --- 1.7 Linear Algebra -----------------------------------------------------
 
@@ -6557,36 +6620,6 @@ except ImportError:
 cvLUT.__doc__ = """void cvLUT(const CvArr* src, CvArr* dst, const CvArr* lut)
 
 Performs look-up table transform of array
-"""
-
-cvCountNonZero.__doc__ = """int cvCountNonZero(const CvArr* arr)
-
-Counts non-zero array elements
-"""
-
-cvSum.__doc__ = """CvScalar cvSum(const CvArr* arr)
-
-Summarizes array elements
-"""
-
-cvAvg.__doc__ = """CvScalar cvAvg(const CvArr* arr, const CvArr* mask=NULL)
-
-Calculates average (mean) of array elements
-"""
-
-cvAvgSdv.__doc__ = """void cvAvgSdv(const CvArr* arr, CvScalar* mean, CvScalar* std_dev, const CvArr* mask=NULL)
-
-Calculates average (mean) of array elements
-"""
-
-cvMinMaxLoc.__doc__ = """void cvMinMaxLoc(const CvArr* arr, double* min_val, double* max_val, CvPoint* min_loc=NULL, CvPoint* max_loc=NULL, const CvArr* mask=NULL)
-
-Finds global minimum and maximum in array or subarray
-"""
-
-cvNorm.__doc__ = """double cvNorm(const CvArr* arr1, const CvArr* arr2=NULL, int norm_type=CV_L2, const CvArr* mask=NULL)
-
-Calculates absolute array norm, absolute difference norm or relative difference norm
 """
 
 cvGetOptimalDFTSize.__doc__ = """int cvGetOptimalDFTSize(int size0)
