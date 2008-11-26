@@ -458,13 +458,6 @@ CV_MAX_ARR = 10
 CV_NO_DEPTH_CHECK = 1
 CV_NO_CN_CHECK = 2
 CV_NO_SIZE_CHECK = 4
-CV_DXT_FORWARD = 0
-CV_DXT_INVERSE = 1
-CV_DXT_SCALE = 2     # divide result by size of array
-CV_DXT_INV_SCALE = CV_DXT_INVERSE + CV_DXT_SCALE
-CV_DXT_INVERSE_SCALE = CV_DXT_INV_SCALE
-CV_DXT_ROWS = 4     # transfor each row individually
-CV_DXT_MUL_CONJ = 8     # conjugate the second argument of cvMulSpectrums
 CV_FRONT = 1
 CV_BACK = 0
 CV_GRAPH_VERTEX = 1
@@ -1203,6 +1196,7 @@ class CvLineIterator(_Structure):
         ('minus_step', c_int),        
     ]
     
+    
 #-----------------------------------------------------------------------------
 # CvScalar
 #-----------------------------------------------------------------------------
@@ -1227,6 +1221,7 @@ def cvRealScalar(val0):
 def cvScalarAll(val0123):
     val0123 = c_double(val0123)
     return CvScalar(val0123, val0123, val0123, val0123)
+
     
 #-----------------------------------------------------------------------------
 # Graph
@@ -1526,6 +1521,7 @@ _hack_del(CvArr_p)
 _hack_del(POINTER(IplImage))
 _hack_del(POINTER(CvMat))
 _hack_del(POINTER(CvMatND))
+_hack_del(POINTER(CvMemStorage))
 
 
 #-----------------------------------------------------------------------------
@@ -3618,8 +3614,192 @@ Reduces matrix to a vector
 
     
 #-----------------------------------------------------------------------------
-# Array Statistics
+# Discrete Linear Transforms and Related Functions
 #-----------------------------------------------------------------------------
+
+
+# Performs forward or inverse Discrete Fourier transform of 1D or 2D floating-point array
+CV_DXT_FORWARD = 0
+CV_DXT_INVERSE = 1
+CV_DXT_SCALE = 2     # divide result by size of array
+CV_DXT_INV_SCALE = CV_DXT_SCALE | CV_DXT_INVERSE
+CV_DXT_INVERSE_SCALE = CV_DXT_INV_SCALE
+CV_DXT_ROWS = 4     # transfor each row individually
+CV_DXT_MUL_CONJ = 8     # conjugate the second argument of cvMulSpectrums
+
+# Performs forward or inverse Discrete Fourier transform of 1D or 2D floating-point array
+cvDFT = cfunc('cvDFT', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('flags', c_int, 1), # int flags
+    ('nonzero_rows', c_int, 1, 0), # int nonzero_rows
+)
+cvDFT.__doc__ = """void cvDFT( const CvArr* src, CvArr* dst, int flags, int nonzero_rows=0 )
+
+Performs forward or inverse Discrete Fourier transform of 1D or 2D floating-point array
+"""
+
+cvFFT = cvDFT
+
+# Performs per-element multiplication of two Fourier spectrums
+cvMulSpectrums = cfunc('cvMulSpectrums', _cxDLL, None,
+    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('flags', c_int, 1), # int flags 
+)
+cvMulSpectrums.__doc__ = """void cvMulSpectrums(const CvArr* src1, const CvArr* src2, CvArr* dst, int flags)
+
+Performs per-element multiplication of two Fourier spectrums
+"""
+
+# Returns optimal DFT size for given vector size
+cvGetOptimalDFTSize = cfunc('cvGetOptimalDFTSize', _cxDLL, c_int,
+    ('size0', c_int, 1), # int size0 
+)
+cvGetOptimalDFTSize.__doc__ = """int cvGetOptimalDFTSize(int size0)
+
+Returns optimal DFT size for given vector size
+"""
+
+# Performs forward or inverse Discrete Cosine transform of 1D or 2D floating-point array
+cvDCT = cfunc('cvDCT', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('flags', c_int, 1), # int flags 
+)
+cvDCT.__doc__ = """void cvDCT( const CvArr* src, CvArr* dst, int flags )
+
+Performs forward or inverse Discrete Cosine transform of 1D or 2D floating-point array
+"""
+
+    
+#-----------------------------------------------------------------------------
+# Dynamic Data Structure: Memory Storages
+#-----------------------------------------------------------------------------
+
+
+# ------ List of methods not to be called by a user ------
+
+# Creates memory storage
+_cvCreateMemStorage = cfunc('cvCreateMemStorage', _cxDLL, POINTER(CvMemStorage),
+    ('block_size', c_int, 1, 0), # int block_size
+)
+
+# Creates child memory storage
+_cvCreateChildMemStorage = cfunc('cvCreateChildMemStorage', _cxDLL, POINTER(CvMemStorage),
+    ('parent', POINTER(CvMemStorage), 1), # CvMemStorage* parent 
+)
+
+# Releases memory storage
+_cvReleaseMemStorage = cfunc('cvReleaseMemStorage', _cxDLL, None,
+    ('storage', POINTER(POINTER(CvMemStorage)), 1), # CvMemStorage** storage 
+)
+
+def _my_cvReleaseMemStorage(storage):
+    for z in storage._children_list:
+        _my_cvReleaseMemStorage(z)
+    _cvReleaseMemStorage(storage)
+
+
+# ------ List of methods a user should call ------
+
+
+# Creates memory storage
+def cvCreateMemStorage(block_size=0):
+    """CvMemStorage* cvCreateMemStorage(int block_size=0)
+
+    Creates memory storage
+    """
+    z = _cvCreateMemStorage(block_size)
+    z._children_list = []
+    _add_autoclean(z, _my_cvReleaseMemStorage)
+    return z
+
+# Creates child memory storage
+def cvCreateChildMemStorage(parent):
+    """CvMemStorage* cvCreateChildMemStorage(CvMemStorage* parent)
+
+    Creates child memory storage
+    """
+    z = _cvCreateChildMemStorage(parent)
+    z._children_list = []
+    _add_autoclean(z, _my_cvReleaseMemStorage)
+    parent._children_list.append(z)
+    return z
+
+# Releases memory storage
+cvReleaseMemStorage = cvFree
+
+# Clears memory storage
+cvClearMemStorage = cfunc('cvClearMemStorage', _cxDLL, None,
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+)
+cvClearMemStorage.__doc__ = """void cvClearMemStorage(CvMemStorage* storage)
+
+Clears memory storage
+"""
+
+# Saves memory storage position
+cvSaveMemStoragePos = cfunc('cvSaveMemStoragePos', _cxDLL, None,
+    ('storage', POINTER(CvMemStorage), 1), # const CvMemStorage* storage
+    ('pos', POINTER(CvMemStoragePos), 1), # CvMemStoragePos* pos 
+)
+cvSaveMemStoragePos.__doc__ = """void cvSaveMemStoragePos(const CvMemStorage* storage, CvMemStoragePos* pos)
+
+Saves memory storage position
+"""
+
+# Restores memory storage position
+cvRestoreMemStoragePos = cfunc('cvRestoreMemStoragePos', _cxDLL, None,
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('pos', POINTER(CvMemStoragePos), 1), # CvMemStoragePos* pos 
+)
+cvRestoreMemStoragePos.__doc__ = """void cvRestoreMemStoragePos(CvMemStorage* storage, CvMemStoragePos* pos)
+
+Restores memory storage position
+"""
+
+# Allocates memory buffer in the storage
+cvMemStorageAlloc = cfunc('cvMemStorageAlloc', _cxDLL, c_void_p,
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('size', c_ulong, 1), # size_t size 
+)
+cvMemStorageAlloc.__doc__ = """void* cvMemStorageAlloc(CvMemStorage* storage, size_t size)
+
+Allocates memory buffer in the storage
+"""
+
+# Allocates text string in the storage
+cvMemStorageAllocString = cfunc('cvMemStorageAllocString', _cxDLL, CvString,
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('ptr', c_char_p, 1), # const char* ptr
+    ('len', c_int, 1), # int len
+)
+cvMemStorageAllocString.__doc__ = """CvString cvMemStorageAllocString(CvMemStorage* storage, const char* ptr, int len=-1)
+
+Allocates text string in the storage
+"""
+
+
+
+    
+#-----------------------------------------------------------------------------
+# Dynamic Data Structure: Sequences
+#-----------------------------------------------------------------------------
+
+# --------- Sequences ------------------------------
+
+# Calculates the sequence slice length
+cvSliceLength = cfunc('cvSliceLength', _cxDLL, c_int,
+    ('slice', CvSlice, 1), # CvSlice slice
+    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+)
+cvSliceLength.__doc__ = """int cvSliceLength( CvSlice slice, const CvSeq* seq )
+
+Performs forward or inverse Discrete Cosine transform of 1D or 2D floating-point array
+"""
+
 
 
 
@@ -4005,93 +4185,9 @@ cvLUT = cfunc('cvLUT', _cxDLL, None,
 
 # --- 1.10 Discrete Transforms -----------------------------------------------
 
-# Performs forward or inverse Discrete Fourier transform of 1D or 2D floating-point array
-CV_DXT_FORWARD = 0
-CV_DXT_INVERSE = 1
-CV_DXT_SCALE = 2
-CV_DXT_ROWS = 4
-CV_DXT_INV_SCALE = CV_DXT_SCALE | CV_DXT_INVERSE
-CV_DXT_INVERSE_SCALE = CV_DXT_INV_SCALE
-
-cvDFT = cfunc('cvDFT', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('flags', c_int, 1), # int flags
-    ('nonzero_rows', c_int, 1, 0), # int nonzero_rows
-)
-
-# Returns optimal DFT size for given vector size
-cvGetOptimalDFTSize = cfunc('cvGetOptimalDFTSize', _cxDLL, c_int,
-    ('size0', c_int, 1), # int size0 
-)
-
-# Performs per-element multiplication of two Fourier spectrums
-cvMulSpectrums = cfunc('cvMulSpectrums', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('flags', c_int, 1), # int flags 
-)
-
-# Performs forward or inverse Discrete Cosine transform of 1D or 2D floating-point array
-CV_DXT_FORWARD = 0
-CV_DXT_INVERSE = 1
-CV_DXT_ROWS = 4
-
-cvDCT = cfunc('cvDCT', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('flags', c_int, 1), # int flags 
-)
-
 # --- 2 Dynamic Structures ---------------------------------------------------
 
 # --- 2.1 Memory Storages ----------------------------------------------------
-
-# Creates memory storage
-cvCreateMemStorage = cfunc('cvCreateMemStorage', _cxDLL, POINTER(CvMemStorage),
-    ('block_size', c_int, 1, 0), # int block_size
-)
-
-# Creates child memory storage
-cvCreateChildMemStorage = cfunc('cvCreateChildMemStorage', _cxDLL, POINTER(CvMemStorage),
-    ('parent', POINTER(CvMemStorage), 1), # CvMemStorage* parent 
-)
-
-# Releases memory storage
-cvReleaseMemStorage = cfunc('cvReleaseMemStorage', _cxDLL, None,
-    ('storage', POINTER(POINTER(CvMemStorage)), 1), # CvMemStorage** storage 
-)
-
-# Clears memory storage
-cvClearMemStorage = cfunc('cvClearMemStorage', _cxDLL, None,
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
-)
-
-# Allocates memory buffer in the storage
-cvMemStorageAlloc = cfunc('cvMemStorageAlloc', _cxDLL, c_void_p,
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('size', c_ulong, 1), # size_t size 
-)
-
-# Allocates text string in the storage
-cvMemStorageAllocString = cfunc('cvMemStorageAllocString', _cxDLL, CvString,
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('ptr', c_char_p, 1), # const char* ptr
-    ('len', c_int, 1), # int len
-)
-
-# Saves memory storage position
-cvSaveMemStoragePos = cfunc('cvSaveMemStoragePos', _cxDLL, None,
-    ('storage', POINTER(CvMemStorage), 1), # const CvMemStorage* storage
-    ('pos', POINTER(CvMemStoragePos), 1), # CvMemStoragePos* pos 
-)
-
-# Restores memory storage position
-cvRestoreMemStoragePos = cfunc('cvRestoreMemStoragePos', _cxDLL, None,
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('pos', POINTER(CvMemStoragePos), 1), # CvMemStoragePos* pos 
-)
 
 # --- 2.2 Sequences ----------------------------------------------------------
 
@@ -6622,56 +6718,6 @@ cvLUT.__doc__ = """void cvLUT(const CvArr* src, CvArr* dst, const CvArr* lut)
 Performs look-up table transform of array
 """
 
-cvGetOptimalDFTSize.__doc__ = """int cvGetOptimalDFTSize(int size0)
-
-Returns optimal DFT size for given vector size
-"""
-
-cvMulSpectrums.__doc__ = """void cvMulSpectrums(const CvArr* src1, const CvArr* src2, CvArr* dst, int flags)
-
-Performs per-element multiplication of two Fourier spectrums
-"""
-
-cvCreateMemStorage.__doc__ = """CvMemStorage* cvCreateMemStorage(int block_size=0)
-
-Creates memory storage
-"""
-
-cvCreateChildMemStorage.__doc__ = """CvMemStorage* cvCreateChildMemStorage(CvMemStorage* parent)
-
-Creates child memory storage
-"""
-
-cvReleaseMemStorage.__doc__ = """void cvReleaseMemStorage(CvMemStorage** storage)
-
-Releases memory storage
-"""
-
-cvClearMemStorage.__doc__ = """void cvClearMemStorage(CvMemStorage* storage)
-
-Clears memory storage
-"""
-
-cvMemStorageAlloc.__doc__ = """void* cvMemStorageAlloc(CvMemStorage* storage, size_t size)
-
-Allocates memory buffer in the storage
-"""
-
-cvMemStorageAllocString.__doc__ = """CvString cvMemStorageAllocString(CvMemStorage* storage, const char* ptr, int len=-1)
-
-Allocates text string in the storage
-"""
-
-cvSaveMemStoragePos.__doc__ = """void cvSaveMemStoragePos(const CvMemStorage* storage, CvMemStoragePos* pos)
-
-Saves memory storage position
-"""
-
-cvRestoreMemStoragePos.__doc__ = """void cvRestoreMemStoragePos(CvMemStorage* storage, CvMemStoragePos* pos)
-
-Restores memory storage position
-"""
-
 cvCreateSeq.__doc__ = """CvSeq* cvCreateSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage)
 
 Creates sequence
@@ -8042,7 +8088,6 @@ cvCvtScaleAbs = cvConvertScaleAbs
 cvCheckArray = cvCheckArr
 cvMatMulAddS = cvTransform
 cvMahalonobis = cvMahalanobis
-cvFFT = cvDFT
 cvGraphFindEdge = cvFindGraphEdge
 cvGraphFindEdgeByPtr = cvFindGraphEdgeByPtr
 cvDrawRect = cvRectangle
