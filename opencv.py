@@ -223,103 +223,14 @@ class CallableToFunc(object):
     
 # --- CONSTANTS AND STUFF FROM CV.H ------------------------------------------------------
 
-CV_BLUR_NO_SCALE = 0
-CV_BLUR = 1
-CV_GAUSSIAN = 2
-CV_MEDIAN = 3
-CV_BILATERAL = 4
 CV_INPAINT_NS = 0
 CV_INPAINT_TELEA = 1
-CV_SCHARR = -1
-CV_MAX_SOBEL_KSIZE = 7
-CV_BGR2BGRA = 0
-CV_RGB2RGBA = CV_BGR2BGRA
-CV_BGRA2BGR = 1
-CV_RGBA2RGB = CV_BGRA2BGR
-CV_BGR2RGBA = 2
-CV_RGB2BGRA = CV_BGR2RGBA
-CV_RGBA2BGR = 3
-CV_BGRA2RGB = CV_RGBA2BGR
-CV_BGR2RGB = 4
-CV_RGB2BGR = CV_BGR2RGB
-CV_BGRA2RGBA = 5
-CV_RGBA2BGRA = CV_BGRA2RGBA
-CV_BGR2GRAY = 6
-CV_RGB2GRAY = 7
-CV_GRAY2BGR = 8
-CV_GRAY2RGB = CV_GRAY2BGR
-CV_GRAY2BGRA = 9
-CV_GRAY2RGBA = CV_GRAY2BGRA
-CV_BGRA2GRAY = 10
-CV_RGBA2GRAY = 11
-CV_BGR2BGR565 = 12
-CV_RGB2BGR565 = 13
-CV_BGR5652BGR = 14
-CV_BGR5652RGB = 15
-CV_BGRA2BGR565 = 16
-CV_RGBA2BGR565 = 17
-CV_BGR5652BGRA = 18
-CV_BGR5652RGBA = 19
-CV_GRAY2BGR565 = 20
-CV_BGR5652GRAY = 21
-CV_BGR2BGR555 = 22
-CV_RGB2BGR555 = 23
-CV_BGR5552BGR = 24
-CV_BGR5552RGB = 25
-CV_BGRA2BGR555 = 26
-CV_RGBA2BGR555 = 27
-CV_BGR5552BGRA = 28
-CV_BGR5552RGBA = 29
-CV_GRAY2BGR555 = 30
-CV_BGR5552GRAY = 31
-CV_BGR2XYZ = 32
-CV_RGB2XYZ = 33
-CV_XYZ2BGR = 34
-CV_XYZ2RGB = 35
-CV_BGR2YCrCb = 36
-CV_RGB2YCrCb = 37
-CV_YCrCb2BGR = 38
-CV_YCrCb2RGB = 39
-CV_BGR2HSV = 40
-CV_RGB2HSV = 41
-CV_BGR2Lab = 44
-CV_RGB2Lab = 45
-CV_BayerBG2BGR = 46
-CV_BayerGB2BGR = 47
-CV_BayerRG2BGR = 48
-CV_BayerGR2BGR = 49
-CV_BayerBG2RGB = CV_BayerRG2BGR
-CV_BayerGB2RGB = CV_BayerGR2BGR
-CV_BayerRG2RGB = CV_BayerBG2BGR
-CV_BayerGR2RGB = CV_BayerGB2BGR
-CV_BGR2Luv = 50
-CV_RGB2Luv = 51
-CV_BGR2HLS = 52
-CV_RGB2HLS = 53
-CV_HSV2BGR = 54
-CV_HSV2RGB = 55
-CV_Lab2BGR = 56
-CV_Lab2RGB = 57
-CV_Luv2BGR = 58
-CV_Luv2RGB = 59
-CV_HLS2BGR = 60
-CV_HLS2RGB = 61
-CV_COLORCVT_MAX = 100
-CV_INTER_NN = 0
-CV_INTER_LINEAR = 1
-CV_INTER_CUBIC = 2
-CV_INTER_AREA = 3
 CV_WARP_FILL_OUTLIERS = 8
 CV_WARP_INVERSE_MAP = 16
 CV_SHAPE_RECT = 0
 CV_SHAPE_CROSS = 1
 CV_SHAPE_ELLIPSE = 2
 CV_SHAPE_CUSTOM = 100
-CV_MOP_OPEN = 2
-CV_MOP_CLOSE = 3
-CV_MOP_GRADIENT = 4
-CV_MOP_TOPHAT = 5
-CV_MOP_BLACKHAT = 6
 CV_TM_SQDIFF = 0
 CV_TM_SQDIFF_NORMED = 1
 CV_TM_CCORR = 2
@@ -343,27 +254,6 @@ CV_COMP_INTERSECT = 2
 CV_COMP_BHATTACHARYYA = 3
 CV_VALUE = 1
 CV_ARRAY = 2
-CV_DIST_MASK_3 = 3
-CV_DIST_MASK_5 = 5
-CV_DIST_MASK_PRECISE = 0
-CV_THRESH_BINARY = 0      # value = (value > threshold) ? max_value : 0
-CV_THRESH_BINARY_INV = 1  # value = (value > threshold) ? 0 : max_value
-CV_THRESH_TRUNC = 2       # value = (value > threshold) ? threshold : value
-CV_THRESH_TOZERO = 3      # value = (value > threshold) ? value : 0
-CV_THRESH_TOZERO_INV = 4  # value = (value > threshold) ? 0 : value
-CV_THRESH_MASK = 7
-CV_THRESH_OTSU = 8        # use Otsu algorithm to choose the optimal threshold value
-CV_ADAPTIVE_THRESH_MEAN_C = 0
-CV_ADAPTIVE_THRESH_GAUSSIAN_C = 1
-CV_FLOODFILL_FIXED_RANGE = 1 << 16
-CV_FLOODFILL_MASK_ONLY = 1 << 17
-CV_CANNY_L2_GRADIENT = 1 << 31
-CV_HOUGH_STANDARD = 0
-CV_HOUGH_PROBABILISTIC = 1
-CV_HOUGH_MULTI_SCALE = 2
-CV_HOUGH_GRADIENT = 3
-CV_HAAR_DO_CANNY_PRUNING = 1
-CV_HAAR_SCALE_IMAGE = 2
 CV_CALIB_USE_INTRINSIC_GUESS = 1
 CV_CALIB_FIX_ASPECT_RATIO = 2
 CV_CALIB_FIX_PRINCIPAL_POINT = 4
@@ -457,12 +347,6 @@ CV_TM_CCOEFF_NORMED =5
 # Sim Harbert 4/9/2007 (start)
 # Added following defines:
 #
-CV_THRESH_BINARY      = 0
-CV_THRESH_BINARY_INV  = 1
-CV_THRESH_TRUNC       = 2 
-CV_THRESH_TOZERO      = 3
-CV_THRESH_TOZERO_INV  = 4
-
 CV_C           = 1
 CV_L1          = 2
 CV_L2          = 4
@@ -475,20 +359,6 @@ CV_INTER_NN     = 0 #nearest-neigbor interpolation,
 CV_INTER_LINEAR = 1 #bilinear interpolation (used by default) 
 CV_INTER_CUBIC  = 2 # bicubic interpolation. 
 CV_INTER_AREA = 3 #resampling using pixel area relation. It is preferred method for image decimation that gives moire-free results. In case of zooming it is similar to CV_INTER_NN method.
-
-#Added constants for contour retrieval mode - Apr 19th
-CV_RETR_EXTERNAL = 0
-CV_RETR_LIST     = 1
-CV_RETR_CCOMP    = 2
-CV_RETR_TREE     = 3
-
-#Added constants for contour approximation method  - Apr 19th
-CV_CHAIN_CODE               = 0
-CV_CHAIN_APPROX_NONE        = 1
-CV_CHAIN_APPROX_SIMPLE      = 2
-CV_CHAIN_APPROX_TC89_L1     = 3
-CV_CHAIN_APPROX_TC89_KCOS   = 4
-CV_LINK_RUNS                = 5
 #Viji Periapoilan 4/16/2007(end)
 
 CV_WINDOW_AUTOSIZE = 1
@@ -1011,7 +881,7 @@ CV_HIST_UNIFORM       = 1
 
 class CvHistogram(_Structure):
     _fields_ = [('type', c_int),
-                ('bins', c_void_p),
+                ('bins', CvArr_p),
                 ('thresh', (c_float*2)*CV_MAX_DIM), # for uniform histograms
                 ('thresh2', POINTER(c_float_p)), # for non-uniform histograms
                 ('mat', CvMatND)] # embedded matrix header for array histograms
@@ -1547,6 +1417,7 @@ _hack_del(POINTER(CvMat))
 _hack_del(POINTER(CvMatND))
 _hack_del(POINTER(CvMemStorage))
 _hack_del(POINTER(CvGraphScanner))
+_hack_del(POINTER(IplConvKernel))
 
 
 #-----------------------------------------------------------------------------
@@ -5926,69 +5797,13 @@ class CvAvgComp(_Structure):
 #=============================================================================
 
 
-
-    
-
-
-# here, start from here
+#-----------------------------------------------------------------------------
+# Image Processing: Gradients, Edges and Corners
+#-----------------------------------------------------------------------------
 
 
-    
-    
-
-    
-    
-    
-    
-
-
-
-
-
-
-
-# CvCapture
-class CvCapture(_Structure): # forward declaration
-    pass
-
-CvCaptureCloseFunc = CFUNCTYPE(None, POINTER(CvCapture))
-CvCaptureGrabFrameFunc = CFUNCTYPE(c_int, POINTER(CvCapture))
-CvCaptureRetrieveFrameFunc = CFUNCTYPE(POINTER(IplImage), POINTER(CvCapture))
-CvCaptureGetPropertyFunc = CFUNCTYPE(c_double, POINTER(CvCapture), c_int)
-CvCaptureSetPropertyFunc = CFUNCTYPE(c_int, POINTER(CvCapture), c_int, c_double)
-CvCaptureGetDescriptionFunc = CFUNCTYPE(c_char_p, POINTER(CvCapture))
-
-class CvCaptureVTable(_Structure):
-    _fields_ = [
-        ('count', c_int),
-        ('close', CvCaptureCloseFunc),
-        ('grab_frame', CvCaptureGrabFrameFunc),
-        ('retrieve_frame', CvCaptureRetrieveFrameFunc),
-        ('get_property', CvCaptureGetPropertyFunc),
-        ('set_property', CvCaptureSetPropertyFunc),
-        ('get_description', CvCaptureGetDescriptionFunc),
-    ]
-
-CvCapture._fields_ = [('vtable', POINTER(CvCaptureVTable))]
-
-
-    
-#=============================================================================
-# End of modification + addition by Minh-Tri Pham
-#=============================================================================
-
-
-# not implemented yet
-class CvPOSITObject(_Structure):
-    _fields_ = []
-
-class CvVideoWriter(_Structure):
-    _fields_ = []
-
-
-# --- 1 Image Processing -----------------------------------------------------
-
-# --- 1.1 Gradients, Edges and Corners ---------------------------------------
+CV_SCHARR = -1
+CV_MAX_SOBEL_KSIZE = 7
 
 # Calculates first, second, third or mixed image derivatives using extended Sobel operator
 cvSobel = cfunc('cvSobel', _cvDLL, None,
@@ -5998,6 +5813,10 @@ cvSobel = cfunc('cvSobel', _cvDLL, None,
     ('yorder', c_int, 1), # int yorder
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
+cvSobel.__doc__ = """void cvSobel(const CvArr* src, CvArr* dst, int xorder, int yorder, int aperture_size=3)
+
+Calculates first, second, third or mixed image derivatives using extended Sobel operator
+"""
 
 # Calculates Laplacian of the image
 cvLaplace = cfunc('cvLaplace', _cvDLL, None,
@@ -6005,6 +5824,12 @@ cvLaplace = cfunc('cvLaplace', _cvDLL, None,
     ('dst', CvArr_p, 1), # CvArr* dst
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
+cvLaplace.__doc__ = """void cvLaplace(const CvArr* src, CvArr* dst, int aperture_size=3)
+
+Calculates Laplacian of the image
+"""
+
+CV_CANNY_L2_GRADIENT = 1 << 31
 
 # Implements Canny algorithm for edge detection
 cvCanny = cfunc('cvCanny', _cvDLL, None,
@@ -6014,6 +5839,10 @@ cvCanny = cfunc('cvCanny', _cvDLL, None,
     ('threshold2', c_double, 1), # double threshold2
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
+cvCanny.__doc__ = """void cvCanny(const CvArr* image, CvArr* edges, double threshold1, double threshold2, int aperture_size=3)
+
+Implements Canny algorithm for edge detection
+"""
 
 # Calculates feature map for corner detection
 cvPreCornerDetect = cfunc('cvPreCornerDetect', _cvDLL, None,
@@ -6021,6 +5850,10 @@ cvPreCornerDetect = cfunc('cvPreCornerDetect', _cvDLL, None,
     ('corners', CvArr_p, 1), # CvArr* corners
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
+cvPreCornerDetect.__doc__ = """void cvPreCornerDetect(const CvArr* image, CvArr* corners, int aperture_size=3)
+
+Calculates feature map for corner detection
+"""
 
 # Calculates eigenvalues and eigenvectors of image blocks for corner detection
 cvCornerEigenValsAndVecs = cfunc('cvCornerEigenValsAndVecs', _cvDLL, None,
@@ -6029,6 +5862,10 @@ cvCornerEigenValsAndVecs = cfunc('cvCornerEigenValsAndVecs', _cvDLL, None,
     ('block_size', c_int, 1), # int block_size
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
+cvCornerEigenValsAndVecs.__doc__ = """void cvCornerEigenValsAndVecs(const CvArr* image, CvArr* eigenvv, int block_size, int aperture_size=3)
+
+Calculates eigenvalues and eigenvectors of image blocks for corner detection
+"""
 
 # Calculates minimal eigenvalue of gradient matrices for corner detection
 cvCornerMinEigenVal = cfunc('cvCornerMinEigenVal', _cvDLL, None,
@@ -6037,6 +5874,10 @@ cvCornerMinEigenVal = cfunc('cvCornerMinEigenVal', _cvDLL, None,
     ('block_size', c_int, 1), # int block_size
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
+cvCornerMinEigenVal.__doc__ = """void cvCornerMinEigenVal(const CvArr* image, CvArr* eigenval, int block_size, int aperture_size=3)
+
+Calculates minimal eigenvalue of gradient matrices for corner detection
+"""
 
 # Harris edge detector
 cvCornerHarris = cfunc('cvCornerHarris', _cvDLL, None,
@@ -6046,6 +5887,10 @@ cvCornerHarris = cfunc('cvCornerHarris', _cvDLL, None,
     ('aperture_size', c_int, 1, 3), # int aperture_size
     ('k', c_double, 1, 0), # double k
 )
+cvCornerHarris.__doc__ = """void cvCornerHarris(const CvArr* image, CvArr* harris_responce, int block_size, int aperture_size=3, double k=0.04)
+
+Harris edge detector
+"""
 
 # Refines corner locations
 cvFindCornerSubPix = cfunc('cvFindCornerSubPix', _cvDLL, None,
@@ -6056,6 +5901,10 @@ cvFindCornerSubPix = cfunc('cvFindCornerSubPix', _cvDLL, None,
     ('zero_zone', CvSize, 1), # CvSize zero_zone
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria 
 )
+cvFindCornerSubPix.__doc__ = """void cvFindCornerSubPix(const CvArr* image, CvPoint2D32f* corners, int count, CvSize win, CvSize zero_zone, CvTermCriteria criteria)
+
+Refines corner locations
+"""
 
 # Determines strong corners on image
 cvGoodFeaturesToTrack = cfunc('cvGoodFeaturesToTrack', _cvDLL, None,
@@ -6071,8 +5920,16 @@ cvGoodFeaturesToTrack = cfunc('cvGoodFeaturesToTrack', _cvDLL, None,
     ('use_harris', c_int, 1, 0), # int use_harris
     ('k', c_double, 1, 0), # double k
 )
+cvGoodFeaturesToTrack.__doc__ = """void cvGoodFeaturesToTrack(const CvArr* image, CvArr* eig_image, CvArr* temp_image, CvPoint2D32f* corners, int* corner_count, double quality_level, double min_distance, const CvArr* mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
 
-# --- 1.2 Sampling, Interpolation and Geometrical Transforms -----------------
+Determines strong corners on image
+"""
+
+
+#-----------------------------------------------------------------------------
+# Image Processing: Sampling, Interpolation and Geometrical Transforms
+#-----------------------------------------------------------------------------
+
 
 # Reads raster line to buffer
 cvSampleLine = cfunc('cvSampleLine', _cvDLL, c_int,
@@ -6082,6 +5939,10 @@ cvSampleLine = cfunc('cvSampleLine', _cvDLL, c_int,
     ('buffer', c_void_p, 1), # void* buffer
     ('connectivity', c_int, 1, 8), # int connectivity
 )
+cvSampleLine.__doc__ = """int cvSampleLine(const CvArr* image, CvPoint pt1, CvPoint pt2, void* buffer, int connectivity=8)
+
+Reads raster line to buffer
+"""
 
 # Retrieves pixel rectangle from image with sub-pixel accuracy
 cvGetRectSubPix = cfunc('cvGetRectSubPix', _cvDLL, None,
@@ -6089,6 +5950,10 @@ cvGetRectSubPix = cfunc('cvGetRectSubPix', _cvDLL, None,
     ('dst', CvArr_p, 1), # CvArr* dst
     ('center', CvPoint2D32f, 1), # CvPoint2D32f center 
 )
+cvGetRectSubPix.__doc__ = """void cvGetRectSubPix(const CvArr* src, CvArr* dst, CvPoint2D32f center)
+
+Retrieves pixel rectangle from image with sub-pixel accuracy
+"""
 
 # Retrieves pixel quadrangle from image with sub-pixel accuracy
 cvGetQuadrangleSubPix = cfunc('cvGetQuadrangleSubPix', _cvDLL, None,
@@ -6096,6 +5961,10 @@ cvGetQuadrangleSubPix = cfunc('cvGetQuadrangleSubPix', _cvDLL, None,
     ('dst', CvArr_p, 1), # CvArr* dst
     ('map_matrix', POINTER(CvMat), 1), # const CvMat* map_matrix 
 )
+cvGetQuadrangleSubPix.__doc__ = """void cvGetQuadrangleSubPix(const CvArr* src, CvArr* dst, const CvMat* map_matrix)
+
+Retrieves pixel quadrangle from image with sub-pixel accuracy
+"""
 
 # Resizes image
 cvResize = cfunc('cvResize', _cvDLL, None,
@@ -6103,6 +5972,10 @@ cvResize = cfunc('cvResize', _cvDLL, None,
     ('dst', CvArr_p, 1), # CvArr* dst
     ('interpolation', c_int, 1), # int interpolation
 )
+cvResize.__doc__ = """void cvResize(const CvArr* src, CvArr* dst, int interpolation=CV_INTER_LINEAR)
+
+Resizes image
+"""
 
 # Applies affine transformation to the image
 cvWarpAffine = cfunc('cvWarpAffine', _cvDLL, None,
@@ -6112,14 +5985,21 @@ cvWarpAffine = cfunc('cvWarpAffine', _cvDLL, None,
     ('flags', c_int, 1), # int flags
     ('fillval', CvScalar, 1), # CvScalar fillval
 )
+cvWarpAffine.__doc__ = """void cvWarpAffine(const CvArr* src, CvArr* dst, const CvMat* map_matrix, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
 
-# Added by Minh-Tri Pham
+Applies affine transformation to the image
+"""
+
 # Calculates affine transform from 3 corresponding points
 cvGetAffineTransform = cfunc('cvGetAffineTransform', _cvDLL, POINTER(CvMat),
     ('src', POINTER(CvPoint2D32f), 1), # const CvPoint2D32f* src
     ('dst', POINTER(CvPoint2D32f), 1), # const CvPoint2D32f* dst
     ('map_matrix', POINTER(CvMat), 1), # CvMat* map_matrix
 )
+cvGetAffineTransform.__doc__ = """CvMat* cvGetAffineTransform(const CvPoint2D32f* src, const CvPoint2D32f* dst, CvMat* map_matrix)
+
+Calculates affine transform from 3 corresponding points
+"""
 
 # Calculates affine matrix of 2d rotation
 cv2DRotationMatrix = cfunc('cv2DRotationMatrix', _cvDLL, POINTER(CvMat),
@@ -6128,6 +6008,10 @@ cv2DRotationMatrix = cfunc('cv2DRotationMatrix', _cvDLL, POINTER(CvMat),
     ('scale', c_double, 1), # double scale
     ('map_matrix', POINTER(CvMat), 1), # CvMat* map_matrix 
 )
+cv2DRotationMatrix.__doc__ = """CvMat* cv2DRotationMatrix(CvPoint2D32f center, double angle, double scale, CvMat* map_matrix)
+
+Calculates affine matrix of 2d rotation
+"""
 
 # Applies perspective transformation to the image
 cvWarpPerspective = cfunc('cvWarpPerspective', _cvDLL, None,
@@ -6137,6 +6021,10 @@ cvWarpPerspective = cfunc('cvWarpPerspective', _cvDLL, None,
     ('flags', c_int, 1), # int flags
     ('fillval', CvScalar, 1), # CvScalar fillval
 )
+cvWarpPerspective.__doc__ = """void cvWarpPerspective(const CvArr* src, CvArr* dst, const CvMat* map_matrix, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
+
+Applies perspective transformation to the image
+"""
 
 # Calculates perspective transform from 4 corresponding points
 cvGetPerspectiveTransform = cfunc('cvGetPerspectiveTransform', _cvDLL, POINTER(CvMat),
@@ -6144,6 +6032,10 @@ cvGetPerspectiveTransform = cfunc('cvGetPerspectiveTransform', _cvDLL, POINTER(C
     ('dst', POINTER(CvPoint2D32f), 1), # const CvPoint2D32f* dst
     ('map_matrix', POINTER(CvMat), 1), # CvMat* map_matrix 
 )
+cvGetPerspectiveTransform.__doc__ = """CvMat* cvGetPerspectiveTransform(const CvPoint2D32f* src, const CvPoint2D32f* dst, CvMat* map_matrix)
+
+Calculates perspective transform from 4 corresponding points
+"""
 
 # Applies generic geometrical transformation to the image
 cvRemap = cfunc('cvRemap', _cvDLL, None,
@@ -6154,6 +6046,10 @@ cvRemap = cfunc('cvRemap', _cvDLL, None,
     ('flags', c_int, 1), # int flags
     ('fillval', CvScalar, 1), # CvScalar fillval
 )
+cvRemap.__doc__ = """void cvRemap(const CvArr* src, CvArr* dst, const CvArr* mapx, const CvArr* mapy, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
+
+Applies generic geometrical transformation to the image
+"""
 
 # Remaps image to log-polar space
 cvLogPolar = cfunc('cvLogPolar', _cvDLL, None,
@@ -6163,11 +6059,21 @@ cvLogPolar = cfunc('cvLogPolar', _cvDLL, None,
     ('M', c_double, 1), # double M
     ('flags', c_int, 1), # int flags
 )
+cvLogPolar.__doc__ = """void cvLogPolar(const CvArr* src, CvArr* dst, CvPoint2D32f center, double M, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS)
 
-# --- 1.3 Morphological Operations -------------------------------------------
+Remaps image to log-polar space
+"""
+
+
+#-----------------------------------------------------------------------------
+# Image Processing: Morphological Operations
+#-----------------------------------------------------------------------------
+
+
+# ------ List of methods not to be called by a user ------
 
 # Creates structuring element
-cvCreateStructuringElementEx = cfunc('cvCreateStructuringElementEx', _cvDLL, c_void_p,
+_cvCreateStructuringElementEx = cfunc('cvCreateStructuringElementEx', _cvDLL, POINTER(IplConvKernel),
     ('cols', c_int, 1), # int cols
     ('rows', c_int, 1), # int rows
     ('anchor_x', c_int, 1), # int anchor_x
@@ -6177,9 +6083,25 @@ cvCreateStructuringElementEx = cfunc('cvCreateStructuringElementEx', _cvDLL, c_v
 )
 
 # Deletes structuring element
-cvReleaseStructuringElement = cfunc('cvReleaseStructuringElement', _cvDLL, None,
+_cvReleaseStructuringElement = cfunc('cvReleaseStructuringElement', _cvDLL, None,
     ('element', POINTER(POINTER(IplConvKernel)), 1), # IplConvKernel** element 
 )
+
+
+# ------ List of methods a user should call ------
+
+# Creates structuring element
+def cvCreateStructuringElementEx(*args, **kwds):
+    """IplConvKernel* cvCreateStructuringElementEx(int cols, int rows, int anchor_x, int anchor_y, int shape, int* values=NULL)
+
+    Creates structuring element
+    """
+    z = _cvCreateStructuringElementEx(*args)
+    _add_autoclean(z, _cvReleaseStructuringElement)
+    return z
+
+# Deletes structuring element
+cvReleaseStructuringElement = cvFree
 
 # Erodes image by using arbitrary structuring element
 cvErode = cfunc('cvErode', _cvDLL, None,
@@ -6188,6 +6110,10 @@ cvErode = cfunc('cvErode', _cvDLL, None,
     ('element', POINTER(IplConvKernel), 1, None), # IplConvKernel* element
     ('iterations', c_int, 1, 1), # int iterations
 )
+cvErode.__doc__ = """void cvErode(const CvArr* src, CvArr* dst, IplConvKernel* element=NULL, int iterations=1)
+
+Erodes image by using arbitrary structuring element
+"""
 
 # Dilates image by using arbitrary structuring element
 cvDilate = cfunc('cvDilate', _cvDLL, None,
@@ -6196,6 +6122,16 @@ cvDilate = cfunc('cvDilate', _cvDLL, None,
     ('element', POINTER(IplConvKernel), 1, None), # IplConvKernel* element
     ('iterations', c_int, 1, 1), # int iterations
 )
+cvDilate.__doc__ = """void cvDilate(const CvArr* src, CvArr* dst, IplConvKernel* element=NULL, int iterations=1)
+
+Dilates image by using arbitrary structuring element
+"""
+
+CV_MOP_OPEN = 2
+CV_MOP_CLOSE = 3
+CV_MOP_GRADIENT = 4
+CV_MOP_TOPHAT = 5
+CV_MOP_BLACKHAT = 6
 
 # Performs advanced morphological transformations
 cvMorphologyEx = cfunc('cvMorphologyEx', _cvDLL, None,
@@ -6206,8 +6142,22 @@ cvMorphologyEx = cfunc('cvMorphologyEx', _cvDLL, None,
     ('operation', c_int, 1), # int operation
     ('iterations', c_int, 1, 1), # int iterations
 )
+cvMorphologyEx.__doc__ = """void cvMorphologyEx(const CvArr* src, CvArr* dst, CvArr* temp, IplConvKernel* element, int operation, int iterations=1)
 
-# --- 1.4 Filters and Color Conversion ---------------------------------------
+Performs advanced morphological transformations
+"""
+
+
+#-----------------------------------------------------------------------------
+# Image Processing: Filters and Color Conversion
+#-----------------------------------------------------------------------------
+
+
+CV_BLUR_NO_SCALE = 0
+CV_BLUR = 1
+CV_GAUSSIAN = 2
+CV_MEDIAN = 3
+CV_BILATERAL = 4
 
 # Smooths the image in one of several ways
 cvSmooth = cfunc('cvSmooth', _cvDLL, None,
@@ -6218,6 +6168,10 @@ cvSmooth = cfunc('cvSmooth', _cvDLL, None,
     ('param2', c_int, 1, 0), # int param2
     ('param3', c_double, 1, 0), # double param3
 )
+cvSmooth.__doc__ = """void cvSmooth(const CvArr* src, CvArr* dst, int smoothtype=CV_GAUSSIAN, int param1=3, int param2=0, double param3=0)
+
+Smooths the image in one of several ways
+"""
 
 # Convolves image with the kernel
 cvFilter2D = cfunc('cvFilter2D', _cvDLL, None,
@@ -6226,6 +6180,10 @@ cvFilter2D = cfunc('cvFilter2D', _cvDLL, None,
     ('kernel', POINTER(CvMat), 1), # const CvMat* kernel
     ('anchor', CvPoint, 1), # CvPoint anchor
 )
+cvFilter2D.__doc__ = """void cvFilter2D(const CvArr* src, CvArr* dst, const CvMat* kernel, CvPoint anchor=cvPoint(-1, -1)
+
+Convolves image with the kernel
+"""
 
 # Copies image and makes border around it
 cvCopyMakeBorder = cfunc('cvCopyMakeBorder', _cvDLL, None,
@@ -6235,6 +6193,10 @@ cvCopyMakeBorder = cfunc('cvCopyMakeBorder', _cvDLL, None,
     ('bordertype', c_int, 1), # int bordertype
     ('value', CvScalar, 1), # CvScalar value
 )
+cvCopyMakeBorder.__doc__ = """void cvCopyMakeBorder(const CvArr* src, CvArr* dst, CvPoint offset, int bordertype, CvScalar value=cvScalarAll(0)
+
+Copies image and makes border around it
+"""
 
 # Calculates integral images
 cvIntegral = cfunc('cvIntegral', _cvDLL, None,
@@ -6243,6 +6205,10 @@ cvIntegral = cfunc('cvIntegral', _cvDLL, None,
     ('sqsum', CvArr_p, 1, None), # CvArr* sqsum
     ('tilted_sum', CvArr_p, 1, None), # CvArr* tilted_sum
 )
+cvIntegral.__doc__ = """void cvIntegral(const CvArr* image, CvArr* sum, CvArr* sqsum=NULL, CvArr* tilted_sum=NULL)
+
+Calculates integral images
+"""
 
 
 CV_BGR2BGRA =   0
@@ -6337,6 +6303,7 @@ CV_Luv2RGB =    59
 CV_HLS2BGR =    60
 CV_HLS2RGB =    61
 
+CV_COLORCVT_MAX = 100
 
 # Converts image from one color space to another
 cvCvtColor = cfunc('cvCvtColor', _cvDLL, None,
@@ -6344,6 +6311,18 @@ cvCvtColor = cfunc('cvCvtColor', _cvDLL, None,
     ('dst', CvArr_p, 1), # CvArr* dst
     ('code', c_int, 1), # int code 
 )
+cvCvtColor.__doc__ = """void cvCvtColor(const CvArr* src, CvArr* dst, int code)
+
+Converts image from one color space to another
+"""
+
+CV_THRESH_BINARY = 0      # value = (value > threshold) ? max_value : 0
+CV_THRESH_BINARY_INV = 1  # value = (value > threshold) ? 0 : max_value
+CV_THRESH_TRUNC = 2       # value = (value > threshold) ? threshold : value
+CV_THRESH_TOZERO = 3      # value = (value > threshold) ? value : 0
+CV_THRESH_TOZERO_INV = 4  # value = (value > threshold) ? 0 : value
+CV_THRESH_MASK = 7
+CV_THRESH_OTSU = 8        # use Otsu algorithm to choose the optimal threshold value
 
 # Applies fixed-level threshold to array elements
 cvThreshold = cfunc('cvThreshold', _cvDLL, None,
@@ -6353,6 +6332,13 @@ cvThreshold = cfunc('cvThreshold', _cvDLL, None,
     ('max_value', c_double, 1), # double max_value
     ('threshold_type', c_int, 1), # int threshold_type 
 )
+cvThreshold.__doc__ = """void cvThreshold(const CvArr* src, CvArr* dst, double threshold, double max_value, int threshold_type)
+
+Applies fixed-level threshold to array elements
+"""
+
+CV_ADAPTIVE_THRESH_MEAN_C = 0
+CV_ADAPTIVE_THRESH_GAUSSIAN_C = 1
 
 # Applies adaptive threshold to array
 cvAdaptiveThreshold = cfunc('cvAdaptiveThreshold', _cvDLL, None,
@@ -6364,8 +6350,16 @@ cvAdaptiveThreshold = cfunc('cvAdaptiveThreshold', _cvDLL, None,
     ('block_size', c_int, 1, 3), # int block_size
     ('param1', c_double, 1, 5), # double param1
 )
+cvAdaptiveThreshold.__doc__ = """void cvAdaptiveThreshold(const CvArr* src, CvArr* dst, double max_value, int adaptive_method=CV_ADAPTIVE_THRESH_MEAN_C, int threshold_type=CV_THRESH_BINARY, int block_size=3, double param1=5)
 
-# --- 1.5 Pyramids and the Applications --------------------------------------
+Applies adaptive threshold to array
+"""
+
+
+#-----------------------------------------------------------------------------
+# Image Processing: Pyramids
+#-----------------------------------------------------------------------------
+
 
 # Downsamples image
 cvPyrDown = cfunc('cvPyrDown', _cvDLL, None,
@@ -6373,6 +6367,10 @@ cvPyrDown = cfunc('cvPyrDown', _cvDLL, None,
     ('dst', CvArr_p, 1), # CvArr* dst
     ('filter', c_int, 1), # int filter
 )
+cvPyrDown.__doc__ = """void cvPyrDown(const CvArr* src, CvArr* dst, int filter=CV_GAUSSIAN_5x5)
+
+Downsamples image
+"""
 
 # Upsamples image
 cvPyrUp = cfunc('cvPyrUp', _cvDLL, None,
@@ -6380,19 +6378,15 @@ cvPyrUp = cfunc('cvPyrUp', _cvDLL, None,
     ('dst', CvArr_p, 1), # CvArr* dst
     ('filter', c_int, 1), # int filter
 )
+cvPyrUp.__doc__ = """void cvPyrUp(const CvArr* src, CvArr* dst, int filter=CV_GAUSSIAN_5x5)
 
-# Implements image segmentation by pyramids
-cvPyrSegmentation = cfunc('cvPyrSegmentation', _cvDLL, None,
-    ('src', POINTER(IplImage), 1), # IplImage* src
-    ('dst', POINTER(IplImage), 1), # IplImage* dst
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('comp', POINTER(POINTER(CvSeq)), 1), # CvSeq** comp
-    ('level', c_int, 1), # int level
-    ('threshold1', c_double, 1), # double threshold1
-    ('threshold2', c_double, 1), # double threshold2 
-)
+Upsamples image
+"""
 
-# --- 1.6 Connected Components -----------------------------------------------
+
+#-----------------------------------------------------------------------------
+# Image Processing: Connected Components
+#-----------------------------------------------------------------------------
 
 
 # Fills a connected component with given color
@@ -6406,6 +6400,10 @@ cvFloodFill = cfunc('cvFloodFill', _cvDLL, None,
     ('flags', c_int, 1, 4), # int flags
     ('mask', CvArr_p, 1, None), # CvArr* mask
 )
+cvFloodFill.__doc__ = """void cvFloodFill(CvArr* image, CvPoint seed_point, CvScalar new_val, CvScalar lo_diff=cvScalarAll(0), CvScalar up_diff=cvScalarAll(0), CvConnectedComp* comp=NULL, int flags=4, CvArr* mask=NULL)
+
+Fills a connected component with given color
+"""
 
 CV_FLOODFILL_FIXED_RANGE = 1 << 16
 CV_FLOODFILL_MASK_ONLY = 1 << 17
@@ -6420,6 +6418,10 @@ cvFindContours = cfunc('cvFindContours', _cvDLL, c_int,
     ('method', c_int, 1), # int method
     ('offset', CvPoint, 1), # CvPoint offset
 )
+cvFindContours.__doc__ = """int cvFindContours(CvArr* image, CvMemStorage* storage, CvSeq** first_contour, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
+
+Finds contours in binary image
+"""
 
 # Initializes contour scanning process
 cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
@@ -6430,24 +6432,91 @@ cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
     ('method', c_int, 1), # int method
     ('offset', CvPoint, 1), # CvPoint offset
 )
+cvStartFindContours.__doc__ = """CvContourScanner cvStartFindContours(CvArr* image, CvMemStorage* storage, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
+
+Initializes contour scanning process
+"""
 
 # Finds next contour in the image
 cvFindNextContour = cfunc('cvFindNextContour', _cvDLL, POINTER(CvSeq),
     ('scanner', CvContourScanner, 1), # CvContourScanner scanner 
 )
+cvFindNextContour.__doc__ = """CvSeq* cvFindNextContour(CvContourScanner scanner)
+
+Finds next contour in the image
+"""
 
 # Replaces retrieved contour
 cvSubstituteContour = cfunc('cvSubstituteContour', _cvDLL, None,
     ('scanner', CvContourScanner, 1), # CvContourScanner scanner
     ('new_contour', POINTER(CvSeq), 1), # CvSeq* new_contour 
 )
+cvSubstituteContour.__doc__ = """void cvSubstituteContour(CvContourScanner scanner, CvSeq* new_contour)
+
+Replaces retrieved contour
+"""
 
 # Finishes scanning process
 cvEndFindContours = cfunc('cvEndFindContours', _cvDLL, POINTER(CvSeq),
     ('scanner', POINTER(CvContourScanner), 1), # CvContourScanner* scanner 
 )
+cvEndFindContours.__doc__ = """CvSeq* cvEndFindContours(CvContourScanner* scanner)
 
-# --- 1.7 Image and Contour moments ------------------------------------------
+Finishes scanning process
+"""
+
+
+#-----------------------------------------------------------------------------
+# Segmentation
+#-----------------------------------------------------------------------------
+
+
+# Implements image segmentation by pyramids
+cvPyrSegmentation = cfunc('cvPyrSegmentation', _cvDLL, None,
+    ('src', POINTER(IplImage), 1), # IplImage* src
+    ('dst', POINTER(IplImage), 1), # IplImage* dst
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('comp', POINTER(POINTER(CvSeq)), 1), # CvSeq** comp
+    ('level', c_int, 1), # int level
+    ('threshold1', c_double, 1), # double threshold1
+    ('threshold2', c_double, 1), # double threshold2 
+)
+cvPyrSegmentation.__doc__ = """void cvPyrSegmentation(IplImage* src, IplImage* dst, CvMemStorage* storage, CvSeq** comp, int level, double threshold1, double threshold2)
+
+Implements image segmentation by pyramids
+"""
+
+_default_cvTermCriteria = cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 5, 1)
+
+# Does meanshift image segmentation
+cvPyrMeanShiftFiltering = cfunc('cvPyrMeanShiftFiltering', _cvDLL, None,
+    ('src', POINTER(IplImage), 1), # IplImage* src
+    ('dst', POINTER(IplImage), 1), # IplImage* dst
+    ('sp', c_double, 1), # double sp
+    ('sr', c_double, 1), # double sr
+    ('max_level', c_int, 1, 1), # int max_level=1
+    ('termcrit', CvTermCriteria, 1, _default_cvTermCriteria), # CvTermCriteria termcrit=cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,5,1)
+)
+cvPyrMeanShiftFiltering.__doc__ = """void cvPyrMeanShiftFiltering( const CvArr* src, CvArr* dst, double sp, double sr, int max_level=1, CvTermCriteria termcrit=cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,5,1))
+
+Does meanshift image segmentation
+"""
+
+# Does watershed segmentation
+cvWatershed = cfunc('cvWatershed', _cvDLL, None,
+    ('image', CvArr_p, 1), # const CvArr* image
+    ('markers', CvArr_p, 1), # CvArr* markers
+)
+cvWatershed.__doc__ = """void cvWatershed( const CvArr* image, CvArr* markers )
+
+Does watershed segmentation
+"""    
+
+
+#-----------------------------------------------------------------------------
+# Image and Contour moments
+#-----------------------------------------------------------------------------
+
 
 # Calculates all moments up to third order of a polygon or rasterized shape
 cvMoments = cfunc('cvMoments', _cvDLL, None,
@@ -6455,6 +6524,10 @@ cvMoments = cfunc('cvMoments', _cvDLL, None,
     ('moments', POINTER(CvMoments), 1), # CvMoments* moments
     ('binary', c_int, 1, 0), # int binary
 )
+cvMoments.__doc__ = """void cvMoments(const CvArr* arr, CvMoments* moments, int binary=0)
+
+Calculates all moments up to third order of a polygon or rasterized shape
+"""
 
 # Retrieves spatial moment from moment state structure
 cvGetSpatialMoment = cfunc('cvGetSpatialMoment', _cvDLL, c_double,
@@ -6462,6 +6535,10 @@ cvGetSpatialMoment = cfunc('cvGetSpatialMoment', _cvDLL, c_double,
     ('x_order', c_int, 1), # int x_order
     ('y_order', c_int, 1), # int y_order 
 )
+cvGetSpatialMoment.__doc__ = """double cvGetSpatialMoment(CvMoments* moments, int x_order, int y_order)
+
+Retrieves spatial moment from moment state structure
+"""
 
 # Retrieves central moment from moment state structure
 cvGetCentralMoment = cfunc('cvGetCentralMoment', _cvDLL, c_double,
@@ -6469,6 +6546,10 @@ cvGetCentralMoment = cfunc('cvGetCentralMoment', _cvDLL, c_double,
     ('x_order', c_int, 1), # int x_order
     ('y_order', c_int, 1), # int y_order 
 )
+cvGetCentralMoment.__doc__ = """double cvGetCentralMoment(CvMoments* moments, int x_order, int y_order)
+
+Retrieves central moment from moment state structure
+"""
 
 # Retrieves normalized central moment from moment state structure
 cvGetNormalizedCentralMoment = cfunc('cvGetNormalizedCentralMoment', _cvDLL, c_double,
@@ -6476,14 +6557,31 @@ cvGetNormalizedCentralMoment = cfunc('cvGetNormalizedCentralMoment', _cvDLL, c_d
     ('x_order', c_int, 1), # int x_order
     ('y_order', c_int, 1), # int y_order 
 )
+cvGetNormalizedCentralMoment.__doc__ = """double cvGetNormalizedCentralMoment(CvMoments* moments, int x_order, int y_order)
+
+Retrieves normalized central moment from moment state structure
+"""
 
 # Calculates seven Hu invariants
 cvGetHuMoments = cfunc('cvGetHuMoments', _cvDLL, None,
     ('moments', POINTER(CvMoments), 1), # CvMoments* moments
     ('hu_moments', POINTER(CvHuMoments), 1), # CvHuMoments* hu_moments 
 )
+cvGetHuMoments.__doc__ = """void cvGetHuMoments(CvMoments* moments, CvHuMoments* hu_moments)
 
-# --- 1.8 Special Image Transforms -------------------------------------------
+Calculates seven Hu invariants
+"""
+
+
+#-----------------------------------------------------------------------------
+# Special Image Transforms
+#-----------------------------------------------------------------------------
+
+
+CV_HOUGH_STANDARD = 0
+CV_HOUGH_PROBABILISTIC = 1
+CV_HOUGH_MULTI_SCALE = 2
+CV_HOUGH_GRADIENT = 3
 
 # Finds lines in binary image using Hough transform
 cvHoughLines2 = cfunc('cvHoughLines2', _cvDLL, POINTER(CvSeq),
@@ -6496,6 +6594,10 @@ cvHoughLines2 = cfunc('cvHoughLines2', _cvDLL, POINTER(CvSeq),
     ('param1', c_double, 1, 0), # double param1
     ('param2', c_double, 1, 0), # double param2
 )
+cvHoughLines2.__doc__ = """CvSeq* cvHoughLines2(CvArr* image, void* line_storage, int method, double rho, double theta, int threshold, double param1=0, double param2=0)
+
+Finds lines in binary image using Hough transform
+"""
 
 # Finds circles in grayscale image using Hough transform
 cvHoughCircles = cfunc('cvHoughCircles', _cvDLL, POINTER(CvSeq),
@@ -6507,6 +6609,14 @@ cvHoughCircles = cfunc('cvHoughCircles', _cvDLL, POINTER(CvSeq),
     ('param1', c_double, 1, 100), # double param1
     ('param2', c_double, 1, 100), # double param2
 )
+cvHoughCircles.__doc__ = """CvSeq* cvHoughCircles(CvArr* image, void* circle_storage, int method, double dp, double min_dist, double param1=100, double param2=100)
+
+Finds circles in grayscale image using Hough transform
+"""
+
+CV_DIST_MASK_3 = 3
+CV_DIST_MASK_5 = 5
+CV_DIST_MASK_PRECISE = 0
 
 # Calculates distance to closest zero pixel for all non-zero pixels of source image
 cvDistTransform = cfunc('cvDistTransform', _cvDLL, None,
@@ -6517,6 +6627,95 @@ cvDistTransform = cfunc('cvDistTransform', _cvDLL, None,
     ('mask', POINTER(c_float), 1, None), # const float* mask
     ('labels', CvArr_p, 1, None), # CvArr* labels
 )
+cvDistTransform.__doc__ = """void cvDistTransform(const CvArr* src, CvArr* dst, int distance_type=CV_DIST_L2, int mask_size=3, const float* mask=NULL, CvArr* labels=NULL)
+
+Calculates distance to closest zero pixel for all non-zero pixels of source image
+"""
+
+
+#-----------------------------------------------------------------------------
+# Histograms
+#-----------------------------------------------------------------------------
+
+
+
+
+
+
+
+# here, start from here
+
+
+    
+    
+
+    
+    
+    
+    
+
+
+
+
+
+
+
+# CvCapture
+class CvCapture(_Structure): # forward declaration
+    pass
+
+CvCaptureCloseFunc = CFUNCTYPE(None, POINTER(CvCapture))
+CvCaptureGrabFrameFunc = CFUNCTYPE(c_int, POINTER(CvCapture))
+CvCaptureRetrieveFrameFunc = CFUNCTYPE(POINTER(IplImage), POINTER(CvCapture))
+CvCaptureGetPropertyFunc = CFUNCTYPE(c_double, POINTER(CvCapture), c_int)
+CvCaptureSetPropertyFunc = CFUNCTYPE(c_int, POINTER(CvCapture), c_int, c_double)
+CvCaptureGetDescriptionFunc = CFUNCTYPE(c_char_p, POINTER(CvCapture))
+
+class CvCaptureVTable(_Structure):
+    _fields_ = [
+        ('count', c_int),
+        ('close', CvCaptureCloseFunc),
+        ('grab_frame', CvCaptureGrabFrameFunc),
+        ('retrieve_frame', CvCaptureRetrieveFrameFunc),
+        ('get_property', CvCaptureGetPropertyFunc),
+        ('set_property', CvCaptureSetPropertyFunc),
+        ('get_description', CvCaptureGetDescriptionFunc),
+    ]
+
+CvCapture._fields_ = [('vtable', POINTER(CvCaptureVTable))]
+
+
+    
+#=============================================================================
+# End of modification + addition by Minh-Tri Pham
+#=============================================================================
+
+
+# not implemented yet
+class CvPOSITObject(_Structure):
+    _fields_ = []
+
+class CvVideoWriter(_Structure):
+    _fields_ = []
+
+
+# --- 1 Image Processing -----------------------------------------------------
+
+# --- 1.1 Gradients, Edges and Corners ---------------------------------------
+
+# --- 1.2 Sampling, Interpolation and Geometrical Transforms -----------------
+
+# --- 1.3 Morphological Operations -------------------------------------------
+
+# --- 1.4 Filters and Color Conversion ---------------------------------------
+
+# --- 1.5 Pyramids and the Applications --------------------------------------
+
+# --- 1.6 Connected Components -----------------------------------------------
+
+# --- 1.7 Image and Contour moments ------------------------------------------
+
+# --- 1.8 Special Image Transforms -------------------------------------------
 
 # --- 1.9 Histograms ---------------------------------------------------------
 
@@ -7078,6 +7277,9 @@ cvReleaseHaarClassifierCascade = cfunc('cvReleaseHaarClassifierCascade', _cvDLL,
     ('cascade', POINTER(POINTER(CvHaarClassifierCascade)), 1), # CvHaarClassifierCascade** cascade 
 )
 
+CV_HAAR_DO_CANNY_PRUNING = 1
+CV_HAAR_SCALE_IMAGE = 2
+
 # Detects objects in the image
 cvHaarDetectObjects = cfunc('cvHaarDetectObjects', _cvDLL, POINTER(CvSeq),
     ('image', CvArr_p, 1), # const CvArr* image
@@ -7609,252 +7811,6 @@ except ImportError:
     pass
 
 # --- Dokumentationsstrings --------------------------------------------------
-
-cvSobel.__doc__ = """void cvSobel(const CvArr* src, CvArr* dst, int xorder, int yorder, int aperture_size=3)
-
-Calculates first, second, third or mixed image derivatives using extended Sobel operator
-"""
-
-cvLaplace.__doc__ = """void cvLaplace(const CvArr* src, CvArr* dst, int aperture_size=3)
-
-Calculates Laplacian of the image
-"""
-
-cvCanny.__doc__ = """void cvCanny(const CvArr* image, CvArr* edges, double threshold1, double threshold2, int aperture_size=3)
-
-Implements Canny algorithm for edge detection
-"""
-
-cvPreCornerDetect.__doc__ = """void cvPreCornerDetect(const CvArr* image, CvArr* corners, int aperture_size=3)
-
-Calculates feature map for corner detection
-"""
-
-cvCornerEigenValsAndVecs.__doc__ = """void cvCornerEigenValsAndVecs(const CvArr* image, CvArr* eigenvv, int block_size, int aperture_size=3)
-
-Calculates eigenvalues and eigenvectors of image blocks for corner detection
-"""
-
-cvCornerMinEigenVal.__doc__ = """void cvCornerMinEigenVal(const CvArr* image, CvArr* eigenval, int block_size, int aperture_size=3)
-
-Calculates minimal eigenvalue of gradient matrices for corner detection
-"""
-
-cvCornerHarris.__doc__ = """void cvCornerHarris(const CvArr* image, CvArr* harris_responce, int block_size, int aperture_size=3, double k=0.04)
-
-Harris edge detector
-"""
-
-cvFindCornerSubPix.__doc__ = """void cvFindCornerSubPix(const CvArr* image, CvPoint2D32f* corners, int count, CvSize win, CvSize zero_zone, CvTermCriteria criteria)
-
-Refines corner locations
-"""
-
-cvGoodFeaturesToTrack.__doc__ = """void cvGoodFeaturesToTrack(const CvArr* image, CvArr* eig_image, CvArr* temp_image, CvPoint2D32f* corners, int* corner_count, double quality_level, double min_distance, const CvArr* mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
-
-Determines strong corners on image
-"""
-
-cvSampleLine.__doc__ = """int cvSampleLine(const CvArr* image, CvPoint pt1, CvPoint pt2, void* buffer, int connectivity=8)
-
-Reads raster line to buffer
-"""
-
-cvGetRectSubPix.__doc__ = """void cvGetRectSubPix(const CvArr* src, CvArr* dst, CvPoint2D32f center)
-
-Retrieves pixel rectangle from image with sub-pixel accuracy
-"""
-
-cvGetQuadrangleSubPix.__doc__ = """void cvGetQuadrangleSubPix(const CvArr* src, CvArr* dst, const CvMat* map_matrix)
-
-Retrieves pixel quadrangle from image with sub-pixel accuracy
-"""
-
-cvResize.__doc__ = """void cvResize(const CvArr* src, CvArr* dst, int interpolation=CV_INTER_LINEAR)
-
-Resizes image
-"""
-
-cvWarpAffine.__doc__ = """void cvWarpAffine(const CvArr* src, CvArr* dst, const CvMat* map_matrix, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
-
-Applies affine transformation to the image
-"""
-
-# Added by Minh-Tri Pham
-cvGetAffineTransform.__doc__ = """CvMat* cvGetAffineTransform(const CvPoint2D32f* src, const CvPoint2D32f* dst, CvMat* map_matrix)
-
-Calculates affine transform from 3 corresponding points
-"""
-
-cv2DRotationMatrix.__doc__ = """CvMat* cv2DRotationMatrix(CvPoint2D32f center, double angle, double scale, CvMat* map_matrix)
-
-Calculates affine matrix of 2d rotation
-"""
-
-cvWarpPerspective.__doc__ = """void cvWarpPerspective(const CvArr* src, CvArr* dst, const CvMat* map_matrix, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
-
-Applies perspective transformation to the image
-"""
-
-cvGetPerspectiveTransform.__doc__ = """CvMat* cvGetPerspectiveTransform(const CvPoint2D32f* src, const CvPoint2D32f* dst, CvMat* map_matrix)
-
-Calculates perspective transform from 4 corresponding points
-"""
-
-cvRemap.__doc__ = """void cvRemap(const CvArr* src, CvArr* dst, const CvArr* mapx, const CvArr* mapy, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
-
-Applies generic geometrical transformation to the image
-"""
-
-cvLogPolar.__doc__ = """void cvLogPolar(const CvArr* src, CvArr* dst, CvPoint2D32f center, double M, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS)
-
-Remaps image to log-polar space
-"""
-
-cvCreateStructuringElementEx.__doc__ = """IplConvKernel* cvCreateStructuringElementEx(int cols, int rows, int anchor_x, int anchor_y, int shape, int* values=NULL)
-
-Creates structuring element
-"""
-
-cvReleaseStructuringElement.__doc__ = """void cvReleaseStructuringElement(IplConvKernel** element)
-
-Deletes structuring element
-"""
-
-cvErode.__doc__ = """void cvErode(const CvArr* src, CvArr* dst, IplConvKernel* element=NULL, int iterations=1)
-
-Erodes image by using arbitrary structuring element
-"""
-
-cvDilate.__doc__ = """void cvDilate(const CvArr* src, CvArr* dst, IplConvKernel* element=NULL, int iterations=1)
-
-Dilates image by using arbitrary structuring element
-"""
-
-cvMorphologyEx.__doc__ = """void cvMorphologyEx(const CvArr* src, CvArr* dst, CvArr* temp, IplConvKernel* element, int operation, int iterations=1)
-
-Performs advanced morphological transformations
-"""
-
-cvSmooth.__doc__ = """void cvSmooth(const CvArr* src, CvArr* dst, int smoothtype=CV_GAUSSIAN, int param1=3, int param2=0, double param3=0)
-
-Smooths the image in one of several ways
-"""
-
-cvFilter2D.__doc__ = """void cvFilter2D(const CvArr* src, CvArr* dst, const CvMat* kernel, CvPoint anchor=cvPoint(-1, -1)
-
-Convolves image with the kernel
-"""
-
-cvCopyMakeBorder.__doc__ = """void cvCopyMakeBorder(const CvArr* src, CvArr* dst, CvPoint offset, int bordertype, CvScalar value=cvScalarAll(0)
-
-Copies image and makes border around it
-"""
-
-cvIntegral.__doc__ = """void cvIntegral(const CvArr* image, CvArr* sum, CvArr* sqsum=NULL, CvArr* tilted_sum=NULL)
-
-Calculates integral images
-"""
-
-cvCvtColor.__doc__ = """void cvCvtColor(const CvArr* src, CvArr* dst, int code)
-
-Converts image from one color space to another
-"""
-
-cvThreshold.__doc__ = """void cvThreshold(const CvArr* src, CvArr* dst, double threshold, double max_value, int threshold_type)
-
-Applies fixed-level threshold to array elements
-"""
-
-cvAdaptiveThreshold.__doc__ = """void cvAdaptiveThreshold(const CvArr* src, CvArr* dst, double max_value, int adaptive_method=CV_ADAPTIVE_THRESH_MEAN_C, int threshold_type=CV_THRESH_BINARY, int block_size=3, double param1=5)
-
-Applies adaptive threshold to array
-"""
-
-cvPyrDown.__doc__ = """void cvPyrDown(const CvArr* src, CvArr* dst, int filter=CV_GAUSSIAN_5x5)
-
-Downsamples image
-"""
-
-cvPyrUp.__doc__ = """void cvPyrUp(const CvArr* src, CvArr* dst, int filter=CV_GAUSSIAN_5x5)
-
-Upsamples image
-"""
-
-cvPyrSegmentation.__doc__ = """void cvPyrSegmentation(IplImage* src, IplImage* dst, CvMemStorage* storage, CvSeq** comp, int level, double threshold1, double threshold2)
-
-Implements image segmentation by pyramids
-"""
-
-cvFloodFill.__doc__ = """void cvFloodFill(CvArr* image, CvPoint seed_point, CvScalar new_val, CvScalar lo_diff=cvScalarAll(0), CvScalar up_diff=cvScalarAll(0), CvConnectedComp* comp=NULL, int flags=4, CvArr* mask=NULL)
-
-Fills a connected component with given color
-"""
-
-cvFindContours.__doc__ = """int cvFindContours(CvArr* image, CvMemStorage* storage, CvSeq** first_contour, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
-
-Finds contours in binary image
-"""
-
-cvStartFindContours.__doc__ = """CvContourScanner cvStartFindContours(CvArr* image, CvMemStorage* storage, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
-
-Initializes contour scanning process
-"""
-
-cvFindNextContour.__doc__ = """CvSeq* cvFindNextContour(CvContourScanner scanner)
-
-Finds next contour in the image
-"""
-
-cvSubstituteContour.__doc__ = """void cvSubstituteContour(CvContourScanner scanner, CvSeq* new_contour)
-
-Replaces retrieved contour
-"""
-
-cvEndFindContours.__doc__ = """CvSeq* cvEndFindContours(CvContourScanner* scanner)
-
-Finishes scanning process
-"""
-
-cvMoments.__doc__ = """void cvMoments(const CvArr* arr, CvMoments* moments, int binary=0)
-
-Calculates all moments up to third order of a polygon or rasterized shape
-"""
-
-cvGetSpatialMoment.__doc__ = """double cvGetSpatialMoment(CvMoments* moments, int x_order, int y_order)
-
-Retrieves spatial moment from moment state structure
-"""
-
-cvGetCentralMoment.__doc__ = """double cvGetCentralMoment(CvMoments* moments, int x_order, int y_order)
-
-Retrieves central moment from moment state structure
-"""
-
-cvGetNormalizedCentralMoment.__doc__ = """double cvGetNormalizedCentralMoment(CvMoments* moments, int x_order, int y_order)
-
-Retrieves normalized central moment from moment state structure
-"""
-
-cvGetHuMoments.__doc__ = """void cvGetHuMoments(CvMoments* moments, CvHuMoments* hu_moments)
-
-Calculates seven Hu invariants
-"""
-
-cvHoughLines2.__doc__ = """CvSeq* cvHoughLines2(CvArr* image, void* line_storage, int method, double rho, double theta, int threshold, double param1=0, double param2=0)
-
-Finds lines in binary image using Hough transform
-"""
-
-cvHoughCircles.__doc__ = """CvSeq* cvHoughCircles(CvArr* image, void* circle_storage, int method, double dp, double min_dist, double param1=100, double param2=100)
-
-Finds circles in grayscale image using Hough transform
-"""
-
-cvDistTransform.__doc__ = """void cvDistTransform(const CvArr* src, CvArr* dst, int distance_type=CV_DIST_L2, int mask_size=3, const float* mask=NULL, CvArr* labels=NULL)
-
-Calculates distance to closest zero pixel for all non-zero pixels of source image
-"""
 
 cvCreateHist.__doc__ = """CvHistogram* cvCreateHist(int dims, int* sizes, int type, float** ranges=NULL, int uniform=1)
 
