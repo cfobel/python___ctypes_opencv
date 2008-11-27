@@ -4863,6 +4863,21 @@ cvInitLineIterator.__doc__ = """int cvInitLineIterator(const CvArr* image, CvPoi
 Initializes line iterator
 """
 
+def _ptr_add(ptr, offset):
+    pc = ptr.contents
+    return pointer(type(pc).from_address(addressof(pc) + offset))
+
+# Moves iterator to the next line point
+def CV_NEXT_LINE_POINT(line_iterator):
+    """void CV_NEXT_LINE_POINT(CvLineIerator line_iterator)
+    
+    Moves iterator to the next line point
+    [ctypes-opencv] I haven't tested this function.
+    """
+    mask = -1 if line_iterator.err < 0 else 0
+    line_iterator.err += line_iterator.minus_delta + (line_iterator.plus_delta & mask)
+    line_iterator.ptr = _ptr_add(line_iterator.ptr, line_iterator.minus_step + (line_iterator.plus_step & mask))
+
 # Clips the line against the image rectangle
 cvClipLine = cfunc('cvClipLine', _cxDLL, c_int,
     ('img_size', CvSize, 1), # CvSize img_size
@@ -5210,6 +5225,132 @@ cvReadRawDataSlice.__doc__ = """void cvReadRawDataSlice(const CvFileStorage* fs,
 
 Initializes file node sequence reader
 """
+   
+    
+#-----------------------------------------------------------------------------
+# Data Persistence and RTTI: RTTI and Generic Functions
+#-----------------------------------------------------------------------------
+
+
+# Registers new type
+cvRegisterType = cfunc('cvRegisterType', _cxDLL, None,
+    ('info', POINTER(CvTypeInfo), 1), # const CvTypeInfo* info 
+)
+cvRegisterType.__doc__ = """void cvRegisterType(const CvTypeInfo* info)
+
+Registers new type
+"""
+
+# Unregisters the type
+cvUnregisterType = cfunc('cvUnregisterType', _cxDLL, None,
+    ('type_name', c_char_p, 1), # const char* type_name 
+)
+cvUnregisterType.__doc__ = """void cvUnregisterType(const char* type_name)
+
+Unregisters the type
+"""
+
+# Returns the beginning of type list
+cvFirstType = cfunc('cvFirstType', _cxDLL, POINTER(CvTypeInfo),
+)
+cvFirstType.__doc__ = """CvTypeInfo* cvFirstType(voi)
+
+Returns the beginning of type list
+"""
+
+# Finds type by its name
+cvFindType = cfunc('cvFindType', _cxDLL, POINTER(CvTypeInfo),
+    ('type_name', c_char_p, 1), # const char* type_name 
+)
+cvFindType.__doc__ = """CvTypeInfo* cvFindType(const char* type_name)
+
+Finds type by its name
+"""
+
+# Returns type of the object
+cvTypeOf = cfunc('cvTypeOf', _cxDLL, POINTER(CvTypeInfo),
+    ('struct_ptr', c_void_p, 1), # const void* struct_ptr 
+)
+cvTypeOf.__doc__ = """CvTypeInfo* cvTypeOf(const void* struct_ptr)
+
+Returns type of the object
+"""
+
+# Releases the object
+cvRelease = cfunc('cvRelease', _cxDLL, None,
+    ('struct_ptr', POINTER(c_void_p), 1), # void** struct_ptr 
+)
+cvRelease.__doc__ = """void cvRelease(void** struct_ptr)
+
+Releases the object
+"""
+
+# Makes a clone of the object
+cvClone = cfunc('cvClone', _cxDLL, c_void_p,
+    ('struct_ptr', c_void_p, 1), # const void* struct_ptr 
+)
+cvClone.__doc__ = """void* cvClone(const void* struct_ptr)
+
+Makes a clone of the object
+"""
+
+# Saves object to file
+cvSave = cfunc('cvSave', _cxDLL, None,
+    ('filename', c_char_p, 1), # const char* filename
+    ('struct_ptr', c_void_p, 1), # const void* struct_ptr
+    ('name', c_char_p, 1, None), # const char* name
+    ('comment', c_char_p, 1, None), # const char* comment
+    ('attributes', CvAttrList, 1), # CvAttrList attributes
+)
+cvSave.__doc__ = """void cvSave(const char* filename, const void* struct_ptr, const char* name=NULL, const char* comment=NULL, CvAttrList attributes=cvAttrLis)
+
+Saves object to file
+"""
+
+# Loads object from file
+cvLoad = cfunc('cvLoad', _cxDLL, c_void_p,
+    ('filename', c_char_p, 1), # const char* filename
+    ('memstorage', POINTER(CvMemStorage), 1, None), # CvMemStorage* memstorage
+    ('name', c_char_p, 1, None), # const char* name
+    ('real_name', POINTER(c_char_p), 1, None), # const char** real_name
+)
+cvLoad.__doc__ = """void* cvLoad(const char* filename, CvMemStorage* memstorage=NULL, const char* name=NULL, const char** real_name=NULL)
+
+Loads object from file
+"""
+
+# Load and cast to given type
+def cvLoadCast(filename, ctype):
+    '''Use cvLoad and then cast the result to ctype'''
+    return cast(cvLoad(filename), POINTER(ctype))
+   
+    
+#-----------------------------------------------------------------------------
+# Miscellaneous Functions
+#-----------------------------------------------------------------------------
+
+
+# Splits set of vectors by given number of clusters
+cvKMeans2 = cfunc('cvKMeans2', _cxDLL, None,
+    ('samples', CvArr_p, 1), # const CvArr* samples
+    ('cluster_count', c_int, 1), # int cluster_count
+    ('labels', CvArr_p, 1), # CvArr* labels
+    ('termcrit', CvTermCriteria, 1), # CvTermCriteria termcrit 
+)
+cvKMeans2.__doc__ = """void cvKMeans2(const CvArr* samples, int cluster_count, CvArr* labels, CvTermCriteria termcrit)
+
+Splits set of vectors by given number of clusters
+"""
+   
+    
+#-----------------------------------------------------------------------------
+# Miscellaneous Functions
+#-----------------------------------------------------------------------------
+
+
+
+
+
 
 
 
@@ -5603,75 +5744,7 @@ class CvChainPtReader(_Structure):
 
 # --- 4.4 RTTI and Generic Functions -----------------------------------------
 
-# Registers new type
-cvRegisterType = cfunc('cvRegisterType', _cxDLL, None,
-    ('info', POINTER(CvTypeInfo), 1), # const CvTypeInfo* info 
-)
-
-# Unregisters the type
-cvUnregisterType = cfunc('cvUnregisterType', _cxDLL, None,
-    ('type_name', c_char_p, 1), # const char* type_name 
-)
-
-# Returns the beginning of type list
-cvFirstType = cfunc('cvFirstType', _cxDLL, POINTER(CvTypeInfo),
-)
-
-# Finds type by its name
-cvFindType = cfunc('cvFindType', _cxDLL, POINTER(CvTypeInfo),
-    ('type_name', c_char_p, 1), # const char* type_name 
-)
-
-# Returns type of the object
-cvTypeOf = cfunc('cvTypeOf', _cxDLL, POINTER(CvTypeInfo),
-    ('struct_ptr', c_void_p, 1), # const void* struct_ptr 
-)
-
-# Releases the object
-cvRelease = cfunc('cvRelease', _cxDLL, None,
-    ('struct_ptr', POINTER(c_void_p), 1), # void** struct_ptr 
-)
-
-# Makes a clone of the object
-cvClone = cfunc('cvClone', _cxDLL, c_void_p,
-    ('struct_ptr', c_void_p, 1), # const void* struct_ptr 
-)
-
-# Saves object to file
-cvSave = cfunc('cvSave', _cxDLL, None,
-    ('filename', c_char_p, 1), # const char* filename
-    ('struct_ptr', c_void_p, 1), # const void* struct_ptr
-    ('name', c_char_p, 1, None), # const char* name
-    ('comment', c_char_p, 1, None), # const char* comment
-    ('attributes', CvAttrList, 1), # CvAttrList attributes
-)
-
-# Loads object from file
-cvLoad = cfunc('cvLoad', _cxDLL, c_void_p,
-    ('filename', c_char_p, 1), # const char* filename
-    ('memstorage', POINTER(CvMemStorage), 1, None), # CvMemStorage* memstorage
-    ('name', c_char_p, 1, None), # const char* name
-    ('real_name', POINTER(c_char_p), 1, None), # const char** real_name
-)
-# Load and cast to given type
-def cvLoadCast(filename, ctype):
-    '''Use cvLoad and then cast the result to ctype'''
-    return cast(cvLoad(filename), POINTER(ctype))
-
-
 # --- 5 Miscellaneous Functions ----------------------------------------------
-
-# Splits set of vectors by given number of clusters
-cvKMeans2 = cfunc('cvKMeans2', _cxDLL, None,
-    ('samples', CvArr_p, 1), # const CvArr* samples
-    ('cluster_count', c_int, 1), # int cluster_count
-    ('labels', CvArr_p, 1), # CvArr* labels
-    ('termcrit', CvTermCriteria, 1), # CvTermCriteria termcrit 
-)
-cvKMeans2.__doc__ = """void cvKMeans2(const CvArr* samples, int cluster_count, CvArr* labels, CvTermCriteria termcrit)
-
-Splits set of vectors by given number of clusters
-"""
 
 # --- 6 Error Handling and System Functions ----------------------------------
 
@@ -7412,51 +7485,6 @@ except ImportError:
 
 # --- Dokumentationsstrings --------------------------------------------------
 
-cvRegisterType.__doc__ = """void cvRegisterType(const CvTypeInfo* info)
-
-Registers new type
-"""
-
-cvUnregisterType.__doc__ = """void cvUnregisterType(const char* type_name)
-
-Unregisters the type
-"""
-
-cvFirstType.__doc__ = """CvTypeInfo* cvFirstType(voi)
-
-Returns the beginning of type list
-"""
-
-cvFindType.__doc__ = """CvTypeInfo* cvFindType(const char* type_name)
-
-Finds type by its name
-"""
-
-cvTypeOf.__doc__ = """CvTypeInfo* cvTypeOf(const void* struct_ptr)
-
-Returns type of the object
-"""
-
-cvRelease.__doc__ = """void cvRelease(void** struct_ptr)
-
-Releases the object
-"""
-
-cvClone.__doc__ = """void* cvClone(const void* struct_ptr)
-
-Makes a clone of the object
-"""
-
-cvSave.__doc__ = """void cvSave(const char* filename, const void* struct_ptr, const char* name=NULL, const char* comment=NULL, CvAttrList attributes=cvAttrLis)
-
-Saves object to file
-"""
-
-cvLoad.__doc__ = """void* cvLoad(const char* filename, CvMemStorage* memstorage=NULL, const char* name=NULL, const char** real_name=NULL)
-
-Loads object from file
-"""
-
 cvGetErrStatus.__doc__ = """int cvGetErrStatus(void)
 
 Returns the current error status
@@ -8307,13 +8335,6 @@ cvConvertImage.__doc__ = """void cvConvertImage(const CvArr* src, CvArr* dst, in
 
 Converts one image to another with optional vertical flip
 """
-
-# --- SOME FUNCTION COPIES FROM THE C HEADERS (reverse compatibility?) ---
-cvZero = cvSetZero
-cvCvtScale = cvConvertScale
-cvScale = cvConvertScale
-cvCvtScaleAbs = cvConvertScaleAbs
-cvCheckArray = cvCheckArr
 
 
 #=============================================================================
