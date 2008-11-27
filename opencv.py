@@ -458,19 +458,6 @@ CV_MAX_ARR = 10
 CV_NO_DEPTH_CHECK = 1
 CV_NO_CN_CHECK = 2
 CV_NO_SIZE_CHECK = 4
-CV_GRAPH_VERTEX = 1
-CV_GRAPH_TREE_EDGE = 2
-CV_GRAPH_BACK_EDGE = 4
-CV_GRAPH_FORWARD_EDGE = 8
-CV_GRAPH_CROSS_EDGE = 16
-CV_GRAPH_ANY_EDGE = 30
-CV_GRAPH_NEW_TREE = 32
-CV_GRAPH_BACKTRACKING = 64
-CV_GRAPH_OVER = -1
-CV_GRAPH_ALL_ITEMS = -1
-CV_GRAPH_ITEM_VISITED_FLAG = 1 << 30
-CV_GRAPH_SEARCH_TREE_NODE_FLAG = 1 << 29
-CV_GRAPH_FORWARD_EDGE_FLAG = 1 << 28
 CV_FILLED = -1
 CV_AA = 16
 CV_FONT_HERSHEY_SIMPLEX = 0
@@ -1259,6 +1246,18 @@ class CvGraph(_Structure):
 
 CV_TYPE_NAME_GRAPH = "opencv-graph"
 
+# CvGraphScanner is taken out from cxcore.h
+class CvGraphScanner(_Structure):
+    _fields_ = [
+        ('vtx', POINTER(CvGraphVtx)), # current graph vertex (or current edge origin)
+        ('dst', POINTER(CvGraphVtx)), # current graph edge destination vertex
+        ('edge', POINTER(CvGraphEdge)), # current edge
+        ('graph', POINTER(CvGraph)), # the graph
+        ('stack', POINTER(CvSeq)), # the graph vertex stack
+        ('index', c_int), # the lower bound of certainly visited vertices
+        ('mask', c_int), # event mask
+    ]    
+
 #-----------------------------------------------------------------------------
 # Chain/Countour
 #-----------------------------------------------------------------------------
@@ -1520,6 +1519,7 @@ _hack_del(POINTER(IplImage))
 _hack_del(POINTER(CvMat))
 _hack_del(POINTER(CvMatND))
 _hack_del(POINTER(CvMemStorage))
+_hack_del(POINTER(CvGraphScanner))
 
 
 #-----------------------------------------------------------------------------
@@ -2724,6 +2724,16 @@ cvCheckTermCriteria = cfunc('cvCheckTermCriteria', _cxDLL, CvTermCriteria,
 # Arithmetic, Logic and Comparison
 #-----------------------------------------------------------------------------
 
+# Performs look-up table transform of array
+cvLUT = cfunc('cvLUT', _cxDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('lut', CvArr_p, 1), # const CvArr* lut 
+)
+cvLUT.__doc__ = """void cvLUT(const CvArr* src, CvArr* dst, const CvArr* lut)
+
+Performs look-up table transform of array
+"""
 
 # Computes per-element sum of two arrays
 cvAdd = cfunc('cvAdd', _cxDLL, None,
@@ -3484,6 +3494,7 @@ cvMahalanobis.__doc__ = """double cvMahalanobis(const CvArr* vec1, const CvArr* 
 Calculates Mahalonobis distance between two vectors
 """
 
+cvMahalonobis = cvMahalanobis
     
 #-----------------------------------------------------------------------------
 # Array Statistics
@@ -4172,6 +4183,7 @@ def cvSetNew(set_header):
     """CvSetElem* cvSetNew( CvSet* set_header )
     
     Adds element to set (fast variant)
+    [ctypes-opencv] Warning: I have not tested this function.
     """
     elem = set_header.contents.free_elem
     if elem:
@@ -4182,6 +4194,23 @@ def cvSetNew(set_header):
         cvSetAdd( set_header, None, elem )
     return elem
 
+# Removes set element given its pointer
+def cvSetRemoveByPtr(set_header, elem):
+    """void cvSetRemoveByPtr( CvSet* set_header, CvSetElem* elem )
+    
+    Removes set element given its pointer
+    [ctypes-opencv] Warning: I have not tested this function.
+    """
+    assert set_header, "Parameter 'set_header' must point to a valid CvSet"
+    sc = set_header.contents
+    assert elem, "Parameter 'elem' must point to a valid CvSetElem"
+    ec = elem.contents
+    assert ec.flags >= 0
+    ec.next_free = sc.free_elems
+    ec.flags = (ec.flags & CV_SET_ELEM_IDX_MASK) | CV_SET_ELEM_FREE_FLAG
+    sc.free_elems = em
+    sc.active_count -= 1
+    
 # Removes element from set
 cvSetRemove = cfunc('cvSetRemove', _cxDLL, None,
     ('set_header', POINTER(CvSet), 1), # CvSet* set_header
@@ -4192,9 +4221,17 @@ cvSetRemove.__doc__ = """void cvSetRemove(CvSet* set_header, int index)
 Removes element from set
 """
 
-# Removes set element given its pointer
-# TODO: implement this cvSetRemoveByPtr()
+# Returns a set element by index. If the element doesn't belong to the set, NULL is returned
+def cvGetSetElem(set_header, index):
+    """CvSetElem* cvGetSetElem( const CvSet* set_header, int index )
+    
+    Returns a set element by index. If the element doesn't belong to the set, NULL is returned
+    [ctypes-opencv] Warning: I have not tested this function.
+    """
+    elem = cvGetSeqElem(set_header, index)
+    return elem if bool(elem) and CV_IS_SET_ELEM( elem ) else 0
 
+    
 # Clears set
 cvClearSet = cfunc('cvClearSet', _cxDLL, None,
     ('set_header', POINTER(CvSet), 1), # CvSet* set_header 
@@ -4203,6 +4240,275 @@ cvClearSet.__doc__ = """void cvClearSet(CvSet* set_header)
 
 Clears set
 """
+
+    
+#-----------------------------------------------------------------------------
+# Dynamic Data Structure: Graphs
+#-----------------------------------------------------------------------------
+
+
+# Creates empty graph
+cvCreateGraph = cfunc('cvCreateGraph', _cxDLL, POINTER(CvGraph),
+    ('graph_flags', c_int, 1), # int graph_flags
+    ('header_size', c_int, 1), # int header_size
+    ('vtx_size', c_int, 1), # int vtx_size
+    ('edge_size', c_int, 1), # int edge_size
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+)
+cvCreateGraph.__doc__ = """CvGraph* cvCreateGraph(int graph_flags, int header_size, int vtx_size, int edge_size, CvMemStorage* storage)
+
+Creates empty graph
+"""
+
+# Adds vertex to graph
+cvGraphAddVtx = cfunc('cvGraphAddVtx', _cxDLL, c_int,
+    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('vtx', POINTER(CvGraphVtx), 1, None), # const CvGraphVtx* vtx
+    ('inserted_vtx', POINTER(POINTER(CvGraphVtx)), 1, None), # CvGraphVtx** inserted_vtx
+)
+cvGraphAddVtx.__doc__ = """int cvGraphAddVtx(CvGraph* graph, const CvGraphVtx* vtx=NULL, CvGraphVtx** inserted_vtx=NULL)
+
+Adds vertex to graph
+"""
+
+# Removes vertex from graph
+cvGraphRemoveVtx = cfunc('cvGraphRemoveVtx', _cxDLL, c_int,
+    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('index', c_int, 1), # int index 
+)
+cvGraphRemoveVtx.__doc__ = """int cvGraphRemoveVtx(CvGraph* graph, int index)
+
+Removes vertex from graph
+"""
+
+# Removes vertex from graph
+cvGraphRemoveVtxByPtr = cfunc('cvGraphRemoveVtxByPtr', _cxDLL, c_int,
+    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* vtx 
+)
+cvGraphRemoveVtxByPtr.__doc__ = """int cvGraphRemoveVtxByPtr(CvGraph* graph, CvGraphVtx* vtx)
+
+Removes vertex from graph
+"""
+
+# Adds edge to graph
+cvGraphAddEdge = cfunc('cvGraphAddEdge', _cxDLL, c_int,
+    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('start_idx', c_int, 1), # int start_idx
+    ('end_idx', c_int, 1), # int end_idx
+    ('edge', POINTER(CvGraphEdge), 1, None), # const CvGraphEdge* edge
+    ('inserted_edge', POINTER(POINTER(CvGraphEdge)), 1, None), # CvGraphEdge** inserted_edge
+)
+cvGraphAddEdge.__doc__ = """int cvGraphAddEdge(CvGraph* graph, int start_idx, int end_idx, const CvGraphEdge* edge=NULL, CvGraphEdge** inserted_edge=NULL)
+
+Adds edge to graph
+"""
+
+# Adds edge to graph
+cvGraphAddEdgeByPtr = cfunc('cvGraphAddEdgeByPtr', _cxDLL, c_int,
+    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('start_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* start_vtx
+    ('end_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* end_vtx
+    ('edge', POINTER(CvGraphEdge), 1, None), # const CvGraphEdge* edge
+    ('inserted_edge', POINTER(POINTER(CvGraphEdge)), 1, None), # CvGraphEdge** inserted_edge
+)
+cvGraphAddEdgeByPtr.__doc__ = """int cvGraphAddEdgeByPtr(CvGraph* graph, CvGraphVtx* start_vtx, CvGraphVtx* end_vtx, const CvGraphEdge* edge=NULL, CvGraphEdge** inserted_edge=NULL)
+
+Adds edge to graph
+"""
+
+# Removes edge from graph
+cvGraphRemoveEdge = cfunc('cvGraphRemoveEdge', _cxDLL, None,
+    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('start_idx', c_int, 1), # int start_idx
+    ('end_idx', c_int, 1), # int end_idx 
+)
+cvGraphRemoveEdge.__doc__ = """void cvGraphRemoveEdge(CvGraph* graph, int start_idx, int end_idx)
+
+Removes edge from graph
+"""
+
+# Removes edge from graph
+cvGraphRemoveEdgeByPtr = cfunc('cvGraphRemoveEdgeByPtr', _cxDLL, None,
+    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('start_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* start_vtx
+    ('end_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* end_vtx 
+)
+cvGraphRemoveEdgeByPtr.__doc__ = """void cvGraphRemoveEdgeByPtr(CvGraph* graph, CvGraphVtx* start_vtx, CvGraphVtx* end_vtx)
+
+Removes edge from graph
+"""
+
+# Finds edge in graph
+cvFindGraphEdge = cfunc('cvFindGraphEdge', _cxDLL, POINTER(CvGraphEdge),
+    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
+    ('start_idx', c_int, 1), # int start_idx
+    ('end_idx', c_int, 1), # int end_idx 
+)
+cvFindGraphEdge.__doc__ = """CvGraphEdge* cvFindGraphEdge(const CvGraph* graph, int start_idx, int end_idx)
+
+Finds edge in graph
+"""
+
+cvGraphFindEdge = cvFindGraphEdge
+
+# Finds edge in graph
+cvFindGraphEdgeByPtr = cfunc('cvFindGraphEdgeByPtr', _cxDLL, POINTER(CvGraphEdge),
+    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
+    ('start_vtx', POINTER(CvGraphVtx), 1), # const CvGraphVtx* start_vtx
+    ('end_vtx', POINTER(CvGraphVtx), 1), # const CvGraphVtx* end_vtx 
+)
+cvFindGraphEdgeByPtr.__doc__ = """CvGraphEdge* cvFindGraphEdgeByPtr(const CvGraph* graph, const CvGraphVtx* start_vtx, const CvGraphVtx* end_vtx)
+
+Finds edge in graph
+"""
+
+cvGraphFindEdgeByPtr = cvFindGraphEdgeByPtr
+
+# Counts edges indicent to the vertex
+cvGraphVtxDegree = cfunc('cvGraphVtxDegree', _cxDLL, c_int,
+    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
+    ('vtx_idx', c_int, 1), # int vtx_idx 
+)
+cvGraphVtxDegree.__doc__ = """int cvGraphVtxDegree(const CvGraph* graph, int vtx_idx)
+
+Counts edges indicent to the vertex
+"""
+
+# Finds edge in graph
+cvGraphVtxDegreeByPtr = cfunc('cvGraphVtxDegreeByPtr', _cxDLL, c_int,
+    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
+    ('vtx', POINTER(CvGraphVtx), 1), # const CvGraphVtx* vtx 
+)
+cvGraphVtxDegreeByPtr.__doc__ = """int cvGraphVtxDegreeByPtr(const CvGraph* graph, const CvGraphVtx* vtx)
+
+Finds edge in graph
+"""
+
+# Retrieves graph vertex by given index
+def cvGetGraphVtx(graph, idx):
+    """CvGraphVtx* cvGetGraphVtx( CvGraph* graph, int vtx_idx )
+    
+    Retrieves graph vertex by given index
+    """
+    return cvGetSetElem(graph, idx)
+
+# Retrieves index of a graph vertex given its pointer
+def GraphVtxIdx(graph, vtx):
+    """int cvGraphVtxIdx( CvGraph* graph, CvGraphVtx* vtx )
+    
+    Retrieves index of a graph vertex given its pointer
+    """
+    return vtx.contents.flags & CV_SET_ELEM_IDX_MASK
+
+# Returns index of graph edge
+def GraphEdgeIdx(graph, edge):
+    """int cvGraphEdgeIdx( CvGraph* graph, CvGraphEdge* edge )
+    
+    Returns index of graph edge
+    """
+    return edge.contents.flags & CV_SET_ELEM_IDX_MASK
+
+def cvGraphGetVtxCount(graph):
+    """int cvGraphGetVtxCount(CvGraph* graph)
+    
+    Returns the number of vertices of the graph
+    """
+    return graph.contents.active_count
+
+def cvGraphGetEdgeCount(graph):
+    """int cvGraphGetEdgeCount(CvGraph* graph)
+    
+    Returns the number of edges of the graph
+    """
+    return graph.contents.edges.contents.active_count
+
+CV_GRAPH_VERTEX = 1
+CV_GRAPH_TREE_EDGE = 2
+CV_GRAPH_BACK_EDGE = 4
+CV_GRAPH_FORWARD_EDGE = 8
+CV_GRAPH_CROSS_EDGE = 16
+CV_GRAPH_ANY_EDGE = 30
+CV_GRAPH_NEW_TREE = 32
+CV_GRAPH_BACKTRACKING = 64
+CV_GRAPH_OVER = -1
+CV_GRAPH_ALL_ITEMS = -1
+CV_GRAPH_ITEM_VISITED_FLAG = 1 << 30
+
+def CV_IS_GRAPH_VERTEX_VISITED(vtx):
+    """bool CV_IS_GRAPH_VERTEX_VISITED(CvGraphVtx* vtx)
+    
+    Returns whether a vertex is visited
+    """
+    return bool(vtx.contents.flags & CV_GRAPH_ITEM_VISITED_FLAG)
+
+def CV_IS_GRAPH_EDGE_VISITED(edge):
+    """bool CV_IS_GRAPH_EDGE_VISITED(CvGraphEdge* edge)
+    
+    Returns whether an edge is visited
+    """
+    return bool(edge.contents.flags & CV_GRAPH_ITEM_VISITED_FLAG)
+
+CV_GRAPH_SEARCH_TREE_NODE_FLAG = 1 << 29
+CV_GRAPH_FORWARD_EDGE_FLAG = 1 << 28
+    
+# Clears graph
+cvClearGraph = cfunc('cvClearGraph', _cxDLL, None,
+    ('graph', POINTER(CvGraph), 1), # CvGraph* graph 
+)
+cvClearGraph.__doc__ = """void cvClearGraph(CvGraph* graph)
+
+Clears graph
+"""
+
+# Clone graph
+cvCloneGraph = cfunc('cvCloneGraph', _cxDLL, POINTER(CvGraph),
+    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+)
+cvCloneGraph.__doc__ = """CvGraph* cvCloneGraph(const CvGraph* graph, CvMemStorage* storage)
+
+Clone graph
+"""
+
+# -------- Functions dealing with CvGraphScanner --------
+
+# Creates structure for depth-first graph traversal
+_cvCreateGraphScanner = cfunc('cvCreateGraphScanner', _cxDLL, POINTER(CvGraphScanner),
+    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('vtx', POINTER(CvGraphVtx), 1, None), # CvGraphVtx* vtx
+    ('mask', c_int, 1), # int mask
+)
+
+# Finishes graph traversal procedure
+_cvReleaseGraphScanner = cfunc('cvReleaseGraphScanner', _cxDLL, None,
+    ('scanner', POINTER(POINTER(CvGraphScanner)), 1), # CvGraphScanner** scanner 
+)
+
+
+# Creates structure for depth-first graph traversal
+def cvCreateGraphScanner(*args):
+    """CvGraphScanner* cvCreateGraphScanner(CvGraph* graph, CvGraphVtx* vtx=NULL, int mask=CV_GRAPH_ALL_ITEMS)
+
+    Creates structure for depth-first graph traversal
+    """
+    z = _cvCreateGraphScanner(*args)
+    _add_autoclean(z, _cvReleaseGraphScanner)
+    return z
+
+# Finishes graph traversal procedure
+cvReleaseGraphScanner = cvFree
+
+# Makes one or more steps of the graph traversal procedure
+cvNextGraphItem = cfunc('cvNextGraphItem', _cxDLL, c_int,
+    ('scanner', POINTER(CvGraphScanner), 1), # CvGraphScanner* scanner 
+)
+cvNextGraphItem.__doc__ = """int cvNextGraphItem(CvGraphScanner* scanner)
+
+Makes one or more steps of the graph traversal procedure
+"""
+
+
 
 
 
@@ -4544,9 +4850,6 @@ class CvAvgComp(_Structure):
 class CvContourScanner(_Structure):
     _fields_ = []
 
-class CvGraphScanner(_Structure):
-    _fields_ = []
-
 class CvTypeInfo(_Structure):
     _fields_ = []
 
@@ -4578,13 +4881,6 @@ class CvChainPtReader(_Structure):
 
 # --- 1.5 Arithmetic, Logic and Comparison -----------------------------------
 
-# Performs look-up table transform of array
-cvLUT = cfunc('cvLUT', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('lut', CvArr_p, 1), # const CvArr* lut 
-)
-
 # --- 1.6 Statistics ---------------------------------------------------------
 
 # --- 1.7 Linear Algebra -----------------------------------------------------
@@ -4604,120 +4900,6 @@ cvLUT = cfunc('cvLUT', _cxDLL, None,
 # --- 2.3 Sets ---------------------------------------------------------------
 
 # --- 2.4 Graphs -------------------------------------------------------------
-
-# Creates empty graph
-cvCreateGraph = cfunc('cvCreateGraph', _cxDLL, POINTER(CvGraph),
-    ('graph_flags', c_int, 1), # int graph_flags
-    ('header_size', c_int, 1), # int header_size
-    ('vtx_size', c_int, 1), # int vtx_size
-    ('edge_size', c_int, 1), # int edge_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
-)
-
-# Adds vertex to graph
-cvGraphAddVtx = cfunc('cvGraphAddVtx', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('vtx', POINTER(CvGraphVtx), 1, None), # const CvGraphVtx* vtx
-    ('inserted_vtx', POINTER(POINTER(CvGraphVtx)), 1, None), # CvGraphVtx** inserted_vtx
-)
-
-# Removes vertex from graph
-cvGraphRemoveVtx = cfunc('cvGraphRemoveVtx', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('index', c_int, 1), # int index 
-)
-
-# Removes vertex from graph
-cvGraphRemoveVtxByPtr = cfunc('cvGraphRemoveVtxByPtr', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* vtx 
-)
-
-# Adds edge to graph
-cvGraphAddEdge = cfunc('cvGraphAddEdge', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('start_idx', c_int, 1), # int start_idx
-    ('end_idx', c_int, 1), # int end_idx
-    ('edge', POINTER(CvGraphEdge), 1, None), # const CvGraphEdge* edge
-    ('inserted_edge', POINTER(POINTER(CvGraphEdge)), 1, None), # CvGraphEdge** inserted_edge
-)
-
-# Adds edge to graph
-cvGraphAddEdgeByPtr = cfunc('cvGraphAddEdgeByPtr', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('start_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* start_vtx
-    ('end_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* end_vtx
-    ('edge', POINTER(CvGraphEdge), 1, None), # const CvGraphEdge* edge
-    ('inserted_edge', POINTER(POINTER(CvGraphEdge)), 1, None), # CvGraphEdge** inserted_edge
-)
-
-# Removes edge from graph
-cvGraphRemoveEdge = cfunc('cvGraphRemoveEdge', _cxDLL, None,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('start_idx', c_int, 1), # int start_idx
-    ('end_idx', c_int, 1), # int end_idx 
-)
-
-# Removes edge from graph
-cvGraphRemoveEdgeByPtr = cfunc('cvGraphRemoveEdgeByPtr', _cxDLL, None,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('start_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* start_vtx
-    ('end_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* end_vtx 
-)
-
-# Finds edge in graph
-cvFindGraphEdge = cfunc('cvFindGraphEdge', _cxDLL, POINTER(CvGraphEdge),
-    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
-    ('start_idx', c_int, 1), # int start_idx
-    ('end_idx', c_int, 1), # int end_idx 
-)
-
-# Finds edge in graph
-cvFindGraphEdgeByPtr = cfunc('cvFindGraphEdgeByPtr', _cxDLL, POINTER(CvGraphEdge),
-    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
-    ('start_vtx', POINTER(CvGraphVtx), 1), # const CvGraphVtx* start_vtx
-    ('end_vtx', POINTER(CvGraphVtx), 1), # const CvGraphVtx* end_vtx 
-)
-
-# Counts edges indicent to the vertex
-cvGraphVtxDegree = cfunc('cvGraphVtxDegree', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
-    ('vtx_idx', c_int, 1), # int vtx_idx 
-)
-
-# Finds edge in graph
-cvGraphVtxDegreeByPtr = cfunc('cvGraphVtxDegreeByPtr', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
-    ('vtx', POINTER(CvGraphVtx), 1), # const CvGraphVtx* vtx 
-)
-
-# Clears graph
-cvClearGraph = cfunc('cvClearGraph', _cxDLL, None,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph 
-)
-
-# Clone graph
-cvCloneGraph = cfunc('cvCloneGraph', _cxDLL, POINTER(CvGraph),
-    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
-)
-
-# Creates structure for depth-first graph traversal
-cvCreateGraphScanner = cfunc('cvCreateGraphScanner', _cxDLL, POINTER(CvGraphScanner),
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('vtx', POINTER(CvGraphVtx), 1, None), # CvGraphVtx* vtx
-    ('mask', c_int, 1), # int mask
-)
-
-# Makes one or more steps of the graph traversal procedure
-cvNextGraphItem = cfunc('cvNextGraphItem', _cxDLL, c_int,
-    ('scanner', POINTER(CvGraphScanner), 1), # CvGraphScanner* scanner 
-)
-
-# Finishes graph traversal procedure
-cvReleaseGraphScanner = cfunc('cvReleaseGraphScanner', _cxDLL, None,
-    ('scanner', POINTER(POINTER(CvGraphScanner)), 1), # CvGraphScanner** scanner 
-)
 
 # --- 2.5 Trees --------------------------------------------------------------
 
@@ -6546,6 +6728,12 @@ cvConvertPointsHomogenious = cfunc('cvConvertPointsHomogenious', _cvDLL, None,
     ('src', POINTER(CvMat), 1), # const CvMat* src
     ('dst', POINTER(CvMat), 1), # CvMat* dst 
 )
+cvConvertPointsHomogenious.__doc__ = """void cvConvertPointsHomogeneous(const CvMat* src, CvMat* dst)
+
+Convert points to/from homogeneous coordinates
+"""
+
+cvConvertPointsHomogeneous = cvConvertPointsHomogenious
 
 # --- 1 Simple GUI -----------------------------------------------------------
 
@@ -6887,96 +7075,6 @@ except ImportError:
     pass
 
 # --- Dokumentationsstrings --------------------------------------------------
-
-cvLUT.__doc__ = """void cvLUT(const CvArr* src, CvArr* dst, const CvArr* lut)
-
-Performs look-up table transform of array
-"""
-
-cvCreateGraph.__doc__ = """CvGraph* cvCreateGraph(int graph_flags, int header_size, int vtx_size, int edge_size, CvMemStorage* storage)
-
-Creates empty graph
-"""
-
-cvGraphAddVtx.__doc__ = """int cvGraphAddVtx(CvGraph* graph, const CvGraphVtx* vtx=NULL, CvGraphVtx** inserted_vtx=NULL)
-
-Adds vertex to graph
-"""
-
-cvGraphRemoveVtx.__doc__ = """int cvGraphRemoveVtx(CvGraph* graph, int index)
-
-Removes vertex from graph
-"""
-
-cvGraphRemoveVtxByPtr.__doc__ = """int cvGraphRemoveVtxByPtr(CvGraph* graph, CvGraphVtx* vtx)
-
-Removes vertex from graph
-"""
-
-cvGraphAddEdge.__doc__ = """int cvGraphAddEdge(CvGraph* graph, int start_idx, int end_idx, const CvGraphEdge* edge=NULL, CvGraphEdge** inserted_edge=NULL)
-
-Adds edge to graph
-"""
-
-cvGraphAddEdgeByPtr.__doc__ = """int cvGraphAddEdgeByPtr(CvGraph* graph, CvGraphVtx* start_vtx, CvGraphVtx* end_vtx, const CvGraphEdge* edge=NULL, CvGraphEdge** inserted_edge=NULL)
-
-Adds edge to graph
-"""
-
-cvGraphRemoveEdge.__doc__ = """void cvGraphRemoveEdge(CvGraph* graph, int start_idx, int end_idx)
-
-Removes edge from graph
-"""
-
-cvGraphRemoveEdgeByPtr.__doc__ = """void cvGraphRemoveEdgeByPtr(CvGraph* graph, CvGraphVtx* start_vtx, CvGraphVtx* end_vtx)
-
-Removes edge from graph
-"""
-
-cvFindGraphEdge.__doc__ = """CvGraphEdge* cvFindGraphEdge(const CvGraph* graph, int start_idx, int end_idx)
-
-Finds edge in graph
-"""
-
-cvFindGraphEdgeByPtr.__doc__ = """CvGraphEdge* cvFindGraphEdgeByPtr(const CvGraph* graph, const CvGraphVtx* start_vtx, const CvGraphVtx* end_vtx)
-
-Finds edge in graph
-"""
-
-cvGraphVtxDegree.__doc__ = """int cvGraphVtxDegree(const CvGraph* graph, int vtx_idx)
-
-Counts edges indicent to the vertex
-"""
-
-cvGraphVtxDegreeByPtr.__doc__ = """int cvGraphVtxDegreeByPtr(const CvGraph* graph, const CvGraphVtx* vtx)
-
-Finds edge in graph
-"""
-
-cvClearGraph.__doc__ = """void cvClearGraph(CvGraph* graph)
-
-Clears graph
-"""
-
-cvCloneGraph.__doc__ = """CvGraph* cvCloneGraph(const CvGraph* graph, CvMemStorage* storage)
-
-Clone graph
-"""
-
-cvCreateGraphScanner.__doc__ = """CvGraphScanner* cvCreateGraphScanner(CvGraph* graph, CvGraphVtx* vtx=NULL, int mask=CV_GRAPH_ALL_ITEMS)
-
-Creates structure for depth-first graph traversal
-"""
-
-cvNextGraphItem.__doc__ = """int cvNextGraphItem(CvGraphScanner* scanner)
-
-Makes one or more steps of the graph traversal procedure
-"""
-
-cvReleaseGraphScanner.__doc__ = """void cvReleaseGraphScanner(CvGraphScanner** scanner)
-
-Finishes graph traversal procedure
-"""
 
 cvInitTreeNodeIterator.__doc__ = """void cvInitTreeNodeIterator(CvTreeNodeIterator* tree_iterator, const void* first, int max_level)
 
@@ -7954,11 +8052,6 @@ cvComputeCorrespondEpilines.__doc__ = """void cvComputeCorrespondEpilines(const 
 For points in one image of stereo pair computes the corresponding epilines in the other image
 """
 
-cvConvertPointsHomogenious.__doc__ = """void cvConvertPointsHomogenious(const CvMat* src, CvMat* dst)
-
-Convert points to/from homogeneous coordinates
-"""
-
 cvNamedWindow.__doc__ = """int cvNamedWindow(const char* name, int flags)
 
 Creates window
@@ -8097,9 +8190,6 @@ cvScale = cvConvertScale
 cvCvtScaleAbs = cvConvertScaleAbs
 cvCheckArray = cvCheckArr
 cvMatMulAddS = cvTransform
-cvMahalonobis = cvMahalanobis
-cvGraphFindEdge = cvFindGraphEdge
-cvGraphFindEdgeByPtr = cvFindGraphEdgeByPtr
 cvDrawRect = cvRectangle
 cvDrawLine = cvLine
 cvDrawCircle = cvCircle
