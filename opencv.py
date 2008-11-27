@@ -378,21 +378,6 @@ CV_FM_RANSAC_ONLY = 8
 CV_FM_LMEDS = CV_FM_LMEDS_ONLY + CV_FM_8POINT
 CV_FM_RANSAC = CV_FM_RANSAC_ONLY + CV_FM_8POINT
 
-#Viji Periapoilan 4/16/2007 (start)
-#Added constants for contour retrieval mode - Apr 19th
-CV_RETR_EXTERNAL = 0
-CV_RETR_LIST     = 1
-CV_RETR_CCOMP    = 2
-CV_RETR_TREE     = 3
-
-#Added constants for contour approximation method  - Apr 19th
-CV_CHAIN_CODE               = 0
-CV_CHAIN_APPROX_NONE        = 1
-CV_CHAIN_APPROX_SIMPLE      = 2
-CV_CHAIN_APPROX_TC89_L1     = 3
-CV_CHAIN_APPROX_TC89_KCOS   = 4
-CV_LINK_RUNS                = 5
-#Viji Periapoilan 4/16/2007(end)
 # --- CONSTANTS AND STUFF FROM highgui.h ----
 CV_WINDOW_AUTOSIZE = 1
 CV_EVENT_MOUSEMOVE = 0
@@ -458,9 +443,6 @@ CV_MAX_ARR = 10
 CV_NO_DEPTH_CHECK = 1
 CV_NO_CN_CHECK = 2
 CV_NO_SIZE_CHECK = 4
-CV_ErrModeLeaf = 0     # print error and exit program
-CV_ErrModeParent = 1     # print error and continue
-CV_ErrModeSilent = 2     # don't print and continue
 
 # --- Globale Variablen und Ausnahmen ----------------------------------------
 
@@ -1517,6 +1499,27 @@ CvTypeInfo._fields_ = [
     ('clone', CvCloneFunc),
 ]
     
+
+# System data types
+
+class CvPluginFuncInfo(_Structure):
+    _fields_ = [
+        ('func_addr', POINTER(c_void_p)),
+        ('default_func_addr', c_void_p),
+        ('func_names', c_char_p),
+        ('search_modules', c_int),
+        ('loaded_from', c_int),
+    ]
+
+class CvModuleInfo(_Structure):
+    pass
+CvModuleInfo._fields_ = [
+    ('next', POINTER(CvModuleInfo)),
+    ('name', c_char_p),
+    ('version', c_char_p),
+    ('func_tab', POINTER(CvPluginFuncInfo)),
+]
+
 
 #=============================================================================
 # cxcore/cxcore.h
@@ -5344,73 +5347,280 @@ Splits set of vectors by given number of clusters
    
     
 #-----------------------------------------------------------------------------
-# Miscellaneous Functions
+# Error Handling
 #-----------------------------------------------------------------------------
 
 
+# Returns the current error status
+cvGetErrStatus = cfunc('cvGetErrStatus', _cxDLL, c_int,
+)
+cvGetErrStatus.__doc__ = """int cvGetErrStatus(void)
 
+Returns the current error status
+"""
 
+# Sets the error status
+cvSetErrStatus = cfunc('cvSetErrStatus', _cxDLL, None,
+    ('status', c_int, 1), # int status 
+)
+cvSetErrStatus.__doc__ = """void cvSetErrStatus(int status)
 
+Sets the error status
+"""
 
+# Returns the current error mode
+cvGetErrMode = cfunc('cvGetErrMode', _cxDLL, c_int,
+)
+cvGetErrMode.__doc__ = """int cvGetErrMode(void)
 
+Returns the current error mode
+"""
 
+# Sets the error mode
+CV_ErrModeLeaf = 0
+CV_ErrModeParent = 1
+CV_ErrModeSilent = 2
 
+# Sets the error mode
+cvSetErrMode = cfunc('cvSetErrMode', _cxDLL, c_int,
+    ('mode', c_int, 1), # int mode 
+)
+cvSetErrMode.__doc__ = """int cvSetErrMode(int mode)
 
+Sets the error mode
+"""
 
+# Raises an error
+cvError = cfunc('cvError', _cxDLL, c_int,
+    ('status', c_int, 1), # int status
+    ('func_name', c_char_p, 1), # const char* func_name
+    ('err_msg', c_char_p, 1), # const char* err_msg
+    ('file_name', c_char_p, 1), # const char* file_name
+    ('line', c_int, 1), # int line 
+)
+cvError.__doc__ = """int cvError(int status, const char* func_name, const char* err_msg, const char* file_name, int line)
 
+Raises an error
+"""
 
+# Returns textual description of error status code
+cvErrorStr = cfunc('cvErrorStr', _cxDLL, c_char_p,
+    ('status', c_int, 1), # int status 
+)
+cvErrorStr.__doc__ = """const char* cvErrorStr(int status)
 
+Returns textual description of error status code
+"""
 
+# Sets a new error handler
+CvErrorCallback = CFUNCTYPE(c_int, # int
+    c_int, # int status
+    c_char_p, # const char* func_name
+    c_char_p, # const char* err_msg
+    c_char_p, # const char* file_name
+    c_int) # int line
 
-# here, start from here
+# Sets a new error handler
+cvRedirectError = cfunc('cvRedirectError', _cxDLL, CvErrorCallback,
+    ('error_handler', CvErrorCallback, 1), # CvErrorCallback error_handler
+    ('userdata', c_void_p, 1, None), # void* userdata
+    ('prev_userdata', POINTER(c_void_p), 1, None), # void** prev_userdata
+)
+cvRedirectError.__doc__ = """CvErrorCallback cvRedirectError( CvErrorCallback error_handler, void* userdata=NULL, void** prev_userdata=NULL )
 
+Sets a new error handler
+"""
 
+# Provide standard error handling
+cvNulDevReport = cfunc('cvNulDevReport', _cxDLL, c_int,
+    ('status', c_int, 1), # int status
+    ('func_name', c_char_p, 1), # const char* func_name
+    ('err_msg', c_char_p, 1), # const char* err_msg
+    ('file_name', c_char_p, 1), # const char* file_name
+    ('line', c_int, 1), # int line
+    ('userdata', c_void_p, 1), # void* userdata 
+)
+cvNulDevReport.__doc__ = """int cvNulDevReport(int status, const char* func_name, const char* err_msg, const char* file_name, int line, void* userdata)
+
+Provide standard error handling
+"""
+
+# Provide standard error handling
+cvStdErrReport = cfunc('cvStdErrReport', _cxDLL, c_int,
+    ('status', c_int, 1), # int status
+    ('func_name', c_char_p, 1), # const char* func_name
+    ('err_msg', c_char_p, 1), # const char* err_msg
+    ('file_name', c_char_p, 1), # const char* file_name
+    ('line', c_int, 1), # int line
+    ('userdata', c_void_p, 1), # void* userdata 
+)
+cvStdErrReport.__doc__ = """int cvStdErrReport( int status, const char* func_name, const char* err_msg, const char* file_name, int line, void* userdata )
+
+Provide standard error handling
+"""
+
+# Provide standard error handling
+cvGuiBoxReport = cfunc('cvGuiBoxReport', _cxDLL, c_int,
+    ('status', c_int, 1), # int status
+    ('func_name', c_char_p, 1), # const char* func_name
+    ('err_msg', c_char_p, 1), # const char* err_msg
+    ('file_name', c_char_p, 1), # const char* file_name
+    ('line', c_int, 1), # int line
+    ('userdata', c_void_p, 1), # void* userdata 
+)
+cvGuiBoxReport.__doc__ = """int cvGuiBoxReport( int status, const char* func_name, const char* err_msg, const char* file_name, int line, void* userdata )
+
+Provide standard error handling
+"""
+   
     
+#-----------------------------------------------------------------------------
+# System and Utility Functions
+#-----------------------------------------------------------------------------
+
+
+# Returns number of tics
+cvGetTickCount = cfunc('cvGetTickCount', _cxDLL, c_longlong,
+)
+cvGetTickCount.__doc__ = """int64 cvGetTickCount(void)
+
+Returns number of tics
+"""
+
+# Returns number of tics per microsecond
+cvGetTickFrequency = cfunc('cvGetTickFrequency', _cxDLL, c_double,
+)
+cvGetTickFrequency.__doc__ = """double cvGetTickFrequency(void)
+
+Returns number of tics per microsecond
+"""
+
+# Registers another module
+cvRegisterModule = cfunc('cvRegisterModule', _cxDLL, c_int,
+    ('module_info', POINTER(CvModuleInfo), 1), # const CvModuleInfo* module_info 
+)
+cvRegisterModule.__doc__ = """int cvRegisterModule(const CvModuleInfo* module_info)
+
+Registers another module
+"""
+
+# Retrieves information about the registered module(s) and plugins
+cvGetModuleInfo = cfunc('cvGetModuleInfo', _cxDLL, None,
+    ('module_name', c_char_p, 1), # const char* module_name
+    ('version', POINTER(c_char_p), 1), # const char** version
+    ('loaded_addon_plugins', POINTER(c_char_p), 1), # const char** loaded_addon_plugins 
+)
+cvGetModuleInfo.__doc__ = """void cvGetModuleInfo(const char* module_name, const char** version, const char** loaded_addon_plugins)
+
+Retrieves information about the registered module(s) and plugins
+"""
+
+# Switches between optimized/non-optimized modes
+cvUseOptimized = cfunc('cvUseOptimized', _cxDLL, c_int,
+    ('on_off', c_int, 1), # int on_off 
+)
+cvUseOptimized.__doc__ = """int cvUseOptimized(int on_off)
+
+Switches between optimized/non-optimized modes
+"""
+   
     
-
-    
-    
-    
-    
+#-----------------------------------------------------------------------------
+# Multi-threading -- using OpenMP
+#-----------------------------------------------------------------------------
 
 
+# Returns the current number of threads used
+cvGetNumThreads = cfunc('cvGetNumThreads', _cxDLL, c_int,
+)
+cvGetNumThreads.__doc__ = """int cvGetNumThreads(void)
+
+Returns the current number of threads used
+"""
+
+# Sets the number of threads
+cvSetNumThreads = cfunc('cvSetNumThreads', _cxDLL, c_int,
+    ('threads', c_int, 1, 0), # int threads=0
+)
+cvSetNumThreads.__doc__ = """void cvSetNumThreads( int threads=0 )
+
+Sets the number of threads
+"""
+
+# Returns index of the current thread
+cvGetThreadNum = cfunc('cvGetThreadNum', _cxDLL, c_int,
+)
+cvGetThreadNum.__doc__ = """int cvGetThreadNum(void)
+
+Returns index of the current thread
+"""
 
 
+# --- 1 Operations on Arrays -------------------------------------------------
+
+# --- 1.1 Initialization -----------------------------------------------------
+
+# --- 1.2 Accessing Elements and sub-Arrays ----------------------------------
+
+# --- 1.3 Copying and Filling ------------------------------------------------
+
+# --- 1.4 Transforms and Permutations ----------------------------------------
+
+# --- 1.5 Arithmetic, Logic and Comparison -----------------------------------
+
+# --- 1.6 Statistics ---------------------------------------------------------
+
+# --- 1.7 Linear Algebra -----------------------------------------------------
+
+# --- 1.8 Math Functions -----------------------------------------------------
+
+# --- 1.9 Random Number Generation -------------------------------------------
+
+# --- 1.10 Discrete Transforms -----------------------------------------------
+
+# --- 2 Dynamic Structures ---------------------------------------------------
+
+# --- 2.1 Memory Storages ----------------------------------------------------
+
+# --- 2.2 Sequences ----------------------------------------------------------
+
+# --- 2.3 Sets ---------------------------------------------------------------
+
+# --- 2.4 Graphs -------------------------------------------------------------
+
+# --- 2.5 Trees --------------------------------------------------------------
+
+# --- 3 Drawing Functions ----------------------------------------------------
+
+# --- 3.1 Curves and Shapes --------------------------------------------------
+
+# --- 3.2 Text ---------------------------------------------------------------
+
+# --- 3.3 Point Sets and Contours --------------------------------------------
+
+# --- 4 Data Persistence and RTTI --------------------------------------------
+
+# --- 4.1 File Storage -------------------------------------------------------
+
+# --- 4.2 Writing Data -------------------------------------------------------
+
+# --- 4.3 Reading Data -------------------------------------------------------
+
+# --- 4.4 RTTI and Generic Functions -----------------------------------------
+
+# --- 5 Miscellaneous Functions ----------------------------------------------
+
+# --- 6 Error Handling and System Functions ----------------------------------
+
+# --- 6.1 Error Handling -----------------------------------------------------
+
+# --- 6.2 System and Utility Functions ---------------------------------------
 
 
+#=============================================================================
+# cv/cvtypes.h
+#=============================================================================
 
-# CvCapture
-class CvCapture(_Structure): # forward declaration
-    pass
-
-CvCaptureCloseFunc = CFUNCTYPE(None, POINTER(CvCapture))
-CvCaptureGrabFrameFunc = CFUNCTYPE(c_int, POINTER(CvCapture))
-CvCaptureRetrieveFrameFunc = CFUNCTYPE(POINTER(IplImage), POINTER(CvCapture))
-CvCaptureGetPropertyFunc = CFUNCTYPE(c_double, POINTER(CvCapture), c_int)
-CvCaptureSetPropertyFunc = CFUNCTYPE(c_int, POINTER(CvCapture), c_int, c_double)
-CvCaptureGetDescriptionFunc = CFUNCTYPE(c_char_p, POINTER(CvCapture))
-
-class CvCaptureVTable(_Structure):
-    _fields_ = [
-        ('count', c_int),
-        ('close', CvCaptureCloseFunc),
-        ('grab_frame', CvCaptureGrabFrameFunc),
-        ('retrieve_frame', CvCaptureRetrieveFrameFunc),
-        ('get_property', CvCaptureGetPropertyFunc),
-        ('set_property', CvCaptureSetPropertyFunc),
-        ('get_description', CvCaptureGetDescriptionFunc),
-    ]
-
-CvCapture._fields_ = [('vtable', POINTER(CvCaptureVTable))]
-
-# Older definitions
-CvVect32f = c_float_p
-CvMatr32f = c_float_p
-CvVect64d = c_double_p
-CvMatr64d = c_double_p
-
-class CvMatrix3(_Structure):
-    _fields_ = [('m', (c_float*3)*3)]
 
 # spatial and central moments
 class CvMoments(_Structure):
@@ -5458,6 +5668,34 @@ class CvConnectedComp(_Structure):
                 ('rect', CvRect), # ROI of the component
                 ('contour', POINTER(CvSeq))] # optional component boundary
 
+#Viji Periapoilan 4/16/2007 (start)
+#Added constants for contour retrieval mode - Apr 19th
+CV_RETR_EXTERNAL = 0
+CV_RETR_LIST     = 1
+CV_RETR_CCOMP    = 2
+CV_RETR_TREE     = 3
+
+#Added constants for contour approximation method  - Apr 19th
+CV_CHAIN_CODE               = 0
+CV_CHAIN_APPROX_NONE        = 1
+CV_CHAIN_APPROX_SIMPLE      = 2
+CV_CHAIN_APPROX_TC89_L1     = 3
+CV_CHAIN_APPROX_TC89_KCOS   = 4
+CV_LINK_RUNS                = 5
+#Viji Periapoilan 4/16/2007(end)
+
+# this structure is supposed to be treated like a blackbox, OpenCV's design
+class CvContourScanner(_Structure):
+    _fields_ = []
+
+# Freeman chain reader state
+class CvChainPtReader(_Structure):
+    _fields_ = CV_SEQ_READER_FIELDS() + [
+        ('code', c_char),
+        ('pt', CvPoint),
+        ('deltas', ((c_char*2)*8)),
+    ]
+    
 # Contour tree header
 class CvContourTree(_Structure):
     _fields_ = CV_SEQUENCE_FIELDS() + [
@@ -5474,7 +5712,6 @@ class CvConvexityDefect(_Structure):
         ('depth', c_float), # distance between the farthest point and the convex hull
     ]
 
-    
 # Data structures and related enumerations for Planar Subdivisions
 CvSubdiv2DEdge = size_t
 
@@ -5543,6 +5780,21 @@ CV_DIST_HUBER   = 7   # distance = |x|<c ? x^2/2 : c(|x|-c/2), c=1.345
 
 CvFilter = c_int
 CV_GAUSSIAN_5x5 = 7
+
+# Older definitions
+CvVect32f = c_float_p
+CvMatr32f = c_float_p
+CvVect64d = c_double_p
+CvMatr64d = c_double_p
+
+class CvMatrix3(_Structure):
+    _fields_ = [('m', (c_float*3)*3)]
+
+# Computes "minimal work" distance between two weighted point configurations
+CvDistanceFunction = CFUNCTYPE(c_float, # float
+    c_void_p, # const float* f1
+    c_void_p, # const float* f2
+    c_void_p) # void* userdata
 
 # CvRandState
 class CvRandState(_Structure):
@@ -5669,6 +5921,57 @@ class CvAvgComp(_Structure):
     ]
 
 
+#=============================================================================
+# cv/cv.h
+#=============================================================================
+
+
+
+    
+
+
+# here, start from here
+
+
+    
+    
+
+    
+    
+    
+    
+
+
+
+
+
+
+
+# CvCapture
+class CvCapture(_Structure): # forward declaration
+    pass
+
+CvCaptureCloseFunc = CFUNCTYPE(None, POINTER(CvCapture))
+CvCaptureGrabFrameFunc = CFUNCTYPE(c_int, POINTER(CvCapture))
+CvCaptureRetrieveFrameFunc = CFUNCTYPE(POINTER(IplImage), POINTER(CvCapture))
+CvCaptureGetPropertyFunc = CFUNCTYPE(c_double, POINTER(CvCapture), c_int)
+CvCaptureSetPropertyFunc = CFUNCTYPE(c_int, POINTER(CvCapture), c_int, c_double)
+CvCaptureGetDescriptionFunc = CFUNCTYPE(c_char_p, POINTER(CvCapture))
+
+class CvCaptureVTable(_Structure):
+    _fields_ = [
+        ('count', c_int),
+        ('close', CvCaptureCloseFunc),
+        ('grab_frame', CvCaptureGrabFrameFunc),
+        ('retrieve_frame', CvCaptureRetrieveFrameFunc),
+        ('get_property', CvCaptureGetPropertyFunc),
+        ('set_property', CvCaptureSetPropertyFunc),
+        ('get_description', CvCaptureGetDescriptionFunc),
+    ]
+
+CvCapture._fields_ = [('vtable', POINTER(CvCaptureVTable))]
+
+
     
 #=============================================================================
 # End of modification + addition by Minh-Tri Pham
@@ -5676,184 +5979,12 @@ class CvAvgComp(_Structure):
 
 
 # not implemented yet
-class CvContourScanner(_Structure):
-    _fields_ = []
-
 class CvPOSITObject(_Structure):
     _fields_ = []
 
 class CvVideoWriter(_Structure):
     _fields_ = []
 
-class CvModuleInfo(_Structure):
-    _fields_ = []
-
-class CvChainPtReader(_Structure):
-    _fields_ = []
-    
-
-# --- 1 Operations on Arrays -------------------------------------------------
-
-# --- 1.1 Initialization -----------------------------------------------------
-
-# --- 1.2 Accessing Elements and sub-Arrays ----------------------------------
-
-# --- 1.3 Copying and Filling ------------------------------------------------
-
-# --- 1.4 Transforms and Permutations ----------------------------------------
-
-# --- 1.5 Arithmetic, Logic and Comparison -----------------------------------
-
-# --- 1.6 Statistics ---------------------------------------------------------
-
-# --- 1.7 Linear Algebra -----------------------------------------------------
-
-# --- 1.8 Math Functions -----------------------------------------------------
-
-# --- 1.9 Random Number Generation -------------------------------------------
-
-# --- 1.10 Discrete Transforms -----------------------------------------------
-
-# --- 2 Dynamic Structures ---------------------------------------------------
-
-# --- 2.1 Memory Storages ----------------------------------------------------
-
-# --- 2.2 Sequences ----------------------------------------------------------
-
-# --- 2.3 Sets ---------------------------------------------------------------
-
-# --- 2.4 Graphs -------------------------------------------------------------
-
-# --- 2.5 Trees --------------------------------------------------------------
-
-# --- 3 Drawing Functions ----------------------------------------------------
-
-# --- 3.1 Curves and Shapes --------------------------------------------------
-
-# --- 3.2 Text ---------------------------------------------------------------
-
-# --- 3.3 Point Sets and Contours --------------------------------------------
-
-# --- 4 Data Persistence and RTTI --------------------------------------------
-
-# --- 4.1 File Storage -------------------------------------------------------
-
-# --- 4.2 Writing Data -------------------------------------------------------
-
-# --- 4.3 Reading Data -------------------------------------------------------
-
-# --- 4.4 RTTI and Generic Functions -----------------------------------------
-
-# --- 5 Miscellaneous Functions ----------------------------------------------
-
-# --- 6 Error Handling and System Functions ----------------------------------
-
-# --- 6.1 Error Handling -----------------------------------------------------
-
-# Returns the current error status
-cvGetErrStatus = cfunc('cvGetErrStatus', _cxDLL, c_int,
-)
-
-# Sets the error status
-cvSetErrStatus = cfunc('cvSetErrStatus', _cxDLL, None,
-    ('status', c_int, 1), # int status 
-)
-
-# Returns the current error mode
-cvGetErrMode = cfunc('cvGetErrMode', _cxDLL, c_int,
-)
-
-# Sets the error mode
-CV_ErrModeLeaf = 0
-CV_ErrModeParent = 1
-CV_ErrModeSilent = 2
-
-cvSetErrMode = cfunc('cvSetErrMode', _cxDLL, c_int,
-    ('mode', c_int, 1), # int mode 
-)
-
-# Raises an error
-cvError = cfunc('cvError', _cxDLL, c_int,
-    ('status', c_int, 1), # int status
-    ('func_name', c_char_p, 1), # const char* func_name
-    ('err_msg', c_char_p, 1), # const char* err_msg
-    ('file_name', c_char_p, 1), # const char* file_name
-    ('line', c_int, 1), # int line 
-)
-
-# Returns textual description of error status code
-cvErrorStr = cfunc('cvErrorStr', _cxDLL, c_char_p,
-    ('status', c_int, 1), # int status 
-)
-
-# Sets a new error handler
-CvErrorCallback = CFUNCTYPE(c_int, # int
-    c_int, # int status
-    c_char_p, # const char* func_name
-    c_char_p, # const char* err_msg
-    c_char_p, # const char* file_name
-    c_int) # int line
-
-cvRedirectError = cfunc('cvRedirectError', _cxDLL, CvErrorCallback,
-    ('error_handler', CvErrorCallback, 1), # CvErrorCallback error_handler
-    ('userdata', c_void_p, 1, None), # void* userdata
-    ('prev_userdata', POINTER(c_void_p), 1, None), # void** prev_userdata
-)
-
-# Provide standard error handling
-cvNulDevReport = cfunc('cvNulDevReport', _cxDLL, c_int,
-    ('status', c_int, 1), # int status
-    ('func_name', c_char_p, 1), # const char* func_name
-    ('err_msg', c_char_p, 1), # const char* err_msg
-    ('file_name', c_char_p, 1), # const char* file_name
-    ('line', c_int, 1), # int line
-    ('userdata', c_void_p, 1), # void* userdata 
-)
-
-cvStdErrReport = cfunc('cvStdErrReport', _cxDLL, c_int,
-    ('status', c_int, 1), # int status
-    ('func_name', c_char_p, 1), # const char* func_name
-    ('err_msg', c_char_p, 1), # const char* err_msg
-    ('file_name', c_char_p, 1), # const char* file_name
-    ('line', c_int, 1), # int line
-    ('userdata', c_void_p, 1), # void* userdata 
-)
-
-cvGuiBoxReport = cfunc('cvGuiBoxReport', _cxDLL, c_int,
-    ('status', c_int, 1), # int status
-    ('func_name', c_char_p, 1), # const char* func_name
-    ('err_msg', c_char_p, 1), # const char* err_msg
-    ('file_name', c_char_p, 1), # const char* file_name
-    ('line', c_int, 1), # int line
-    ('userdata', c_void_p, 1), # void* userdata 
-)
-
-# --- 6.2 System and Utility Functions ---------------------------------------
-
-# Returns number of tics
-cvGetTickCount = cfunc('cvGetTickCount', _cxDLL, c_longlong,
-)
-
-# Returns number of tics per microsecond
-cvGetTickFrequency = cfunc('cvGetTickFrequency', _cxDLL, c_double,
-)
-
-# Registers another module
-cvRegisterModule = cfunc('cvRegisterModule', _cxDLL, c_int,
-    ('module_info', POINTER(CvModuleInfo), 1), # const CvModuleInfo* module_info 
-)
-
-# Retrieves information about the registered module(s) and plugins
-cvGetModuleInfo = cfunc('cvGetModuleInfo', _cxDLL, None,
-    ('module_name', c_char_p, 1), # const char* module_name
-    ('version', POINTER(c_char_p), 1), # const char** version
-    ('loaded_addon_plugins', POINTER(c_char_p), 1), # const char** loaded_addon_plugins 
-)
-
-# Switches between optimized/non-optimized modes
-cvUseOptimized = cfunc('cvUseOptimized', _cxDLL, c_int,
-    ('on_off', c_int, 1), # int on_off 
-)
 
 # --- 1 Image Processing -----------------------------------------------------
 
@@ -6519,12 +6650,6 @@ cvMatchShapes = cfunc('cvMatchShapes', _cvDLL, c_double,
     ('method', c_int, 1), # int method
     ('parameter', c_double, 1, 0), # double parameter
 )
-
-# Computes "minimal work" distance between two weighted point configurations
-CvDistanceFunction = CFUNCTYPE(c_float, # float
-    c_void_p, # const float* f1
-    c_void_p, # const float* f2
-    c_void_p) # void* userdata
 
 cvCalcEMD2 = cfunc('cvCalcEMD2', _cvDLL, c_float,
     ('signature1', CvArr_p, 1), # const CvArr* signature1
@@ -7484,61 +7609,6 @@ except ImportError:
     pass
 
 # --- Dokumentationsstrings --------------------------------------------------
-
-cvGetErrStatus.__doc__ = """int cvGetErrStatus(void)
-
-Returns the current error status
-"""
-
-cvSetErrStatus.__doc__ = """void cvSetErrStatus(int status)
-
-Sets the error status
-"""
-
-cvGetErrMode.__doc__ = """int cvGetErrMode(void)
-
-Returns the current error mode
-"""
-
-cvError.__doc__ = """int cvError(int status, const char* func_name, const char* err_msg, const char* file_name, int line)
-
-Raises an error
-"""
-
-cvErrorStr.__doc__ = """const char* cvErrorStr(int status)
-
-Returns textual description of error status code
-"""
-
-cvNulDevReport.__doc__ = """int cvNulDevReport(int status, const char* func_name, const char* err_msg, const char* file_name, int line, void* userdata)
-
-Provide standard error handling
-"""
-
-cvGetTickCount.__doc__ = """int64 cvGetTickCount(void)
-
-Returns number of tics
-"""
-
-cvGetTickFrequency.__doc__ = """double cvGetTickFrequency(void)
-
-Returns number of tics per microsecond
-"""
-
-cvRegisterModule.__doc__ = """int cvRegisterModule(const CvModuleInfo* module_info)
-
-Registers another module
-"""
-
-cvGetModuleInfo.__doc__ = """void cvGetModuleInfo(const char* module_name, const char** version, const char** loaded_addon_plugins)
-
-Retrieves information about the registered module(s) and plugins
-"""
-
-cvUseOptimized.__doc__ = """int cvUseOptimized(int on_off)
-
-Switches between optimized/non-optimized modes
-"""
 
 cvSobel.__doc__ = """void cvSobel(const CvArr* src, CvArr* dst, int xorder, int yorder, int aperture_size=3)
 
