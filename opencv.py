@@ -458,18 +458,6 @@ CV_MAX_ARR = 10
 CV_NO_DEPTH_CHECK = 1
 CV_NO_CN_CHECK = 2
 CV_NO_SIZE_CHECK = 4
-CV_FILLED = -1
-CV_AA = 16
-CV_FONT_HERSHEY_SIMPLEX = 0
-CV_FONT_HERSHEY_PLAIN = 1
-CV_FONT_HERSHEY_DUPLEX = 2
-CV_FONT_HERSHEY_COMPLEX = 3
-CV_FONT_HERSHEY_TRIPLEX = 4
-CV_FONT_HERSHEY_COMPLEX_SMALL = 5
-CV_FONT_HERSHEY_SCRIPT_SIMPLEX = 6
-CV_FONT_HERSHEY_SCRIPT_COMPLEX = 7
-CV_FONT_ITALIC = 16
-CV_FONT_VECTOR0 = CV_FONT_HERSHEY_SIMPLEX
 CV_ErrModeLeaf = 0     # print error and exit program
 CV_ErrModeParent = 1     # print error and continue
 CV_ErrModeSilent = 2     # don't print and continue
@@ -520,9 +508,6 @@ CV_CHAIN_APPROX_TC89_L1     = 3
 CV_CHAIN_APPROX_TC89_KCOS   = 4
 CV_LINK_RUNS                = 5
 #Viji Periapoilan 4/16/2007(end)
-
-CV_FILLED = -1
-CV_AA = 16
 
 CV_WINDOW_AUTOSIZE = 1
 
@@ -2066,6 +2051,8 @@ cvGetSubRect.__doc__ = """CvMat* cvGetSubRect(const CvArr* arr, CvMat* submat, C
 Returns matrix header corresponding to the rectangular sub-array of input image or matrix
 """
 
+cvGetSubArr = cvGetSubRect
+
 # Returns array row or row span
 cvGetRows = cfunc('cvGetRows', _cxDLL, POINTER(CvMat),
     ('arr', CvArr_p, 1), # const CvArr* arr
@@ -3262,6 +3249,8 @@ cvTransform.__doc__ = """void cvTransform(const CvArr* src, CvArr* dst, const Cv
 
 Performs matrix transform of every array element
 """
+
+cvMatMulAddS = cvTransform
 
 # Performs perspective matrix transform of vector array
 cvPerspectiveTransform = cfunc('cvPerspectiveTransform', _cxDLL, None,
@@ -4508,11 +4497,358 @@ cvNextGraphItem.__doc__ = """int cvNextGraphItem(CvGraphScanner* scanner)
 Makes one or more steps of the graph traversal procedure
 """
 
+    
+#-----------------------------------------------------------------------------
+# Dynamic Data Structure: Trees
+#-----------------------------------------------------------------------------
 
 
+class CvTreeNodeIterator(_Structure):
+    _fields_ = [
+        ('node', c_void_p),
+        ('level', c_int),
+        ('max_level', c_int),
+    ]
+
+# Initializes tree node iterator
+cvInitTreeNodeIterator = cfunc('cvInitTreeNodeIterator', _cxDLL, None,
+    ('tree_iterator', POINTER(CvTreeNodeIterator), 1), # CvTreeNodeIterator* tree_iterator
+    ('first', c_void_p, 1), # const void* first
+    ('max_level', c_int, 1), # int max_level 
+)
+cvInitTreeNodeIterator.__doc__ = """void cvInitTreeNodeIterator(CvTreeNodeIterator* tree_iterator, const void* first, int max_level)
+
+Initializes tree node iterator
+"""
+
+# Returns the currently observed node and moves iterator toward the next node
+cvNextTreeNode = cfunc('cvNextTreeNode', _cxDLL, c_void_p,
+    ('tree_iterator', POINTER(CvTreeNodeIterator), 1), # CvTreeNodeIterator* tree_iterator 
+)
+cvNextTreeNode.__doc__ = """void* cvNextTreeNode(CvTreeNodeIterator* tree_iterator)
+
+Returns the currently observed node and moves iterator toward the next node
+"""
+
+# Returns the currently observed node and moves iterator toward the previous node
+cvPrevTreeNode = cfunc('cvPrevTreeNode', _cxDLL, c_void_p,
+    ('tree_iterator', POINTER(CvTreeNodeIterator), 1), # CvTreeNodeIterator* tree_iterator 
+)
+cvPrevTreeNode.__doc__ = """void* cvPrevTreeNode(CvTreeNodeIterator* tree_iterator)
+
+Returns the currently observed node and moves iterator toward the previous node
+"""
+
+# Gathers all node pointers to the single sequence
+cvTreeToNodeSeq = cfunc('cvTreeToNodeSeq', _cxDLL, POINTER(CvSeq),
+    ('first', c_void_p, 1), # const void* first
+    ('header_size', c_int, 1), # int header_size
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+)
+cvTreeToNodeSeq.__doc__ = """CvSeq* cvTreeToNodeSeq(const void* first, int header_size, CvMemStorage* storage)
+
+Gathers all node pointers to the single sequence
+"""
+
+# Adds new node to the tree
+cvInsertNodeIntoTree = cfunc('cvInsertNodeIntoTree', _cxDLL, None,
+    ('node', c_void_p, 1), # void* node
+    ('parent', c_void_p, 1), # void* parent
+    ('frame', c_void_p, 1), # void* frame 
+)
+cvInsertNodeIntoTree.__doc__ = """void cvInsertNodeIntoTree(void* node, void* parent, void* frame)
+
+Adds new node to the tree
+"""
+
+# Removes node from tree
+cvRemoveNodeFromTree = cfunc('cvRemoveNodeFromTree', _cxDLL, None,
+    ('node', c_void_p, 1), # void* node
+    ('frame', c_void_p, 1), # void* frame 
+)
+cvRemoveNodeFromTree.__doc__ = """void cvRemoveNodeFromTree(void* node, void* frame)
+
+Removes node from tree
+"""
+
+    
+#-----------------------------------------------------------------------------
+# Drawing Functions: Curves and Shapes
+#-----------------------------------------------------------------------------
 
 
+CV_FILLED = -1
+CV_AA = 16
 
+# Constructs a color value
+def CV_RGB(r, g, b):
+    return CvScalar(b, g, r)
+
+# Draws a line segment connecting two points
+cvLine = cfunc('cvLine', _cxDLL, None,
+    ('img', CvArr_p, 1), # CvArr* img
+    ('pt1', CvPoint, 1), # CvPoint pt1
+    ('pt2', CvPoint, 1), # CvPoint pt2
+    ('color', CvScalar, 1), # CvScalar color
+    ('thickness', c_int, 1, 1), # int thickness
+    ('line_type', c_int, 1, 8), # int line_type
+    ('shift', c_int, 1, 0), # int shift
+)
+cvLine.__doc__ = """void cvLine(CvArr* img, CvPoint pt1, CvPoint pt2, CvScalar color, int thickness=1, int line_type=8, int shift=0)
+
+Draws a line segment connecting two points
+"""
+
+# Draws simple, thick or filled rectangle
+cvRectangle = cfunc('cvRectangle', _cxDLL, None,
+    ('img', CvArr_p, 1), # CvArr* img
+    ('pt1', CvPoint, 1), # CvPoint pt1
+    ('pt2', CvPoint, 1), # CvPoint pt2
+    ('color', CvScalar, 1), # CvScalar color
+    ('thickness', c_int, 1, 1), # int thickness
+    ('line_type', c_int, 1, 8), # int line_type
+    ('shift', c_int, 1, 0), # int shift
+)
+cvRectangle.__doc__ = """void cvRectangle(CvArr* img, CvPoint pt1, CvPoint pt2, CvScalar color,                  int thickness=1, int line_type=8, int shift=0)
+
+Draws simple, thick or filled rectangle
+"""
+
+# Draws a circle
+cvCircle = cfunc('cvCircle', _cxDLL, None,
+    ('img', CvArr_p, 1), # CvArr* img
+    ('center', CvPoint, 1), # CvPoint center
+    ('radius', c_int, 1), # int radius
+    ('color', CvScalar, 1), # CvScalar color
+    ('thickness', c_int, 1, 1), # int thickness
+    ('line_type', c_int, 1, 8), # int line_type
+    ('shift', c_int, 1, 0), # int shift
+)
+cvCircle.__doc__ = """void cvCircle(CvArr* img, CvPoint center, int radius, CvScalar color, int thickness=1, int line_type=8, int shift=0)
+
+Draws a circle
+"""
+
+# Draws simple or thick elliptic arc or fills ellipse sector
+cvEllipse = cfunc('cvEllipse', _cxDLL, None,
+    ('img', CvArr_p, 1), # CvArr* img
+    ('center', CvPoint, 1), # CvPoint center
+    ('axes', CvSize, 1), # CvSize axes
+    ('angle', c_double, 1), # double angle
+    ('start_angle', c_double, 1), # double start_angle
+    ('end_angle', c_double, 1), # double end_angle
+    ('color', CvScalar, 1), # CvScalar color
+    ('thickness', c_int, 1, 1), # int thickness
+    ('line_type', c_int, 1, 8), # int line_type
+    ('shift', c_int, 1, 0), # int shift
+)
+cvEllipse.__doc__ = """void cvEllipse(CvArr* img, CvPoint center, CvSize axes, double angle, double start_angle, double end_angle, CvScalar color, int thickness=1, int line_type=8, int shift=0)
+
+Draws simple or thick elliptic arc or fills ellipse sector
+"""
+
+def cvEllipseBox(img, box, color, thickness=1, line_type=8, shift=0):
+    """void cvEllipseBox( CvArr* img, CvBox2D box, CvScalar color, int thickness=1, int line_type=8, int shift=0 )
+    
+    Draws simple or thick elliptic arc or fills ellipse sector
+    """
+    cvEllipse(img, CvPoint(int(box.center.x), int(box.center.y)),
+              CvSize(int(box.size.height*0.5),int(box.size.width*0.5)),
+              box.angle, 0, 360, color, thickness, line_type, shift)
+
+
+# Fills polygons interior
+cvFillPoly = cfunc('cvFillPoly', _cxDLL, None,
+    ('img', CvArr_p, 1), # CvArr* img
+    ('pts', POINTER(POINTER(CvPoint)), 1), # CvPoint** pts
+    ('npts', POINTER(c_int), 1), # int* npts
+    ('contours', c_int, 1), # int contours
+    ('color', CvScalar, 1), # CvScalar color
+    ('line_type', c_int, 1, 8), # int line_type
+    ('shift', c_int, 1, 0), # int shift
+)
+cvFillPoly.__doc__ = """void cvFillPoly(CvArr* img, CvPoint** pts, int* npts, int contours, CvScalar color, int line_type=8, int shift=0)
+
+Fills polygons interior
+"""
+
+# Fills convex polygon
+cvFillConvexPoly = cfunc('cvFillConvexPoly', _cxDLL, None,
+    ('img', CvArr_p, 1), # CvArr* img
+    ('pts', POINTER(CvPoint), 1), # CvPoint* pts
+    ('npts', c_int, 1), # int npts
+    ('color', CvScalar, 1), # CvScalar color
+    ('line_type', c_int, 1, 8), # int line_type
+    ('shift', c_int, 1, 0), # int shift
+)
+cvFillConvexPoly.__doc__ = """void cvFillConvexPoly(CvArr* img, CvPoint* pts, int npts, CvScalar color, int line_type=8, int shift=0)
+
+Fills convex polygon
+"""
+
+# Draws simple or thick polygons
+cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,
+    ('img', CvArr_p, 1), # CvArr* img
+    ('pts', POINTER(POINTER(CvPoint)), 1), # CvPoint** pts
+    ('npts', POINTER(c_int), 1), # int* npts
+    ('contours', c_int, 1), # int contours
+    ('is_closed', c_int, 1), # int is_closed
+    ('color', CvScalar, 1), # CvScalar color
+    ('thickness', c_int, 1, 1), # int thickness
+    ('line_type', c_int, 1, 8), # int line_type
+    ('shift', c_int, 1, 0), # int shift
+)
+cvPolyLine.__doc__ = """void cvPolyLine(CvArr* img, CvPoint** pts, int* npts, int contours, int is_closed, CvScalar color, int thickness=1, int line_type=8, int shift=0)
+
+Draws simple or thick polygons
+"""
+
+cvDrawRect = cvRectangle
+cvDrawLine = cvLine
+cvDrawCircle = cvCircle
+cvDrawEllipse = cvEllipse
+cvDrawPolyLine = cvPolyLine
+
+    
+#-----------------------------------------------------------------------------
+# Drawing Functions: Text
+#-----------------------------------------------------------------------------
+
+
+CV_FONT_HERSHEY_SIMPLEX = 0
+CV_FONT_HERSHEY_PLAIN = 1
+CV_FONT_HERSHEY_DUPLEX = 2
+CV_FONT_HERSHEY_COMPLEX = 3
+CV_FONT_HERSHEY_TRIPLEX = 4
+CV_FONT_HERSHEY_COMPLEX_SMALL = 5
+CV_FONT_HERSHEY_SCRIPT_SIMPLEX = 6
+CV_FONT_HERSHEY_SCRIPT_COMPLEX = 7
+CV_FONT_ITALIC = 16
+CV_FONT_VECTOR0 = CV_FONT_HERSHEY_SIMPLEX
+
+# Font
+class CvFont(_Structure):
+    _fields_ = [("font_face", c_int),
+                ("ascii", c_int_p),
+                ("greek", c_int_p),
+                ("cyrillic", c_int_p),
+                ("hscale", c_float),
+                ("vscale", c_float),
+                ("shear", c_float),
+                ("thickness", c_int),
+                ("dx", c_float),
+                ("line_type", c_int)]
+
+# Initializes font structure
+cvInitFont = cfunc('cvInitFont', _cxDLL, None,
+    ('font', POINTER(CvFont), 1), # CvFont* font
+    ('font_face', c_int, 1), # int font_face
+    ('hscale', c_double, 1), # double hscale
+    ('vscale', c_double, 1), # double vscale
+    ('shear', c_double, 1, 0), # double shear
+    ('thickness', c_int, 1, 1), # int thickness
+    ('line_type', c_int, 1, 8), # int line_type
+)
+cvInitFont.__doc__ = """void cvInitFont(CvFont* font, int font_face, double hscale, double vscale, double shear=0, int thickness=1, int line_type=8)
+
+Initializes font structure
+"""
+
+def cvFont(scale, thickness=1):
+    """CvFont cvFont( double scale, int thickness=1)
+    
+    Returns a CV_FONT_HERSHEY_PLAIN font with given scale and thickness
+    """
+    font = CvFont()
+    cvInitFont( byref(font), CV_FONT_HERSHEY_PLAIN, scale, scale, 0, thickness, CV_AA )
+    return font
+                
+# Draws text string
+cvPutText = cfunc('cvPutText', _cxDLL, None,
+    ('img', CvArr_p, 1), # CvArr* img
+    ('text', c_char_p, 1), # const char* text
+    ('org', CvPoint, 1), # CvPoint org
+    ('font', POINTER(CvFont), 1), # const CvFont* font
+    ('color', CvScalar, 1), # CvScalar color 
+)
+cvPutText.__doc__ = """void cvPutText(CvArr* img, const char* text, CvPoint org, const CvFont* font, CvScalar color)
+
+Draws text string
+"""
+
+# Retrieves width and height of text string
+cvGetTextSize = cfunc('cvGetTextSize', _cxDLL, None,
+    ('text_string', c_char_p, 1), # const char* text_string
+    ('font', POINTER(CvFont), 1), # const CvFont* font
+    ('text_size', POINTER(CvSize), 1), # CvSize* text_size
+    ('baseline', POINTER(c_int), 1), # int* baseline 
+)
+cvGetTextSize.__doc__ = """void cvGetTextSize(const char* text_string, const CvFont* font, CvSize* text_size, int* baseline)
+
+Retrieves width and height of text string
+"""
+
+    
+#-----------------------------------------------------------------------------
+# Drawing Functions: Point Sets and Contours
+#-----------------------------------------------------------------------------
+
+
+# Draws contour outlines or interiors in the image
+cvDrawContours = cfunc('cvDrawContours', _cxDLL, None,
+    ('img', CvArr_p, 1), # CvArr* img
+    ('contour', c_void_p, 1), # CvSeq* contour
+    ('external_color', CvScalar, 1), # CvScalar external_color
+    ('hole_color', CvScalar, 1), # CvScalar hole_color
+    ('max_level', c_int, 1), # int max_level
+    ('thickness', c_int, 1, 1), # int thickness
+    ('line_type', c_int, 1, 8), # int line_type
+    ('offset', CvPoint, 1), # CvPoint offset      
+)
+cvDrawContours.__doc__ = """void cvDrawContours(CvArr* img, CvSeq* contour, CvScalar external_color, CvScalar hole_color, int max_level, int thickness=1, int line_type=8)
+
+Draws contour outlines or interiors in the image
+"""
+
+# Initializes line iterator
+cvInitLineIterator = cfunc('cvInitLineIterator', _cxDLL, c_int,
+    ('image', CvArr_p, 1), # const CvArr* image
+    ('pt1', CvPoint, 1), # CvPoint pt1
+    ('pt2', CvPoint, 1), # CvPoint pt2
+    ('line_iterator', POINTER(CvLineIterator), 1), # CvLineIterator* line_iterator
+    ('connectivity', c_int, 1, 8), # int connectivity
+    ('left_to_right', c_int, 1, 0), # int left_to_right
+)
+cvInitLineIterator.__doc__ = """int cvInitLineIterator(const CvArr* image, CvPoint pt1, CvPoint pt2, CvLineIterator* line_iterator, int connectivity=8, int left_to_right=0)
+
+Initializes line iterator
+"""
+
+# Clips the line against the image rectangle
+cvClipLine = cfunc('cvClipLine', _cxDLL, c_int,
+    ('img_size', CvSize, 1), # CvSize img_size
+    ('pt1', POINTER(CvPoint), 1), # CvPoint* pt1
+    ('pt2', POINTER(CvPoint), 1), # CvPoint* pt2 
+)
+cvClipLine.__doc__ = """int cvClipLine(CvSize img_size, CvPoint* pt1, CvPoint* pt2)
+
+Clips the line against the image rectangle
+"""
+
+# Approximates elliptic arc with polyline
+cvEllipse2Poly = cfunc('cvEllipse2Poly', _cxDLL, c_int,
+    ('center', CvPoint, 1), # CvPoint center
+    ('axes', CvSize, 1), # CvSize axes
+    ('angle', c_int, 1), # int angle
+    ('arc_start', c_int, 1), # int arc_start
+    ('arc_end', c_int, 1), # int arc_end
+    ('pts', POINTER(CvPoint), 1), # CvPoint* pts
+    ('delta', c_int, 1), # int delta 
+)
+cvEllipse2Poly.__doc__ = """int cvEllipse2Poly(CvPoint center, CvSize axes, int angle, int arc_start, int arc_end, CvPoint* pts, int delta)
+
+Approximates elliptic arc with polyline
+"""
 
 
 
@@ -4536,20 +4872,6 @@ Makes one or more steps of the graph traversal procedure
 
 
 
-# Font
-class CvFont(_Structure):
-    _fields_ = [("font_face", c_int),
-                ("ascii", c_int_p),
-                ("greek", c_int_p),
-                ("cyrillic", c_int_p),
-                ("hscale", c_float),
-                ("vscale", c_float),
-                ("shear", c_float),
-                ("thickness", c_int),
-                ("dx", c_float),
-                ("line_type", c_int)]
-
-                
 # CvCapture
 class CvCapture(_Structure): # forward declaration
     pass
@@ -4859,9 +5181,6 @@ class CvPOSITObject(_Structure):
 class CvVideoWriter(_Structure):
     _fields_ = []
 
-class CvTreeNodeIterator(_Structure):
-    _fields_ = []
-
 class CvModuleInfo(_Structure):
     _fields_ = []
 
@@ -4903,214 +5222,13 @@ class CvChainPtReader(_Structure):
 
 # --- 2.5 Trees --------------------------------------------------------------
 
-# Initializes tree node iterator
-cvInitTreeNodeIterator = cfunc('cvInitTreeNodeIterator', _cxDLL, None,
-    ('tree_iterator', POINTER(CvTreeNodeIterator), 1), # CvTreeNodeIterator* tree_iterator
-    ('first', c_void_p, 1), # const void* first
-    ('max_level', c_int, 1), # int max_level 
-)
-
-# Returns the currently observed node and moves iterator toward the next node
-cvNextTreeNode = cfunc('cvNextTreeNode', _cxDLL, c_void_p,
-    ('tree_iterator', POINTER(CvTreeNodeIterator), 1), # CvTreeNodeIterator* tree_iterator 
-)
-
-# Returns the currently observed node and moves iterator toward the previous node
-cvPrevTreeNode = cfunc('cvPrevTreeNode', _cxDLL, c_void_p,
-    ('tree_iterator', POINTER(CvTreeNodeIterator), 1), # CvTreeNodeIterator* tree_iterator 
-)
-
-# Gathers all node pointers to the single sequence
-cvTreeToNodeSeq = cfunc('cvTreeToNodeSeq', _cxDLL, POINTER(CvSeq),
-    ('first', c_void_p, 1), # const void* first
-    ('header_size', c_int, 1), # int header_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
-)
-
-# Adds new node to the tree
-cvInsertNodeIntoTree = cfunc('cvInsertNodeIntoTree', _cxDLL, None,
-    ('node', c_void_p, 1), # void* node
-    ('parent', c_void_p, 1), # void* parent
-    ('frame', c_void_p, 1), # void* frame 
-)
-
-# Removes node from tree
-cvRemoveNodeFromTree = cfunc('cvRemoveNodeFromTree', _cxDLL, None,
-    ('node', c_void_p, 1), # void* node
-    ('frame', c_void_p, 1), # void* frame 
-)
-
 # --- 3 Drawing Functions ----------------------------------------------------
 
 # --- 3.1 Curves and Shapes --------------------------------------------------
 
-# Constructs a color value
-def CV_RGB(r, g, b):
-    result = CvScalar()
-    result.val[0] = b
-    result.val[1] = g
-    result.val[2] = r
-    return result
-
-# Draws a line segment connecting two points
-cvLine = cfunc('cvLine', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
-    ('pt1', CvPoint, 1), # CvPoint pt1
-    ('pt2', CvPoint, 1), # CvPoint pt2
-    ('color', CvScalar, 1), # CvScalar color
-    ('thickness', c_int, 1, 1), # int thickness
-    ('line_type', c_int, 1, 8), # int line_type
-    ('shift', c_int, 1, 0), # int shift
-)
-
-# Draws simple, thick or filled rectangle
-cvRectangle = cfunc('cvRectangle', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
-    ('pt1', CvPoint, 1), # CvPoint pt1
-    ('pt2', CvPoint, 1), # CvPoint pt2
-    ('color', CvScalar, 1), # CvScalar color
-    ('thickness', c_int, 1, 1), # int thickness
-    ('line_type', c_int, 1, 8), # int line_type
-    ('shift', c_int, 1, 0), # int shift
-)
-
-# Draws a circle
-cvCircle = cfunc('cvCircle', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
-    ('center', CvPoint, 1), # CvPoint center
-    ('radius', c_int, 1), # int radius
-    ('color', CvScalar, 1), # CvScalar color
-    ('thickness', c_int, 1, 1), # int thickness
-    ('line_type', c_int, 1, 8), # int line_type
-    ('shift', c_int, 1, 0), # int shift
-)
-
-# Draws simple or thick elliptic arc or fills ellipse sector
-cvEllipse = cfunc('cvEllipse', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
-    ('center', CvPoint, 1), # CvPoint center
-    ('axes', CvSize, 1), # CvSize axes
-    ('angle', c_double, 1), # double angle
-    ('start_angle', c_double, 1), # double start_angle
-    ('end_angle', c_double, 1), # double end_angle
-    ('color', CvScalar, 1), # CvScalar color
-    ('thickness', c_int, 1, 1), # int thickness
-    ('line_type', c_int, 1, 8), # int line_type
-    ('shift', c_int, 1, 0), # int shift
-)
-
-def cvEllipseBox(img, box, color, thickness=1, line_type=8, shift=0):
-    '''Draws simple or thick elliptic arc or fills ellipse sector'''
-    cvEllipse(img, CvPoint(int(box.center.x), int(box.center.y)),
-              CvSize(int(box.size.height*0.5),int(box.size.width*0.5)),
-              box.angle, 0, 360, color, thickness, line_type, shift)
-
-
-# Fills polygons interior
-cvFillPoly = cfunc('cvFillPoly', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
-    ('pts', POINTER(POINTER(CvPoint)), 1), # CvPoint** pts
-    ('npts', POINTER(c_int), 1), # int* npts
-    ('contours', c_int, 1), # int contours
-    ('color', CvScalar, 1), # CvScalar color
-    ('line_type', c_int, 1, 8), # int line_type
-    ('shift', c_int, 1, 0), # int shift
-)
-
-# Fills convex polygon
-cvFillConvexPoly = cfunc('cvFillConvexPoly', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
-    ('pts', POINTER(CvPoint), 1), # CvPoint* pts
-    ('npts', c_int, 1), # int npts
-    ('color', CvScalar, 1), # CvScalar color
-    ('line_type', c_int, 1, 8), # int line_type
-    ('shift', c_int, 1, 0), # int shift
-)
-
-# Draws simple or thick polygons
-cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
-    ('pts', POINTER(POINTER(CvPoint)), 1), # CvPoint** pts
-    ('npts', POINTER(c_int), 1), # int* npts
-    ('contours', c_int, 1), # int contours
-    ('is_closed', c_int, 1), # int is_closed
-    ('color', CvScalar, 1), # CvScalar color
-    ('thickness', c_int, 1, 1), # int thickness
-    ('line_type', c_int, 1, 8), # int line_type
-    ('shift', c_int, 1, 0), # int shift
-)
-
 # --- 3.2 Text ---------------------------------------------------------------
 
-# Initializes font structure
-cvInitFont = cfunc('cvInitFont', _cxDLL, None,
-    ('font', POINTER(CvFont), 1), # CvFont* font
-    ('font_face', c_int, 1), # int font_face
-    ('hscale', c_double, 1), # double hscale
-    ('vscale', c_double, 1), # double vscale
-    ('shear', c_double, 1, 0), # double shear
-    ('thickness', c_int, 1, 1), # int thickness
-    ('line_type', c_int, 1, 8), # int line_type
-)
-
-# Draws text string
-cvPutText = cfunc('cvPutText', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
-    ('text', c_char_p, 1), # const char* text
-    ('org', CvPoint, 1), # CvPoint org
-    ('font', POINTER(CvFont), 1), # const CvFont* font
-    ('color', CvScalar, 1), # CvScalar color 
-)
-
-# Retrieves width and height of text string
-cvGetTextSize = cfunc('cvGetTextSize', _cxDLL, None,
-    ('text_string', c_char_p, 1), # const char* text_string
-    ('font', POINTER(CvFont), 1), # const CvFont* font
-    ('text_size', POINTER(CvSize), 1), # CvSize* text_size
-    ('baseline', POINTER(c_int), 1), # int* baseline 
-)
-
 # --- 3.3 Point Sets and Contours --------------------------------------------
-
-# Draws contour outlines or interiors in the image
-cvDrawContours = cfunc('cvDrawContours', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
-    ('contour', c_void_p, 1), # CvSeq* contour
-    ('external_color', CvScalar, 1), # CvScalar external_color
-    ('hole_color', CvScalar, 1), # CvScalar hole_color
-    ('max_level', c_int, 1), # int max_level
-    ('thickness', c_int, 1, 1), # int thickness
-    ('line_type', c_int, 1, 8), # int line_type
-    ('offset', CvPoint, 1), # CvPoint offset      
-)
-
-# Initializes line iterator
-cvInitLineIterator = cfunc('cvInitLineIterator', _cxDLL, c_int,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('pt1', CvPoint, 1), # CvPoint pt1
-    ('pt2', CvPoint, 1), # CvPoint pt2
-    ('line_iterator', POINTER(CvLineIterator), 1), # CvLineIterator* line_iterator
-    ('connectivity', c_int, 1, 8), # int connectivity
-    ('left_to_right', c_int, 1, 0), # int left_to_right
-)
-
-# Clips the line against the image rectangle
-cvClipLine = cfunc('cvClipLine', _cxDLL, c_int,
-    ('img_size', CvSize, 1), # CvSize img_size
-    ('pt1', POINTER(CvPoint), 1), # CvPoint* pt1
-    ('pt2', POINTER(CvPoint), 1), # CvPoint* pt2 
-)
-
-# Approximates elliptic arc with polyline
-cvEllipse2Poly = cfunc('cvEllipse2Poly', _cxDLL, c_int,
-    ('center', CvPoint, 1), # CvPoint center
-    ('axes', CvSize, 1), # CvSize axes
-    ('angle', c_int, 1), # int angle
-    ('arc_start', c_int, 1), # int arc_start
-    ('arc_end', c_int, 1), # int arc_end
-    ('pts', POINTER(CvPoint), 1), # CvPoint* pts
-    ('delta', c_int, 1), # int delta 
-)
 
 # --- 4 Data Persistence and RTTI --------------------------------------------
 
@@ -5336,6 +5454,10 @@ cvKMeans2 = cfunc('cvKMeans2', _cxDLL, None,
     ('labels', CvArr_p, 1), # CvArr* labels
     ('termcrit', CvTermCriteria, 1), # CvTermCriteria termcrit 
 )
+cvKMeans2.__doc__ = """void cvKMeans2(const CvArr* samples, int cluster_count, CvArr* labels, CvTermCriteria termcrit)
+
+Splits set of vectors by given number of clusters
+"""
 
 # --- 6 Error Handling and System Functions ----------------------------------
 
@@ -7076,106 +7198,6 @@ except ImportError:
 
 # --- Dokumentationsstrings --------------------------------------------------
 
-cvInitTreeNodeIterator.__doc__ = """void cvInitTreeNodeIterator(CvTreeNodeIterator* tree_iterator, const void* first, int max_level)
-
-Initializes tree node iterator
-"""
-
-cvNextTreeNode.__doc__ = """void* cvNextTreeNode(CvTreeNodeIterator* tree_iterator)
-
-Returns the currently observed node and moves iterator toward the next node
-"""
-
-cvPrevTreeNode.__doc__ = """void* cvPrevTreeNode(CvTreeNodeIterator* tree_iterator)
-
-Returns the currently observed node and moves iterator toward the previous node
-"""
-
-cvTreeToNodeSeq.__doc__ = """CvSeq* cvTreeToNodeSeq(const void* first, int header_size, CvMemStorage* storage)
-
-Gathers all node pointers to the single sequence
-"""
-
-cvInsertNodeIntoTree.__doc__ = """void cvInsertNodeIntoTree(void* node, void* parent, void* frame)
-
-Adds new node to the tree
-"""
-
-cvRemoveNodeFromTree.__doc__ = """void cvRemoveNodeFromTree(void* node, void* frame)
-
-Removes node from tree
-"""
-
-cvLine.__doc__ = """void cvLine(CvArr* img, CvPoint pt1, CvPoint pt2, CvScalar color, int thickness=1, int line_type=8, int shift=0)
-
-Draws a line segment connecting two points
-"""
-
-cvRectangle.__doc__ = """void cvRectangle(CvArr* img, CvPoint pt1, CvPoint pt2, CvScalar color,                  int thickness=1, int line_type=8, int shift=0)
-
-Draws simple, thick or filled rectangle
-"""
-
-cvCircle.__doc__ = """void cvCircle(CvArr* img, CvPoint center, int radius, CvScalar color, int thickness=1, int line_type=8, int shift=0)
-
-Draws a circle
-"""
-
-cvEllipse.__doc__ = """void cvEllipse(CvArr* img, CvPoint center, CvSize axes, double angle, double start_angle, double end_angle, CvScalar color, int thickness=1, int line_type=8, int shift=0)
-
-Draws simple or thick elliptic arc or fills ellipse sector
-"""
-
-cvFillPoly.__doc__ = """void cvFillPoly(CvArr* img, CvPoint** pts, int* npts, int contours, CvScalar color, int line_type=8, int shift=0)
-
-Fills polygons interior
-"""
-
-cvFillConvexPoly.__doc__ = """void cvFillConvexPoly(CvArr* img, CvPoint* pts, int npts, CvScalar color, int line_type=8, int shift=0)
-
-Fills convex polygon
-"""
-
-cvPolyLine.__doc__ = """void cvPolyLine(CvArr* img, CvPoint** pts, int* npts, int contours, int is_closed, CvScalar color, int thickness=1, int line_type=8, int shift=0)
-
-Draws simple or thick polygons
-"""
-
-cvInitFont.__doc__ = """void cvInitFont(CvFont* font, int font_face, double hscale, double vscale, double shear=0, int thickness=1, int line_type=8)
-
-Initializes font structure
-"""
-
-cvPutText.__doc__ = """void cvPutText(CvArr* img, const char* text, CvPoint org, const CvFont* font, CvScalar color)
-
-Draws text string
-"""
-
-cvGetTextSize.__doc__ = """void cvGetTextSize(const char* text_string, const CvFont* font, CvSize* text_size, int* baseline)
-
-Retrieves width and height of text string
-"""
-
-cvDrawContours.__doc__ = """void cvDrawContours(CvArr* img, CvSeq* contour, CvScalar external_color, CvScalar hole_color, int max_level, int thickness=1, int line_type=8)
-
-Draws contour outlines or interiors in the image
-"""
-
-cvInitLineIterator.__doc__ = """int cvInitLineIterator(const CvArr* image, CvPoint pt1, CvPoint pt2, CvLineIterator* line_iterator, int connectivity=8, int left_to_right=0)
-
-Initializes line iterator
-"""
-
-cvClipLine.__doc__ = """int cvClipLine(CvSize img_size, CvPoint* pt1, CvPoint* pt2)
-
-Clips the line against the image rectangle
-"""
-
-cvEllipse2Poly.__doc__ = """int cvEllipse2Poly(CvPoint center, CvSize axes, int angle, int arc_start, int arc_end, CvPoint* pts, int delta)
-
-Approximates elliptic arc with polyline
-"""
-
 cvOpenFileStorage.__doc__ = """CvFileStorage* cvOpenFileStorage(const char* filename, CvMemStorage* memstorage, int flags)
 
 Opens file storage for reading or writing data
@@ -7324,11 +7346,6 @@ Saves object to file
 cvLoad.__doc__ = """void* cvLoad(const char* filename, CvMemStorage* memstorage=NULL, const char* name=NULL, const char** real_name=NULL)
 
 Loads object from file
-"""
-
-cvKMeans2.__doc__ = """void cvKMeans2(const CvArr* samples, int cluster_count, CvArr* labels, CvTermCriteria termcrit)
-
-Splits set of vectors by given number of clusters
 """
 
 cvGetErrStatus.__doc__ = """int cvGetErrStatus(void)
@@ -8183,18 +8200,11 @@ Converts one image to another with optional vertical flip
 """
 
 # --- SOME FUNCTION COPIES FROM THE C HEADERS (reverse compatibility?) ---
-cvGetSubArr = cvGetSubRect
 cvZero = cvSetZero
 cvCvtScale = cvConvertScale
 cvScale = cvConvertScale
 cvCvtScaleAbs = cvConvertScaleAbs
 cvCheckArray = cvCheckArr
-cvMatMulAddS = cvTransform
-cvDrawRect = cvRectangle
-cvDrawLine = cvLine
-cvDrawCircle = cvCircle
-cvDrawEllipse = cvEllipse
-cvDrawPolyLine = cvPolyLine
 
 
 #=============================================================================
