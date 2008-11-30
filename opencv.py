@@ -101,6 +101,7 @@ Continuously updated by Minh-Tri Pham since 30 June 2007
 
 import os, sys
 from ctypes import *
+from math import floor, ceil
 
 # Added by Minh-Tri Pham
 c_int_p = POINTER(c_int)
@@ -187,6 +188,16 @@ class ListPOINTER(object):
     def from_param(self, param):
         if isinstance(param, (list,tuple)):
             return (self.etype * len(param))(*param)
+
+class AdjustableListPOINTER(object):
+    '''Just like a POINTER but accept a list of ctype as an argument'''
+    def __init__(self, etype):
+        self.etype = etype
+
+    def from_param(self, param):
+        if isinstance(param, (list,tuple)):
+            etype = type(param[0]) if param else self.etype
+            return (etype * len(param))(*param)
 
 class ListPOINTER2(object):
     '''Just like POINTER(POINTER(ctype)) but accept a list of lists of ctype'''
@@ -411,13 +422,21 @@ CV_LOG2 = 0.69314718055994530941723212145818
 
 # Round to nearest integer
 def cvRound(val):
-    return int(val + 0.5)
+    return int(round(val))
+
+# Round to nearest integer
+def cvFloor(val):
+    return int(floor(val))
+
+# Round to nearest integer
+def cvCeil(val): # here, this function is not correct
+    return int(ceil(val))
 
 #-----------------------------------------------------------------------------
 # Random number generation
 #-----------------------------------------------------------------------------
 
-# Minh-Tri's note: I'd prefer using a random generator other than CvRNG.
+# Minh-Tri's note: I'd rather use a random generator other than CvRNG.
 # It's slow and doesn't guarrantee a large cycle.
 
 CvRNG = c_uint64
@@ -1371,32 +1390,8 @@ CvModuleInfo._fields_ = [
 
 
 #=============================================================================
-# cxcore/cxcore.h
+# Minh-Tri's hacks -- part 1
 #=============================================================================
-
-#-----------------------------------------------------------------------------
-# A hack on OpenCV's data types
-#-----------------------------------------------------------------------------
-# allows __del__ ()to call _my__del__(), if it exists
-
-def _hack_del(cls):
-    def _new__del__(self):
-        z = getattr(self, '_my__del__', None)
-        if z is not None:
-            z(self)
-        if self._old__del__ is not None:
-            self._old__del__()
-        
-    cls._old__del__ = getattr(cls, '__del__', None)
-    cls.__del__ = _new__del__
-    
-_hack_del(CvArr_p)
-_hack_del(POINTER(IplImage))
-_hack_del(POINTER(CvMat))
-_hack_del(POINTER(CvMatND))
-_hack_del(POINTER(CvMemStorage))
-_hack_del(POINTER(CvGraphScanner))
-_hack_del(POINTER(IplConvKernel))
 
 
 #-----------------------------------------------------------------------------
@@ -1565,7 +1560,8 @@ def _hack_cvmat(cls):
         if sy.step == 0:
             raise IndexError("Row slice cannot have zero step, i.e. step_y != 0.")
             
-        result = pointer(cvGetSubRect(self, cvRect(0,0,1,1)))
+        CvMat 
+        result = cvGetSubRect(self, cvRect(0,0,1,1))
 
         cols = sx.stop-sx.start
         if sy.step > 0:
@@ -1617,6 +1613,7 @@ _hack_cvmat(POINTER(CvMat))
 #-----------------------------------------------------------------------------
 # Add an auto-clean feature to an object
 #-----------------------------------------------------------------------------
+#  Note: see Minh-Tri's hacks part 2
 def _add_autoclean(obj, _clean):
     '''Add an auto-clean capability to an object
     
@@ -1640,8 +1637,13 @@ def _add_autoclean(obj, _clean):
     obj._allocated = True
     obj._clean = _clean
     obj._done = _done
-    obj._my__del__ = _my__del__
-    
+    obj._my__del__ = _my__del__    
+
+
+#=============================================================================
+# cxcore/cxcore.h
+#=============================================================================
+
 
 #-----------------------------------------------------------------------------
 # Memory allocation/deallocation for CvArr_p
@@ -1741,14 +1743,14 @@ _cvCloneMat = cfunc('cvCloneMat', _cxDLL, POINTER(CvMat),
 # Creates new matrix header
 _cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, POINTER(CvMatND),
     ('dims', c_int, 1), # int dims
-    ('sizes', c_int_p, 1), # const int* sizes
+    ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type 
 )
 
 # Creates multi-dimensional dense array
 _cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, POINTER(CvMatND),
     ('dims', c_int, 1), # int dims
-    ('sizes', c_int_p, 1), # const int* sizes
+    ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type 
 )
 
@@ -1756,7 +1758,7 @@ _cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, POINTER(CvMatND),
 _cvInitMatNDHeader = cfunc('cvInitMatNDHeader', _cxDLL, POINTER(CvMatND),
     ('mat', POINTER(CvMatND), 1), # CvMatND* mat
     ('dims', c_int, 1), # int dims
-    ('sizes', c_int_p, 1), # const int* sizes
+    ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type
     ('data', c_void_p, 1, None), # void* data
 )
@@ -1769,7 +1771,7 @@ _cvCloneMatND = cfunc('cvCloneMatND', _cxDLL, POINTER(CvMatND),
 # Creates sparse array
 _cvCreateSparseMat = cfunc('cvCreateSparseMat', _cxDLL, POINTER(CvSparseMat),
     ('dims', c_int, 1), # int dims
-    ('sizes', c_int_p, 1), # const int* sizes
+    ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type 
 )
 
@@ -1783,6 +1785,12 @@ _cvCloneSparseMat = cfunc('cvCloneSparseMat', _cxDLL, POINTER(CvSparseMat),
     ('mat', POINTER(CvSparseMat), 1), # const CvSparseMat* mat 
 )
 
+# Returns matrix header corresponding to the rectangular sub-array of input image or matrix
+_cvGetSubRect = cfunc('cvGetSubRect', _cxDLL, None,
+    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('submat', POINTER(CvMat), 1), # CvMat* submat
+    ('rect', CvRect, 1), # CvRect rect 
+)
 
 # ------ List of methods a user should call ------
 
@@ -1934,15 +1942,16 @@ def cvCloneMat(*args):
     return z
 
 # Returns matrix header corresponding to the rectangular sub-array of input image or matrix
-cvGetSubRect = cfunc('cvGetSubRect', _cxDLL, POINTER(CvMat),
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('submat', POINTER(CvMat), 2), # CvMat* submat
-    ('rect', CvRect, 1), # CvRect rect 
-)
-cvGetSubRect.__doc__ = """CvMat* cvGetSubRect(const CvArr* arr, CvMat* submat, CvRect rect)
+def cvGetSubRect(arr, rect, submat=None):
+    """CvMat* cvGetSubRect(const CvArr* arr, CvRect rect, CvMat* submat=NULL)
 
-Returns matrix header corresponding to the rectangular sub-array of input image or matrix
-"""
+    Returns matrix header corresponding to the rectangular sub-array of input image or matrix
+    [ctypes-opencv] The format of this function is changed a bit from OpenCV to support OpenCV's pythonic interface. If submat is NULL, a new CvMat is created. Otherwise, the submat will be filled with a new header.
+    """
+    if submat is None:
+        submat = pointer(CvMat())
+    _cvGetSubRect(arr, submat, rect)
+    return submat
 
 cvGetSubArr = cvGetSubRect
 
@@ -1982,28 +1991,13 @@ cvGetDiag.__doc__ = """CvMat* cvGetDiag(const CvArr* arr, CvMat* submat, int dia
 Returns one of array diagonals
 """
 
-def _sizes2ctypes(sizes):
-    if isinstance(sizes, int) or isinstance(sizes, c_int):
-        return 1, (c_int*1)(sizes)
-    try:
-        dims = len(sizes)
-        sz = (c_int*dims)()
-        for i in xrange(dims):
-            x = sizes[i]
-            sz[i] = x.value if isinstance(x, c_int) else int(x)
-        return dims, sz
-    except:
-        raise TypeError, "Parameter 'sizes' is not an integer nor a tuple/list of integers."
-        
-
 # Creates new matrix header
 def cvCreateMatNDHeader(sizes, cvmat_type):
     """CvMatND* cvCreateMatNDHeader(sizes = list or tuple of integers, int type)
 
     Creates new matrix header
     """
-    dims, sz = _sizes2ctypes(sizes)
-    z = _cvCreateMatNDHeader(dims, sz, cvmat_type)
+    z = _cvCreateMatNDHeader(len(sizes), sizes, cvmat_type)
     _add_autoclean(z, _cvReleaseMat)
     return z
 
@@ -2013,8 +2007,7 @@ def cvCreateMatND(sizes, cvmat_type):
 
     Creates multi-dimensional dense array
     """
-    dims, sz = _sizes2ctypes(sizes)
-    z = _cvCreateMatND(dims, sz, cvmat_type)
+    z = _cvCreateMatND(len(sizes), sizes, cvmat_type)
     _add_autoclean(z, _cvReleaseMat)
     return z
 
@@ -2024,8 +2017,7 @@ def cvInitMatNDHeader(mat, sizes, cvmat_type, data=None):
 
     Initializes multi-dimensional array header
     """
-    dims, sz = _sizes2ctypes(sizes)
-    return _cvInitMatNDHeader(mat, dims, sz, cvmat_type, data)
+    return _cvInitMatNDHeader(mat, len(sizes), sizes, cvmat_type, data)
     
 # Releases CvMatND
 cvReleaseMatND = cvReleaseMat
@@ -2046,8 +2038,7 @@ def cvCreateSparseMat(sizes, cvmat_type):
 
     Creates sparse array
     """
-    dims, sz = _sizes2ctypes(sizes)
-    z = _cvCreateSparseMat(dims, sz, cvmat_type)
+    z = _cvCreateSparseMat(len(sizes), sizes, cvmat_type)
     _add_autoclean(z, _cvReleaseSparseMat)
     return z
 
@@ -3441,7 +3432,7 @@ cvMinMaxLoc = cfunc('cvMinMaxLoc', _cxDLL, None,
                     ('max_val', POINTER(c_double), 2),
                     ('min_loc', POINTER(CvPoint), 2),
                     ('max_loc', POINTER(CvPoint), 2),
-                    ('mask', c_void_p, 1, None))
+                    ('mask', POINTER(IplImage), 1, None))
 cvMinMaxLoc.__doc__ = """void cvMinMaxLoc(const CvArr* arr, double* min_val, double* max_val, CvPoint* min_loc=NULL, CvPoint* max_loc=NULL, const CvArr* mask=NULL)
 
 Finds global minimum and maximum in array or subarray
@@ -3584,7 +3575,7 @@ _cvCreateChildMemStorage = cfunc('cvCreateChildMemStorage', _cxDLL, POINTER(CvMe
 
 # Releases memory storage
 _cvReleaseMemStorage = cfunc('cvReleaseMemStorage', _cxDLL, None,
-    ('storage', POINTER(POINTER(CvMemStorage)), 1), # CvMemStorage** storage 
+    ('storage', ByRefArg(POINTER(CvMemStorage)), 1), # CvMemStorage** storage 
 )
 
 def _my_cvReleaseMemStorage(storage, check_parent=True):
@@ -4364,7 +4355,7 @@ _cvCreateGraphScanner = cfunc('cvCreateGraphScanner', _cxDLL, POINTER(CvGraphSca
 
 # Finishes graph traversal procedure
 _cvReleaseGraphScanner = cfunc('cvReleaseGraphScanner', _cxDLL, None,
-    ('scanner', POINTER(POINTER(CvGraphScanner)), 1), # CvGraphScanner** scanner 
+    ('scanner', ByRefArg(POINTER(CvGraphScanner)), 1), # CvGraphScanner** scanner 
 )
 
 
@@ -6073,19 +6064,19 @@ _cvCreateStructuringElementEx = cfunc('cvCreateStructuringElementEx', _cvDLL, PO
 
 # Deletes structuring element
 _cvReleaseStructuringElement = cfunc('cvReleaseStructuringElement', _cvDLL, None,
-    ('element', POINTER(POINTER(IplConvKernel)), 1), # IplConvKernel** element 
+    ('element', ByRefArg(POINTER(IplConvKernel)), 1), # IplConvKernel** element 
 )
 
 
 # ------ List of methods a user should call ------
 
 # Creates structuring element
-def cvCreateStructuringElementEx(*args, **kwds):
+def cvCreateStructuringElementEx(cols, rows, anchor_x, anchor_y, shape, values=None):
     """IplConvKernel* cvCreateStructuringElementEx(int cols, int rows, int anchor_x, int anchor_y, int shape, int* values=NULL)
 
     Creates structuring element
     """
-    z = _cvCreateStructuringElementEx(*args)
+    z = _cvCreateStructuringElementEx(cols, rows, anchor_x, anchor_y, shape, values)
     _add_autoclean(z, _cvReleaseStructuringElement)
     return z
 
@@ -6643,15 +6634,6 @@ _cvReleaseHist = cfunc('cvReleaseHist', _cvDLL, None,
     ('hist', ByRefArg(POINTER(CvHistogram)), 1), # CvHistogram** hist 
 )
 
-# Finds minimum and maximum histogram bins
-_cvGetMinMaxHistValue = cfunc('cvGetMinMaxHistValue', _cvDLL, None,
-    ('hist', POINTER(CvHistogram), 1), # const CvHistogram* hist
-    ('min_value', ByRefArg(c_float), 1), # float* min_value
-    ('max_value', ByRefArg(c_float), 1), # float* max_value
-    ('min_idx', ByRefArg(c_int), 1, None), # int* min_idx
-    ('max_idx', ByRefArg(c_int), 1, None), # int* max_idx
-)
-
 # Copies histogram
 _cvCopyHist = cfunc('cvCopyHist', _cvDLL, None,
     ('src', POINTER(CvHistogram), 1), # const CvHistogram* src
@@ -6662,12 +6644,11 @@ _cvCopyHist = cfunc('cvCopyHist', _cvDLL, None,
 
 # Creates histogram
 def cvCreateHist(sizes, hist_type, ranges=None, uniform=1):
-    """CvHistogram* cvCreateHist(sizes = list or tuple of integers, int type, float** ranges=NULL, int uniform=1)
+    """CvHistogram* cvCreateHist(sizes = list or tuple of integers, int type, float** ranges = 2D list or tuple of floats (default=None), int uniform=1)
 
     Creates histogram
     """
-    dims, sz = _sizes2ctypes(sizes)
-    z = _cvCreateHist(dims, sz, hist_type, ranges, uniform)
+    z = _cvCreateHist(len(sizes), sizes, hist_type, ranges, uniform)
     _add_autoclean(z, _cvReleaseHist)
     return z
 
@@ -6709,17 +6690,18 @@ Makes a histogram out of array
 """
 
 # Finds minimum and maximum histogram bins
-def cvGetMinMaxHistValue(hist, min_idx=None, max_idx=None):
-    """float min_value, max_value = cvGetMinMaxHistValue(const CvHistogram* hist, int* min_idx=NULL, int* max_idx=NULL)
+cvGetMinMaxHistValue = cfunc('cvGetMinMaxHistValue', _cvDLL, None,
+    ('hist', POINTER(CvHistogram), 1), # const CvHistogram* hist
+    ('min_value', POINTER(c_float), 2), # float* min_value
+    ('max_value', POINTER(c_float), 2), # float* max_value
+    ('min_idx', POINTER(c_int), 1, None), # int* min_idx
+    ('max_idx', POINTER(c_int), 1, None), # int* max_idx
+)
+cvGetMinMaxHistValue.__doc__ = """float min_value, max_value = cvGetMinMaxHistValue(const CvHistogram* hist, int* min_idx=NULL, int* max_idx=NULL)
 
     Finds minimum and maximum histogram bins
     [ctypes-opencv] Note that both min_value and max_value are returned.
     """
-    min_value = c_float()
-    max_value = c_float()
-    _cvGetMinMaxHistValue(hist, min_value, max_value, min_idx, max_idx)
-    
-    return min_value.value, max_value.value
 
 # Normalizes histogram
 cvNormalizeHist = cfunc('cvNormalizeHist', _cvDLL, None,
@@ -6773,7 +6755,7 @@ def cvCopyHist(src, dst=None):
     
 # Calculate the histogram
 cvCalcHist = cfunc('cvCalcArrHist', _cvDLL, None,
-    ('image', ListPOINTER(POINTER(IplImage)), 1), # IplImage** image
+    ('image', AdjustableListPOINTER(POINTER(IplImage)), 1), # IplImage** image
     ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
     ('accumulate', c_int, 1, 0), # int accumulate
     ('mask', CvArr_p, 1, None), # CvArr* mask
@@ -7315,10 +7297,667 @@ Removes all virtual points
 """
 
 
+#-----------------------------------------------------------------------------
+# Accumulation of Background Statistics
+#-----------------------------------------------------------------------------
+
+
+# Adds frame to accumulator
+cvAcc = cfunc('cvAcc', _cvDLL, None,
+    ('image', CvArr_p, 1), # const CvArr* image
+    ('sum', CvArr_p, 1), # CvArr* sum
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvAcc.__doc__ = """void cvAcc(const CvArr* image, CvArr* sum, const CvArr* mask=NULL)
+
+Adds frame to accumulator
+"""
+
+# Adds the square of source image to accumulator
+cvSquareAcc = cfunc('cvSquareAcc', _cvDLL, None,
+    ('image', CvArr_p, 1), # const CvArr* image
+    ('sqsum', CvArr_p, 1), # CvArr* sqsum
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvSquareAcc.__doc__ = """void cvSquareAcc(const CvArr* image, CvArr* sqsum, const CvArr* mask=NULL)
+
+Adds the square of source image to accumulator
+"""
+
+# Adds product of two input images to accumulator
+cvMultiplyAcc = cfunc('cvMultiplyAcc', _cvDLL, None,
+    ('image1', CvArr_p, 1), # const CvArr* image1
+    ('image2', CvArr_p, 1), # const CvArr* image2
+    ('acc', CvArr_p, 1), # CvArr* acc
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvMultiplyAcc.__doc__ = """void cvMultiplyAcc(const CvArr* image1, const CvArr* image2, CvArr* acc, const CvArr* mask=NULL)
+
+Adds product of two input images to accumulator
+"""
+
+# Updates running average
+cvRunningAvg = cfunc('cvRunningAvg', _cvDLL, None,
+    ('image', CvArr_p, 1), # const CvArr* image
+    ('acc', CvArr_p, 1), # CvArr* acc
+    ('alpha', c_double, 1), # double alpha
+    ('mask', CvArr_p, 1, None), # const CvArr* mask
+)
+cvRunningAvg.__doc__ = """void cvRunningAvg(const CvArr* image, CvArr* acc, double alpha, const CvArr* mask=NULL)
+
+Updates running average
+"""
+
+
+#-----------------------------------------------------------------------------
+# Motion Templates
+#-----------------------------------------------------------------------------
+
+
+# Updates motion history image by moving silhouette
+cvUpdateMotionHistory = cfunc('cvUpdateMotionHistory', _cvDLL, None,
+    ('silhouette', CvArr_p, 1), # const CvArr* silhouette
+    ('mhi', CvArr_p, 1), # CvArr* mhi
+    ('timestamp', c_double, 1), # double timestamp
+    ('duration', c_double, 1), # double duration 
+)
+cvUpdateMotionHistory.__doc__ = """void cvUpdateMotionHistory(const CvArr* silhouette, CvArr* mhi, double timestamp, double duration)
+
+Updates motion history image by moving silhouette
+"""
+
+# Calculates gradient orientation of motion history image
+cvCalcMotionGradient = cfunc('cvCalcMotionGradient', _cvDLL, None,
+    ('mhi', CvArr_p, 1), # const CvArr* mhi
+    ('mask', CvArr_p, 1), # CvArr* mask
+    ('orientation', CvArr_p, 1), # CvArr* orientation
+    ('delta1', c_double, 1), # double delta1
+    ('delta2', c_double, 1), # double delta2
+    ('aperture_size', c_int, 1, 3), # int aperture_size
+)
+cvCalcMotionGradient.__doc__ = """void cvCalcMotionGradient(const CvArr* mhi, CvArr* mask, CvArr* orientation, double delta1, double delta2, int aperture_size=3)
+
+Calculates gradient orientation of motion history image
+"""
+
+# Calculates global motion orientation of some selected region
+cvCalcGlobalOrientation = cfunc('cvCalcGlobalOrientation', _cvDLL, c_double,
+    ('orientation', CvArr_p, 1), # const CvArr* orientation
+    ('mask', CvArr_p, 1), # const CvArr* mask
+    ('mhi', CvArr_p, 1), # const CvArr* mhi
+    ('timestamp', c_double, 1), # double timestamp
+    ('duration', c_double, 1), # double duration 
+)
+cvCalcGlobalOrientation.__doc__ = """double cvCalcGlobalOrientation(const CvArr* orientation, const CvArr* mask, const CvArr* mhi, double timestamp, double duration)
+
+Calculates global motion orientation of some selected region
+"""
+
+# Segments whole motion into separate moving parts
+cvSegmentMotion = cfunc('cvSegmentMotion', _cvDLL, POINTER(CvSeq),
+    ('mhi', CvArr_p, 1), # const CvArr* mhi
+    ('seg_mask', CvArr_p, 1), # CvArr* seg_mask
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('timestamp', c_double, 1), # double timestamp
+    ('seg_thresh', c_double, 1), # double seg_thresh 
+)
+cvSegmentMotion.__doc__ = """CvSeq* cvSegmentMotion(const CvArr* mhi, CvArr* seg_mask, CvMemStorage* storage, double timestamp, double seg_thresh)
+
+Segments whole motion into separate moving parts
+"""
+
+
+#-----------------------------------------------------------------------------
+# Object Tracking
+#-----------------------------------------------------------------------------
+
+
+# Finds object center on back projection
+cvMeanShift = cfunc('cvMeanShift', _cvDLL, c_int,
+    ('prob_image', CvArr_p, 1), # const CvArr* prob_image
+    ('window', CvRect, 1), # CvRect window
+    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
+    ('comp', POINTER(CvConnectedComp), 1), # CvConnectedComp* comp 
+)
+cvMeanShift.__doc__ = """int cvMeanShift(const CvArr* prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp* comp)
+
+Finds object center on back projection
+"""
+
+# Finds object center, size, and orientation
+cvCamShift = cfunc('cvCamShift', _cvDLL, c_int,
+    ('prob_image', CvArr_p, 1), # const CvArr* prob_image
+    ('window', CvRect, 1), # CvRect window
+    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
+    ('comp', POINTER(CvConnectedComp), 1), # CvConnectedComp* comp
+    ('box', POINTER(CvBox2D), 1), # CvBox2D* box
+)
+cvCamShift.__doc__ = """int cvCamShift(const CvArr* prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp* comp, CvBox2D* box=NULL)
+
+Finds object center, size, and orientation
+"""
+
+CV_VALUE = 1
+CV_ARRAY = 2
+
+# Changes contour position to minimize its energy
+cvSnakeImage = cfunc('cvSnakeImage', _cvDLL, None,
+    ('image', POINTER(IplImage), 1), # const IplImage* image
+    ('points', POINTER(CvPoint), 1), # CvPoint* points
+    ('length', c_int, 1), # int length
+    ('alpha', POINTER(c_float), 1), # float* alpha
+    ('beta', POINTER(c_float), 1), # float* beta
+    ('gamma', POINTER(c_float), 1), # float* gamma
+    ('coeff_usage', c_int, 1), # int coeff_usage
+    ('win', CvSize, 1), # CvSize win
+    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
+    ('calc_gradient', c_int, 1, 1), # int calc_gradient
+)
+cvSnakeImage.__doc__ = """void cvSnakeImage(const IplImage* image, CvPoint* points, int length, float* alpha, float* beta, float* gamma, int coeff_usage, CvSize win, CvTermCriteria criteria, int calc_gradient=1)
+
+Changes contour position to minimize its energy
+"""
+
+
+#-----------------------------------------------------------------------------
+# Optical Flow
+#-----------------------------------------------------------------------------
+
+
+# Calculates optical flow for two images
+cvCalcOpticalFlowHS = cfunc('cvCalcOpticalFlowHS', _cvDLL, None,
+    ('prev', CvArr_p, 1), # const CvArr* prev
+    ('curr', CvArr_p, 1), # const CvArr* curr
+    ('use_previous', c_int, 1), # int use_previous
+    ('velx', CvArr_p, 1), # CvArr* velx
+    ('vely', CvArr_p, 1), # CvArr* vely
+    ('lambda', c_double, 1), # double lambda
+    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria 
+)
+cvCalcOpticalFlowHS.__doc__ = """void cvCalcOpticalFlowHS(const CvArr* prev, const CvArr* curr, int use_previous, CvArr* velx, CvArr* vely, double lambda, CvTermCriteria criteria)
+
+Calculates optical flow for two images
+"""
+
+# Calculates optical flow for two images
+cvCalcOpticalFlowLK = cfunc('cvCalcOpticalFlowLK', _cvDLL, None,
+    ('prev', CvArr_p, 1), # const CvArr* prev
+    ('curr', CvArr_p, 1), # const CvArr* curr
+    ('win_size', CvSize, 1), # CvSize win_size
+    ('velx', CvArr_p, 1), # CvArr* velx
+    ('vely', CvArr_p, 1), # CvArr* vely 
+)
+cvCalcOpticalFlowLK.__doc__ = """void cvCalcOpticalFlowLK(const CvArr* prev, const CvArr* curr, CvSize win_size, CvArr* velx, CvArr* vely)
+
+Calculates optical flow for two images
+"""
+
+# Calculates optical flow for two images by block matching method
+cvCalcOpticalFlowBM = cfunc('cvCalcOpticalFlowBM', _cvDLL, None,
+    ('prev', CvArr_p, 1), # const CvArr* prev
+    ('curr', CvArr_p, 1), # const CvArr* curr
+    ('block_size', CvSize, 1), # CvSize block_size
+    ('shift_size', CvSize, 1), # CvSize shift_size
+    ('max_range', CvSize, 1), # CvSize max_range
+    ('use_previous', c_int, 1), # int use_previous
+    ('velx', CvArr_p, 1), # CvArr* velx
+    ('vely', CvArr_p, 1), # CvArr* vely 
+)
+cvCalcOpticalFlowBM.__doc__ = """void cvCalcOpticalFlowBM(const CvArr* prev, const CvArr* curr, CvSize block_size, CvSize shift_size, CvSize max_range, int use_previous, CvArr* velx, CvArr* vely)
+
+Calculates optical flow for two images by block matching method
+"""
+
+# Calculates optical flow for a sparse feature set using iterative Lucas-Kanade method in   pyramids
+cvCalcOpticalFlowPyrLK = cfunc('cvCalcOpticalFlowPyrLK', _cvDLL, None,
+    ('prev', CvArr_p, 1), # const CvArr* prev
+    ('curr', CvArr_p, 1), # const CvArr* curr
+    ('prev_pyr', CvArr_p, 1), # CvArr* prev_pyr
+    ('curr_pyr', CvArr_p, 1), # CvArr* curr_pyr
+    ('prev_features', POINTER(CvPoint2D32f), 1), # const CvPoint2D32f* prev_features
+    ('curr_features', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* curr_features
+    ('count', c_int, 1), # int count
+    ('win_size', CvSize, 1), # CvSize win_size
+    ('level', c_int, 1), # int level
+    ('status', c_char_p, 1), # char* status
+    ('track_error', POINTER(c_float), 1), # float* track_error
+    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
+    ('flags', c_int, 1), # int flags 
+)
+cvCalcOpticalFlowPyrLK.__doc__ = """void cvCalcOpticalFlowPyrLK(const CvArr* prev, const CvArr* curr, CvArr* prev_pyr, CvArr* curr_pyr, const CvPoint2D32f* prev_features, CvPoint2D32f* curr_features, int count, CvSize win_size, int level, char* status, float* track_error, CvTermCriteria criteria, int flags)
+
+Calculates optical flow for a sparse feature set using iterative Lucas-Kanade method in   pyramids
+"""
+
+
+#-----------------------------------------------------------------------------
+# Estimators
+#-----------------------------------------------------------------------------
+
+
+# ------ List of methods not to be called by a user ------
+
+
+# Allocates Kalman filter structure
+_cvCreateKalman = cfunc('cvCreateKalman', _cvDLL, POINTER(CvKalman),
+    ('dynam_params', c_int, 1), # int dynam_params
+    ('measure_params', c_int, 1), # int measure_params
+    ('control_params', c_int, 1, 0), # int control_params
+)
+
+# Deallocates Kalman filter structure
+_cvReleaseKalman = cfunc('cvReleaseKalman', _cvDLL, None,
+    ('kalman', ByRefArg(POINTER(CvKalman)), 1), # CvKalman** kalman 
+)
+
+# Allocates ConDensation filter structure
+_cvCreateConDensation = cfunc('cvCreateConDensation', _cvDLL, POINTER(CvConDensation),
+    ('dynam_params', c_int, 1), # int dynam_params
+    ('measure_params', c_int, 1), # int measure_params
+    ('sample_count', c_int, 1), # int sample_count 
+)
+
+# Deallocates ConDensation filter structure
+_cvReleaseConDensation = cfunc('cvReleaseConDensation', _cvDLL, None,
+    ('condens', ByRefArg(POINTER(CvConDensation)), 1), # CvConDensation** condens 
+)
+
+
+# ------ List of methods a user should call ------
+
+
+# Allocates Kalman filter structure
+def cvCreateKalman(dynam_params, measure_params, control_params=0):
+    """CvKalman* cvCreateKalman(int dynam_params, int measure_params, int control_params=0)
+
+    Allocates Kalman filter structure
+    """
+    z = _cvCreateKalman(dynam_params, measure_params, control_params)
+    _add_autoclean(z, _cvReleaseKalman)
+    return z
+
+# Deallocates Kalman filter structure
+cvReleaseKalman = cvFree
+
+# Estimates subsequent model state
+cvKalmanPredict = cfunc('cvKalmanPredict', _cvDLL, POINTER(CvMat),
+    ('kalman', POINTER(CvKalman), 1), # CvKalman* kalman
+    ('control', POINTER(CvMat), 1, None), # const CvMat* control
+)
+cvKalmanPredict.__doc__ = """const CvMat* cvKalmanPredict(CvKalman* kalman, const CvMat* control=NULL)
+
+Estimates subsequent model state
+"""
+
+cvKalmanUpdateByTime = cvKalmanPredict
+
+# Adjusts model state
+cvKalmanCorrect = cfunc('cvKalmanCorrect', _cvDLL, POINTER(CvMat),
+    ('kalman', POINTER(CvKalman), 1), # CvKalman* kalman
+    ('measurement', POINTER(CvMat), 1), # const CvMat* measurement 
+)
+cvKalmanCorrect.__doc__ = """const CvMat* cvKalmanCorrect(CvKalman* kalman, const CvMat* measurement)
+
+Adjusts model state
+"""
+
+cvKalmanUpdateByMeasurement = cvKalmanCorrect
+
+# Allocates ConDensation filter structure
+def cvCreateConDensation(*args):
+    """CvConDensation* cvCreateConDensation(int dynam_params, int measure_params, int sample_count)
+
+    Allocates ConDensation filter structure
+    """
+    z = _cvCreateConDensation(*args)
+    _add_autoclean(z, _cvReleaseConDensation)
+    return z
+
+# Deallocates ConDensation filter structure
+cvReleaseConDensation = cvFree
+
+# Initializes sample set for ConDensation algorithm
+cvConDensInitSampleSet = cfunc('cvConDensInitSampleSet', _cvDLL, None,
+    ('condens', POINTER(CvConDensation), 1), # CvConDensation* condens
+    ('lower_bound', POINTER(CvMat), 1), # CvMat* lower_bound
+    ('upper_bound', POINTER(CvMat), 1), # CvMat* upper_bound 
+)
+cvConDensInitSampleSet.__doc__ = """void cvConDensInitSampleSet(CvConDensation* condens, CvMat* lower_bound, CvMat* upper_bound)
+
+Initializes sample set for ConDensation algorithm
+"""
+
+# Estimates subsequent model state
+cvConDensUpdateByTime = cfunc('cvConDensUpdateByTime', _cvDLL, None,
+    ('condens', POINTER(CvConDensation), 1), # CvConDensation* condens 
+)
+cvConDensUpdateByTime.__doc__ = """void cvConDensUpdateByTime(CvConDensation* condens)
+
+Estimates subsequent model state
+"""
+
+
+#-----------------------------------------------------------------------------
+# Object Detection
+#-----------------------------------------------------------------------------
+
+
+# ------ List of methods not to be called by a user ------
+
+
+# Loads a trained cascade classifier from file or the classifier database embedded in OpenCV
+_cvLoadHaarClassifierCascade = cfunc('cvLoadHaarClassifierCascade', _cvDLL, POINTER(CvHaarClassifierCascade),
+    ('directory', c_char_p, 1), # const char* directory
+    ('orig_window_size', CvSize, 1), # CvSize orig_window_size 
+)
+
+# Releases haar classifier cascade
+_cvReleaseHaarClassifierCascade = cfunc('cvReleaseHaarClassifierCascade', _cvDLL, None,
+    ('cascade', ByRefArg(POINTER(CvHaarClassifierCascade)), 1), # CvHaarClassifierCascade** cascade 
+)
+
+
+# ------ List of methods a user should call ------
+
+
+
+# Loads a trained cascade classifier from file or the classifier database embedded in OpenCV
+def cvLoadHaarClassifierCascade(directory, orig_window_size):
+    """CvHaarClassifierCascade* cvLoadHaarClassifierCascade(const char* directory, CvSize orig_window_size)
+
+    Loads a trained cascade classifier from file or the classifier database embedded in OpenCV
+    """
+    z = _cvLoadHaarClassifierCascade(directory, orig_window_size)
+    _add_autoclean(z, _cvReleaseHaarClassifierCascade)
+    return z
+
+# Releases haar classifier cascade
+cvReleaseHaarClassifierCascade = cvFree
+
+CV_HAAR_DO_CANNY_PRUNING = 1
+CV_HAAR_SCALE_IMAGE = 2
+
+# Detects objects in the image
+cvHaarDetectObjects = cfunc('cvHaarDetectObjects', _cvDLL, POINTER(CvSeq),
+    ('image', CvArr_p, 1), # const CvArr* image
+    ('cascade', POINTER(CvHaarClassifierCascade), 1), # CvHaarClassifierCascade* cascade
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('scale_factor', c_double, 1, 1), # double scale_factor
+    ('min_neighbors', c_int, 1, 3), # int min_neighbors
+    ('flags', c_int, 1, 0), # int flags
+    ('min_size', CvSize, 1), # CvSize min_size
+)
+cvHaarDetectObjects.__doc__ = """CvSeq* cvHaarDetectObjects(const CvArr* image, CvHaarClassifierCascade* cascade, CvMemStorage* storage, double scale_factor=1.1, int min_neighbors=3, int flags=0, CvSize min_size=cvSize(0, 0)
+
+Detects objects in the image
+"""
+def ChangeCvSeqToCvRect(result, func, args):
+    '''Handle the casting to extract a list of Rects from the Seq returned'''
+    res = []
+    for i in xrange(result[0].total):
+        f = cvGetSeqElem(result, i)
+        r = cast(f, POINTER(CvRect))[0]
+        res.append(r)
+    return res
+cvHaarDetectObjects.errcheck = ChangeCvSeqToCvRect
+
+# Assigns images to the hidden cascade
+cvSetImagesForHaarClassifierCascade = cfunc('cvSetImagesForHaarClassifierCascade', _cvDLL, None,
+    ('cascade', POINTER(CvHaarClassifierCascade), 1), # CvHaarClassifierCascade* cascade
+    ('sum', CvArr_p, 1), # const CvArr* sum
+    ('sqsum', CvArr_p, 1), # const CvArr* sqsum
+    ('tilted_sum', CvArr_p, 1), # const CvArr* tilted_sum
+    ('scale', c_double, 1), # double scale 
+)
+cvSetImagesForHaarClassifierCascade.__doc__ = """void cvSetImagesForHaarClassifierCascade(CvHaarClassifierCascade* cascade, const CvArr* sum, const CvArr* sqsum, const CvArr* tilted_sum, double scale)
+
+Assigns images to the hidden cascade
+"""
+
+# Runs cascade of boosted classifier at given image location
+cvRunHaarClassifierCascade = cfunc('cvRunHaarClassifierCascade', _cvDLL, c_int,
+    ('cascade', POINTER(CvHaarClassifierCascade), 1), # CvHaarClassifierCascade* cascade
+    ('pt', CvPoint, 1), # CvPoint pt
+    ('start_stage', c_int, 1, 0), # int start_stage
+)
+cvRunHaarClassifierCascade.__doc__ = """int cvRunHaarClassifierCascade(CvHaarClassifierCascade* cascade, CvPoint pt, int start_stage=0)
+
+Runs cascade of boosted classifier at given image location
+"""
+
+
+#-----------------------------------------------------------------------------
+# Camera Calibration
+#-----------------------------------------------------------------------------
+
+
+# Projects 3D points to image plane
+cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
+    ('object_points', POINTER(CvMat), 1), # const CvMat* object_points
+    ('rotation_vector', POINTER(CvMat), 1), # const CvMat* rotation_vector
+    ('translation_vector', POINTER(CvMat), 1), # const CvMat* translation_vector
+    ('intrinsic_matrix', POINTER(CvMat), 1), # const CvMat* intrinsic_matrix
+    ('distortion_coeffs', POINTER(CvMat), 1), # const CvMat* distortion_coeffs
+    ('image_points', POINTER(CvMat), 1), # CvMat* image_points
+    ('dpdrot', POINTER(CvMat), 1, None), # CvMat* dpdrot
+    ('dpdt', POINTER(CvMat), 1, None), # CvMat* dpdt
+    ('dpdf', POINTER(CvMat), 1, None), # CvMat* dpdf
+    ('dpdc', POINTER(CvMat), 1, None), # CvMat* dpdc
+    ('dpddist', POINTER(CvMat), 1, None), # CvMat* dpddist
+)
+cvProjectPoints2.__doc__ = """void cvProjectPoints2(const CvMat* object_points, const CvMat* rotation_vector, const CvMat* translation_vector, const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs, CvMat* image_points, CvMat* dpdrot=NULL, CvMat* dpdt=NULL, CvMat* dpdf=NULL, CvMat* dpdc=NULL, CvMat* dpddist=NULL)
+
+Projects 3D points to image plane
+"""
+
+# Finds perspective transformation between two planes
+cvFindHomography = cfunc('cvFindHomography', _cvDLL, None,
+    ('src_points', POINTER(CvMat), 1), # const CvMat* src_points
+    ('dst_points', POINTER(CvMat), 1), # const CvMat* dst_points
+    ('homography', POINTER(CvMat), 1), # CvMat* homography 
+)
+cvFindHomography.__doc__ = """void cvFindHomography(const CvMat* src_points, const CvMat* dst_points, CvMat* homography)
+
+Finds perspective transformation between two planes
+"""
+
+# Finds intrinsic and extrinsic camera parameters using calibration pattern
+cvCalibrateCamera2 = cfunc('cvCalibrateCamera2', _cvDLL, None,
+    ('object_points', POINTER(CvMat), 1), # const CvMat* object_points
+    ('image_points', POINTER(CvMat), 1), # const CvMat* image_points
+    ('point_counts', POINTER(CvMat), 1), # const CvMat* point_counts
+    ('image_size', CvSize, 1), # CvSize image_size
+    ('intrinsic_matrix', POINTER(CvMat), 1), # CvMat* intrinsic_matrix
+    ('distortion_coeffs', POINTER(CvMat), 1), # CvMat* distortion_coeffs
+    ('rotation_vectors', POINTER(CvMat), 1, None), # CvMat* rotation_vectors
+    ('translation_vectors', POINTER(CvMat), 1, None), # CvMat* translation_vectors
+    ('flags', c_int, 1, 0), # int flags
+)
+cvCalibrateCamera2.__doc__ = """void cvCalibrateCamera2(const CvMat* object_points, const CvMat* image_points, const CvMat* point_counts, CvSize image_size, CvMat* intrinsic_matrix, CvMat* distortion_coeffs, CvMat* rotation_vectors=NULL, CvMat* translation_vectors=NULL, int flags=0)
+
+Finds intrinsic and extrinsic camera parameters using calibration pattern
+"""
+
+# Finds extrinsic camera parameters for particular view
+cvFindExtrinsicCameraParams2 = cfunc('cvFindExtrinsicCameraParams2', _cvDLL, None,
+    ('object_points', POINTER(CvMat), 1), # const CvMat* object_points
+    ('image_points', POINTER(CvMat), 1), # const CvMat* image_points
+    ('intrinsic_matrix', POINTER(CvMat), 1), # const CvMat* intrinsic_matrix
+    ('distortion_coeffs', POINTER(CvMat), 1), # const CvMat* distortion_coeffs
+    ('rotation_vector', POINTER(CvMat), 1), # CvMat* rotation_vector
+    ('translation_vector', POINTER(CvMat), 1), # CvMat* translation_vector 
+)
+cvFindExtrinsicCameraParams2.__doc__ = """void cvFindExtrinsicCameraParams2(const CvMat* object_points, const CvMat* image_points, const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs, CvMat* rotation_vector, CvMat* translation_vector)
+
+Finds extrinsic camera parameters for particular view
+"""
+
+# Converts rotation matrix to rotation vector or vice versa
+cvRodrigues2 = cfunc('cvRodrigues2', _cvDLL, c_int,
+    ('src', POINTER(CvMat), 1), # const CvMat* src
+    ('dst', POINTER(CvMat), 1), # CvMat* dst
+    ('jacobian', POINTER(CvMat), 1, 0), # CvMat* jacobian
+)
+cvRodrigues2.__doc__ = """int cvRodrigues2(const CvMat* src, CvMat* dst, CvMat* jacobian=0)
+
+Converts rotation matrix to rotation vector or vice versa
+"""
+
+# Transforms image to compensate lens distortion
+cvUndistort2 = cfunc('cvUndistort2', _cvDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('intrinsic_matrix', POINTER(CvMat), 1), # const CvMat* intrinsic_matrix
+    ('distortion_coeffs', POINTER(CvMat), 1), # const CvMat* distortion_coeffs 
+)
+cvUndistort2.__doc__ = """void cvUndistort2(const CvArr* src, CvArr* dst, const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs)
+
+Transforms image to compensate lens distortion
+"""
+
+# Computes undistorion map
+cvInitUndistortMap = cfunc('cvInitUndistortMap', _cvDLL, None,
+    ('intrinsic_matrix', POINTER(CvMat), 1), # const CvMat* intrinsic_matrix
+    ('distortion_coeffs', POINTER(CvMat), 1), # const CvMat* distortion_coeffs
+    ('mapx', CvArr_p, 1), # CvArr* mapx
+    ('mapy', CvArr_p, 1), # CvArr* mapy 
+)
+cvInitUndistortMap.__doc__ = """void cvInitUndistortMap(const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs, CvArr* mapx, CvArr* mapy)
+
+Computes undistorion map
+"""
+
+# Finds positions of internal corners of the chessboard
+cvFindChessboardCorners = cfunc('cvFindChessboardCorners', _cvDLL, c_int,
+    ('image', c_void_p, 1), # const void* image
+    ('pattern_size', CvSize, 1), # CvSize pattern_size
+    ('corners', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* corners
+    ('corner_count', c_int_p, 1, None), # int* corner_count
+    ('flags', c_int, 1), # int flags
+)
+cvFindChessboardCorners.__doc__ = """int cvFindChessboardCorners(const void* image, CvSize pattern_size, CvPoint2D32f* corners, int* corner_count=NULL, int flags=CV_CALIB_CB_ADAPTIVE_THRESH)
+
+Finds positions of internal corners of the chessboard
+"""
+
+# Renders the detected chessboard corners
+cvDrawChessboardCorners = cfunc('cvDrawChessboardCorners', _cvDLL, None,
+    ('image', CvArr_p, 1), # CvArr* image
+    ('pattern_size', CvSize, 1), # CvSize pattern_size
+    ('corners', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* corners
+    ('count', c_int, 1), # int count
+    ('pattern_was_found', c_int, 1), # int pattern_was_found 
+)
+cvDrawChessboardCorners.__doc__ = """void cvDrawChessboardCorners(CvArr* image, CvSize pattern_size, CvPoint2D32f* corners, int count, int pattern_was_found)
+
+Renders the detected chessboard corners
+"""
+
+
+#-----------------------------------------------------------------------------
+# Camera Calibration
+#-----------------------------------------------------------------------------
+
+
+class CvPOSITObject(_Structure):
+    _fields_ = [] # no field, really
+
+
+# ------ List of methods not to be called by a user ------
+
+
+# Initializes structure containing object information
+_cvCreatePOSITObject = cfunc('cvCreatePOSITObject', _cvDLL, POINTER(CvPOSITObject),
+    ('points', ListPOINTER(CvPoint3D32f), 1), # CvPoint3D32f* points
+    ('point_count', c_int, 1), # int point_count 
+)
+
+# Deallocates 3D object structure
+_cvReleasePOSITObject = cfunc('cvReleasePOSITObject', _cvDLL, None,
+    ('posit_object', ByRefArg(POINTER(CvPOSITObject)), 1), # CvPOSITObject** posit_object 
+)
+
+
+# ------ List of methods a user should call ------
+
+
+# Initializes structure containing object information
+def cvCreatePOSITObject(points):
+    """CvPOSITObject* cvCreatePOSITObject(list_or_tupleof_CvPoint3D32f points)
+
+    Initializes structure containing object information
+    """
+    z = _cvCreatePOSITObject(points, len(points))
+    _add_autoclean(z, _cvReleasePOSITObject)
+    return z
+
+# Implements POSIT algorithm
+cvPOSIT = cfunc('cvPOSIT', _cvDLL, None,
+    ('posit_object', POINTER(CvPOSITObject), 1), # CvPOSITObject* posit_object
+    ('image_points', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* image_points
+    ('focal_length', c_double, 1), # double focal_length
+    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
+    ('rotation_matrix', CvMatr32f, 1), # CvMatr32f rotation_matrix
+    ('translation_vector', CvVect32f, 1), # CvVect32f translation_vector 
+)
+cvPOSIT.__doc__ = """void cvPOSIT(CvPOSITObject* posit_object, CvPoint2D32f* image_points, double focal_length, CvTermCriteria criteria, CvMatr32f rotation_matrix, CvVect32f translation_vector)
+
+Implements POSIT algorithm
+"""
+
+# Deallocates 3D object structure
+cvReleasePOSITObject = cvFree
+
+# Calculates homography matrix for oblong planar object (e.g. arm)
+cvCalcImageHomography = cfunc('cvCalcImageHomography', _cvDLL, None,
+    ('line', POINTER(c_float), 1), # float* line
+    ('center', POINTER(CvPoint3D32f), 1), # CvPoint3D32f* center
+    ('intrinsic', POINTER(c_float), 1), # float* intrinsic
+    ('homography', POINTER(c_float), 1), # float* homography 
+)
+cvCalcImageHomography.__doc__ = """void cvCalcImageHomography(float* line, CvPoint3D32f* center, float* intrinsic, float* homography)
+
+Calculates homography matrix for oblong planar object (e.g. arm)
+"""
+
+
+
+
+
 # here, start from here
 
 
+#=============================================================================
+# Minh-Tri's hacks -- part 2
+#=============================================================================
+
     
+#-----------------------------------------------------------------------------
+# A hack on OpenCV's data types
+#-----------------------------------------------------------------------------
+# allows __del__ ()to call _my__del__(), if it exists
+
+def _hack_del(cls):
+    def _new__del__(self):
+        z = getattr(self, '_my__del__', None)
+        if z is not None:
+            z(self)
+        if self._old__del__ is not None:
+            self._old__del__()
+        
+    cls._old__del__ = getattr(cls, '__del__', None)
+    cls.__del__ = _new__del__
+    
+_hack_del(CvArr_p)
+_hack_del(POINTER(IplImage))
+_hack_del(POINTER(CvMat))
+_hack_del(POINTER(CvMatND))
+_hack_del(POINTER(CvMemStorage))
+_hack_del(POINTER(CvGraphScanner))
+_hack_del(POINTER(IplConvKernel))
+_hack_del(POINTER(CvKalman))
+_hack_del(POINTER(CvConDensation))
+
     
 
     
@@ -7364,9 +8003,6 @@ CvCapture._fields_ = [('vtable', POINTER(CvCaptureVTable))]
 
 
 # not implemented yet
-class CvPOSITObject(_Structure):
-    _fields_ = []
-
 class CvVideoWriter(_Structure):
     _fields_ = []
 
@@ -7405,390 +8041,23 @@ class CvVideoWriter(_Structure):
 
 # --- 3.1 Accumulation of Background Statistics ------------------------------
 
-# Adds frame to accumulator
-cvAcc = cfunc('cvAcc', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('sum', CvArr_p, 1), # CvArr* sum
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Adds the square of source image to accumulator
-cvSquareAcc = cfunc('cvSquareAcc', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('sqsum', CvArr_p, 1), # CvArr* sqsum
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Adds product of two input images to accumulator
-cvMultiplyAcc = cfunc('cvMultiplyAcc', _cvDLL, None,
-    ('image1', CvArr_p, 1), # const CvArr* image1
-    ('image2', CvArr_p, 1), # const CvArr* image2
-    ('acc', CvArr_p, 1), # CvArr* acc
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
-# Updates running average
-cvRunningAvg = cfunc('cvRunningAvg', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('acc', CvArr_p, 1), # CvArr* acc
-    ('alpha', c_double, 1), # double alpha
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
-)
-
 # --- 3.2 Motion Templates ---------------------------------------------------
-
-# Updates motion history image by moving silhouette
-cvUpdateMotionHistory = cfunc('cvUpdateMotionHistory', _cvDLL, None,
-    ('silhouette', CvArr_p, 1), # const CvArr* silhouette
-    ('mhi', CvArr_p, 1), # CvArr* mhi
-    ('timestamp', c_double, 1), # double timestamp
-    ('duration', c_double, 1), # double duration 
-)
-
-# Calculates gradient orientation of motion history image
-cvCalcMotionGradient = cfunc('cvCalcMotionGradient', _cvDLL, None,
-    ('mhi', CvArr_p, 1), # const CvArr* mhi
-    ('mask', CvArr_p, 1), # CvArr* mask
-    ('orientation', CvArr_p, 1), # CvArr* orientation
-    ('delta1', c_double, 1), # double delta1
-    ('delta2', c_double, 1), # double delta2
-    ('aperture_size', c_int, 1, 3), # int aperture_size
-)
-
-# Calculates global motion orientation of some selected region
-cvCalcGlobalOrientation = cfunc('cvCalcGlobalOrientation', _cvDLL, c_double,
-    ('orientation', CvArr_p, 1), # const CvArr* orientation
-    ('mask', CvArr_p, 1), # const CvArr* mask
-    ('mhi', CvArr_p, 1), # const CvArr* mhi
-    ('timestamp', c_double, 1), # double timestamp
-    ('duration', c_double, 1), # double duration 
-)
-
-# Segments whole motion into separate moving parts
-cvSegmentMotion = cfunc('cvSegmentMotion', _cvDLL, POINTER(CvSeq),
-    ('mhi', CvArr_p, 1), # const CvArr* mhi
-    ('seg_mask', CvArr_p, 1), # CvArr* seg_mask
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('timestamp', c_double, 1), # double timestamp
-    ('seg_thresh', c_double, 1), # double seg_thresh 
-)
 
 # --- 3.3 Object Tracking ----------------------------------------------------
 
-# Finds object center on back projection
-cvMeanShift = cfunc('cvMeanShift', _cvDLL, c_int,
-    ('prob_image', CvArr_p, 1), # const CvArr* prob_image
-    ('window', CvRect, 1), # CvRect window
-    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
-    ('comp', POINTER(CvConnectedComp), 1), # CvConnectedComp* comp 
-)
-
-# Finds object center, size, and orientation
-cvCamShift = cfunc('cvCamShift', _cvDLL, c_int,
-    ('prob_image', CvArr_p, 1), # const CvArr* prob_image
-    ('window', CvRect, 1), # CvRect window
-    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
-    ('comp', POINTER(CvConnectedComp), 2), # CvConnectedComp* comp
-    ('box', POINTER(CvBox2D), 2), # CvBox2D* box
-)
-
-CV_VALUE = 1
-CV_ARRAY = 2
-
-# Changes contour position to minimize its energy
-cvSnakeImage = cfunc('cvSnakeImage', _cvDLL, None,
-    ('image', POINTER(IplImage), 1), # const IplImage* image
-    ('points', POINTER(CvPoint), 1), # CvPoint* points
-    ('length', c_int, 1), # int length
-    ('alpha', POINTER(c_float), 1), # float* alpha
-    ('beta', POINTER(c_float), 1), # float* beta
-    ('gamma', POINTER(c_float), 1), # float* gamma
-    ('coeff_usage', c_int, 1), # int coeff_usage
-    ('win', CvSize, 1), # CvSize win
-    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
-    ('calc_gradient', c_int, 1, 1), # int calc_gradient
-)
-
 # --- 3.4 Optical Flow -------------------------------------------------------
 
-# Calculates optical flow for two images
-cvCalcOpticalFlowHS = cfunc('cvCalcOpticalFlowHS', _cvDLL, None,
-    ('prev', CvArr_p, 1), # const CvArr* prev
-    ('curr', CvArr_p, 1), # const CvArr* curr
-    ('use_previous', c_int, 1), # int use_previous
-    ('velx', CvArr_p, 1), # CvArr* velx
-    ('vely', CvArr_p, 1), # CvArr* vely
-    ('lambda', c_double, 1), # double lambda
-    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria 
-)
-
-# Calculates optical flow for two images
-cvCalcOpticalFlowLK = cfunc('cvCalcOpticalFlowLK', _cvDLL, None,
-    ('prev', CvArr_p, 1), # const CvArr* prev
-    ('curr', CvArr_p, 1), # const CvArr* curr
-    ('win_size', CvSize, 1), # CvSize win_size
-    ('velx', CvArr_p, 1), # CvArr* velx
-    ('vely', CvArr_p, 1), # CvArr* vely 
-)
-
-# Calculates optical flow for two images by block matching method
-cvCalcOpticalFlowBM = cfunc('cvCalcOpticalFlowBM', _cvDLL, None,
-    ('prev', CvArr_p, 1), # const CvArr* prev
-    ('curr', CvArr_p, 1), # const CvArr* curr
-    ('block_size', CvSize, 1), # CvSize block_size
-    ('shift_size', CvSize, 1), # CvSize shift_size
-    ('max_range', CvSize, 1), # CvSize max_range
-    ('use_previous', c_int, 1), # int use_previous
-    ('velx', CvArr_p, 1), # CvArr* velx
-    ('vely', CvArr_p, 1), # CvArr* vely 
-)
-
-# Calculates optical flow for a sparse feature set using iterative Lucas-Kanade method in   pyramids
-cvCalcOpticalFlowPyrLK = cfunc('cvCalcOpticalFlowPyrLK', _cvDLL, None,
-    ('prev', CvArr_p, 1), # const CvArr* prev
-    ('curr', CvArr_p, 1), # const CvArr* curr
-    ('prev_pyr', CvArr_p, 1), # CvArr* prev_pyr
-    ('curr_pyr', CvArr_p, 1), # CvArr* curr_pyr
-    ('prev_features', POINTER(CvPoint2D32f), 1), # const CvPoint2D32f* prev_features
-    ('curr_features', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* curr_features
-    ('count', c_int, 1), # int count
-    ('win_size', CvSize, 1), # CvSize win_size
-    ('level', c_int, 1), # int level
-    ('status', c_char_p, 1), # char* status
-    ('track_error', POINTER(c_float), 1), # float* track_error
-    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
-    ('flags', c_int, 1), # int flags 
-)
-
 # --- 3.5 Estimators ---------------------------------------------------------
-
-# Allocates Kalman filter structure
-cvCreateKalman = cfunc('cvCreateKalman', _cvDLL, POINTER(CvKalman),
-    ('dynam_params', c_int, 1), # int dynam_params
-    ('measure_params', c_int, 1), # int measure_params
-    ('control_params', c_int, 1, 0), # int control_params
-)
-
-# Deallocates Kalman filter structure
-cvReleaseKalman = cfunc('cvReleaseKalman', _cvDLL, None,
-    ('kalman', POINTER(POINTER(CvKalman)), 1), # CvKalman** kalman 
-)
-
-# Estimates subsequent model state
-cvKalmanPredict = cfunc('cvKalmanPredict', _cvDLL, POINTER(CvMat),
-    ('kalman', POINTER(CvKalman), 1), # CvKalman* kalman
-    ('control', POINTER(CvMat), 1, None), # const CvMat* control
-)
-
-cvKalmanUpdateByTime = cvKalmanPredict
-
-# Adjusts model state
-cvKalmanCorrect = cfunc('cvKalmanCorrect', _cvDLL, POINTER(CvMat),
-    ('kalman', POINTER(CvKalman), 1), # CvKalman* kalman
-    ('measurement', POINTER(CvMat), 1), # const CvMat* measurement 
-)
-
-cvKalmanUpdateByMeasurement = cvKalmanCorrect
-
-# Allocates ConDensation filter structure
-cvCreateConDensation = cfunc('cvCreateConDensation', _cvDLL, POINTER(CvConDensation),
-    ('dynam_params', c_int, 1), # int dynam_params
-    ('measure_params', c_int, 1), # int measure_params
-    ('sample_count', c_int, 1), # int sample_count 
-)
-
-# Deallocates ConDensation filter structure
-cvReleaseConDensation = cfunc('cvReleaseConDensation', _cvDLL, None,
-    ('condens', POINTER(POINTER(CvConDensation)), 1), # CvConDensation** condens 
-)
-
-# Initializes sample set for ConDensation algorithm
-cvConDensInitSampleSet = cfunc('cvConDensInitSampleSet', _cvDLL, None,
-    ('condens', POINTER(CvConDensation), 1), # CvConDensation* condens
-    ('lower_bound', POINTER(CvMat), 1), # CvMat* lower_bound
-    ('upper_bound', POINTER(CvMat), 1), # CvMat* upper_bound 
-)
-
-# Estimates subsequent model state
-cvConDensUpdateByTime = cfunc('cvConDensUpdateByTime', _cvDLL, None,
-    ('condens', POINTER(CvConDensation), 1), # CvConDensation* condens 
-)
 
 # --- 4 Pattern Recognition --------------------------------------------------
 
 # --- 4.1 Object Detection ---------------------------------------------------
 
-# Loads a trained cascade classifier from file or the classifier database embedded in OpenCV
-cvLoadHaarClassifierCascade = cfunc('cvLoadHaarClassifierCascade', _cvDLL, POINTER(CvHaarClassifierCascade),
-    ('directory', c_char_p, 1), # const char* directory
-    ('orig_window_size', CvSize, 1), # CvSize orig_window_size 
-)
-
-# Releases haar classifier cascade
-cvReleaseHaarClassifierCascade = cfunc('cvReleaseHaarClassifierCascade', _cvDLL, None,
-    ('cascade', POINTER(POINTER(CvHaarClassifierCascade)), 1), # CvHaarClassifierCascade** cascade 
-)
-
-CV_HAAR_DO_CANNY_PRUNING = 1
-CV_HAAR_SCALE_IMAGE = 2
-
-# Detects objects in the image
-cvHaarDetectObjects = cfunc('cvHaarDetectObjects', _cvDLL, POINTER(CvSeq),
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('cascade', POINTER(CvHaarClassifierCascade), 1), # CvHaarClassifierCascade* cascade
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('scale_factor', c_double, 1, 1), # double scale_factor
-    ('min_neighbors', c_int, 1, 3), # int min_neighbors
-    ('flags', c_int, 1, 0), # int flags
-    ('min_size', CvSize, 1), # CvSize min_size
-)
-def ChangeCvSeqToCvRect(result, func, args):
-    '''Handle the casting to extract a list of Rects from the Seq returned'''
-    res = []
-    for i in xrange(result[0].total):
-        f = cvGetSeqElem(result, i)
-        r = cast(f, POINTER(CvRect))[0]
-        res.append(r)
-    return res
-cvHaarDetectObjects.errcheck = ChangeCvSeqToCvRect
-
-
-# Assigns images to the hidden cascade
-cvSetImagesForHaarClassifierCascade = cfunc('cvSetImagesForHaarClassifierCascade', _cvDLL, None,
-    ('cascade', POINTER(CvHaarClassifierCascade), 1), # CvHaarClassifierCascade* cascade
-    ('sum', CvArr_p, 1), # const CvArr* sum
-    ('sqsum', CvArr_p, 1), # const CvArr* sqsum
-    ('tilted_sum', CvArr_p, 1), # const CvArr* tilted_sum
-    ('scale', c_double, 1), # double scale 
-)
-
-# Runs cascade of boosted classifier at given image location
-cvRunHaarClassifierCascade = cfunc('cvRunHaarClassifierCascade', _cvDLL, c_int,
-    ('cascade', POINTER(CvHaarClassifierCascade), 1), # CvHaarClassifierCascade* cascade
-    ('pt', CvPoint, 1), # CvPoint pt
-    ('start_stage', c_int, 1, 0), # int start_stage
-)
-
 # --- 5 Camera Calibration and 3D Reconstruction -----------------------------
 
 # --- 5.1 Camera Calibration -------------------------------------------------
 
-# Projects 3D points to image plane
-cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
-    ('object_points', POINTER(CvMat), 1), # const CvMat* object_points
-    ('rotation_vector', POINTER(CvMat), 1), # const CvMat* rotation_vector
-    ('translation_vector', POINTER(CvMat), 1), # const CvMat* translation_vector
-    ('intrinsic_matrix', POINTER(CvMat), 1), # const CvMat* intrinsic_matrix
-    ('distortion_coeffs', POINTER(CvMat), 1), # const CvMat* distortion_coeffs
-    ('image_points', POINTER(CvMat), 1), # CvMat* image_points
-    ('dpdrot', POINTER(CvMat), 1, None), # CvMat* dpdrot
-    ('dpdt', POINTER(CvMat), 1, None), # CvMat* dpdt
-    ('dpdf', POINTER(CvMat), 1, None), # CvMat* dpdf
-    ('dpdc', POINTER(CvMat), 1, None), # CvMat* dpdc
-    ('dpddist', POINTER(CvMat), 1, None), # CvMat* dpddist
-)
-
-# Finds perspective transformation between two planes
-cvFindHomography = cfunc('cvFindHomography', _cvDLL, None,
-    ('src_points', POINTER(CvMat), 1), # const CvMat* src_points
-    ('dst_points', POINTER(CvMat), 1), # const CvMat* dst_points
-    ('homography', POINTER(CvMat), 1), # CvMat* homography 
-)
-
-# Finds intrinsic and extrinsic camera parameters using calibration pattern
-cvCalibrateCamera2 = cfunc('cvCalibrateCamera2', _cvDLL, None,
-    ('object_points', POINTER(CvMat), 1), # const CvMat* object_points
-    ('image_points', POINTER(CvMat), 1), # const CvMat* image_points
-    ('point_counts', POINTER(CvMat), 1), # const CvMat* point_counts
-    ('image_size', CvSize, 1), # CvSize image_size
-    ('intrinsic_matrix', POINTER(CvMat), 1), # CvMat* intrinsic_matrix
-    ('distortion_coeffs', POINTER(CvMat), 1), # CvMat* distortion_coeffs
-    ('rotation_vectors', POINTER(CvMat), 1, None), # CvMat* rotation_vectors
-    ('translation_vectors', POINTER(CvMat), 1, None), # CvMat* translation_vectors
-    ('flags', c_int, 1, 0), # int flags
-)
-
-# Finds extrinsic camera parameters for particular view
-cvFindExtrinsicCameraParams2 = cfunc('cvFindExtrinsicCameraParams2', _cvDLL, None,
-    ('object_points', POINTER(CvMat), 1), # const CvMat* object_points
-    ('image_points', POINTER(CvMat), 1), # const CvMat* image_points
-    ('intrinsic_matrix', POINTER(CvMat), 1), # const CvMat* intrinsic_matrix
-    ('distortion_coeffs', POINTER(CvMat), 1), # const CvMat* distortion_coeffs
-    ('rotation_vector', POINTER(CvMat), 1), # CvMat* rotation_vector
-    ('translation_vector', POINTER(CvMat), 1), # CvMat* translation_vector 
-)
-
-# Converts rotation matrix to rotation vector or vice versa
-cvRodrigues2 = cfunc('cvRodrigues2', _cvDLL, c_int,
-    ('src', POINTER(CvMat), 1), # const CvMat* src
-    ('dst', POINTER(CvMat), 1), # CvMat* dst
-    ('jacobian', POINTER(CvMat), 1, 0), # CvMat* jacobian
-)
-
-# Transforms image to compensate lens distortion
-cvUndistort2 = cfunc('cvUndistort2', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('intrinsic_matrix', POINTER(CvMat), 1), # const CvMat* intrinsic_matrix
-    ('distortion_coeffs', POINTER(CvMat), 1), # const CvMat* distortion_coeffs 
-)
-
-# Computes undistorion map
-cvInitUndistortMap = cfunc('cvInitUndistortMap', _cvDLL, None,
-    ('intrinsic_matrix', POINTER(CvMat), 1), # const CvMat* intrinsic_matrix
-    ('distortion_coeffs', POINTER(CvMat), 1), # const CvMat* distortion_coeffs
-    ('mapx', CvArr_p, 1), # CvArr* mapx
-    ('mapy', CvArr_p, 1), # CvArr* mapy 
-)
-
-# Finds positions of internal corners of the chessboard
-cvFindChessboardCorners = cfunc('cvFindChessboardCorners', _cvDLL, c_int,
-    ('image', c_void_p, 1), # const void* image
-    ('pattern_size', CvSize, 1), # CvSize pattern_size
-    ('corners', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* corners
-    ('corner_count', c_int_p, 1, None), # int* corner_count
-    ('flags', c_int, 1), # int flags
-)
-
-# Renders the detected chessboard corners
-cvDrawChessboardCorners = cfunc('cvDrawChessboardCorners', _cvDLL, None,
-    ('image', CvArr_p, 1), # CvArr* image
-    ('pattern_size', CvSize, 1), # CvSize pattern_size
-    ('corners', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* corners
-    ('count', c_int, 1), # int count
-    ('pattern_was_found', c_int, 1), # int pattern_was_found 
-)
-
 # --- 5.2 Pose Estimation ----------------------------------------------------
-
-# Initializes structure containing object information
-cvCreatePOSITObject = cfunc('cvCreatePOSITObject', _cvDLL, POINTER(CvPOSITObject),
-    ('points', POINTER(CvPoint3D32f), 1), # CvPoint3D32f* points
-    ('point_count', c_int, 1), # int point_count 
-)
-
-# Implements POSIT algorithm
-cvPOSIT = cfunc('cvPOSIT', _cvDLL, None,
-    ('posit_object', POINTER(CvPOSITObject), 1), # CvPOSITObject* posit_object
-    ('image_points', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* image_points
-    ('focal_length', c_double, 1), # double focal_length
-    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
-    ('rotation_matrix', CvMatr32f, 1), # CvMatr32f rotation_matrix
-    ('translation_vector', CvVect32f, 1), # CvVect32f translation_vector 
-)
-
-# Deallocates 3D object structure
-cvReleasePOSITObject = cfunc('cvReleasePOSITObject', _cvDLL, None,
-    ('posit_object', POINTER(POINTER(CvPOSITObject)), 1), # CvPOSITObject** posit_object 
-)
-
-# Calculates homography matrix for oblong planar object (e.g. arm)
-cvCalcImageHomography = cfunc('cvCalcImageHomography', _cvDLL, None,
-    ('line', POINTER(c_float), 1), # float* line
-    ('center', POINTER(CvPoint3D32f), 1), # CvPoint3D32f* center
-    ('intrinsic', POINTER(c_float), 1), # float* intrinsic
-    ('homography', POINTER(c_float), 1), # float* homography 
-)
 
 # --- 5.3 Epipolar Geometry --------------------------------------------------
 
@@ -8163,211 +8432,6 @@ except ImportError:
     pass
 
 # --- Dokumentationsstrings --------------------------------------------------
-
-cvAcc.__doc__ = """void cvAcc(const CvArr* image, CvArr* sum, const CvArr* mask=NULL)
-
-Adds frame to accumulator
-"""
-
-cvSquareAcc.__doc__ = """void cvSquareAcc(const CvArr* image, CvArr* sqsum, const CvArr* mask=NULL)
-
-Adds the square of source image to accumulator
-"""
-
-cvMultiplyAcc.__doc__ = """void cvMultiplyAcc(const CvArr* image1, const CvArr* image2, CvArr* acc, const CvArr* mask=NULL)
-
-Adds product of two input images to accumulator
-"""
-
-cvRunningAvg.__doc__ = """void cvRunningAvg(const CvArr* image, CvArr* acc, double alpha, const CvArr* mask=NULL)
-
-Updates running average
-"""
-
-cvUpdateMotionHistory.__doc__ = """void cvUpdateMotionHistory(const CvArr* silhouette, CvArr* mhi, double timestamp, double duration)
-
-Updates motion history image by moving silhouette
-"""
-
-cvCalcMotionGradient.__doc__ = """void cvCalcMotionGradient(const CvArr* mhi, CvArr* mask, CvArr* orientation, double delta1, double delta2, int aperture_size=3)
-
-Calculates gradient orientation of motion history image
-"""
-
-cvCalcGlobalOrientation.__doc__ = """double cvCalcGlobalOrientation(const CvArr* orientation, const CvArr* mask, const CvArr* mhi, double timestamp, double duration)
-
-Calculates global motion orientation of some selected region
-"""
-
-cvSegmentMotion.__doc__ = """CvSeq* cvSegmentMotion(const CvArr* mhi, CvArr* seg_mask, CvMemStorage* storage, double timestamp, double seg_thresh)
-
-Segments whole motion into separate moving parts
-"""
-
-cvMeanShift.__doc__ = """int cvMeanShift(const CvArr* prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp* comp)
-
-Finds object center on back projection
-"""
-
-cvCamShift.__doc__ = """int cvCamShift(const CvArr* prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp* comp, CvBox2D* box=NULL)
-
-Finds object center, size, and orientation
-"""
-
-cvSnakeImage.__doc__ = """void cvSnakeImage(const IplImage* image, CvPoint* points, int length, float* alpha, float* beta, float* gamma, int coeff_usage, CvSize win, CvTermCriteria criteria, int calc_gradient=1)
-
-Changes contour position to minimize its energy
-"""
-
-cvCalcOpticalFlowHS.__doc__ = """void cvCalcOpticalFlowHS(const CvArr* prev, const CvArr* curr, int use_previous, CvArr* velx, CvArr* vely, double lambda, CvTermCriteria criteria)
-
-Calculates optical flow for two images
-"""
-
-cvCalcOpticalFlowLK.__doc__ = """void cvCalcOpticalFlowLK(const CvArr* prev, const CvArr* curr, CvSize win_size, CvArr* velx, CvArr* vely)
-
-Calculates optical flow for two images
-"""
-
-cvCalcOpticalFlowBM.__doc__ = """void cvCalcOpticalFlowBM(const CvArr* prev, const CvArr* curr, CvSize block_size, CvSize shift_size, CvSize max_range, int use_previous, CvArr* velx, CvArr* vely)
-
-Calculates optical flow for two images by block matching method
-"""
-
-cvCalcOpticalFlowPyrLK.__doc__ = """void cvCalcOpticalFlowPyrLK(const CvArr* prev, const CvArr* curr, CvArr* prev_pyr, CvArr* curr_pyr, const CvPoint2D32f* prev_features, CvPoint2D32f* curr_features, int count, CvSize win_size, int level, char* status, float* track_error, CvTermCriteria criteria, int flags)
-
-Calculates optical flow for a sparse feature set using iterative Lucas-Kanade method in   pyramids
-"""
-
-cvCreateKalman.__doc__ = """CvKalman* cvCreateKalman(int dynam_params, int measure_params, int control_params=0)
-
-Allocates Kalman filter structure
-"""
-
-cvReleaseKalman.__doc__ = """void cvReleaseKalman(CvKalman** kalman)
-
-Deallocates Kalman filter structure
-"""
-
-cvKalmanPredict.__doc__ = """const CvMat* cvKalmanPredict(CvKalman* kalman, const CvMat* control=NULL)
-
-Estimates subsequent model state
-"""
-
-cvKalmanCorrect.__doc__ = """const CvMat* cvKalmanCorrect(CvKalman* kalman, const CvMat* measurement)
-
-Adjusts model state
-"""
-
-cvCreateConDensation.__doc__ = """CvConDensation* cvCreateConDensation(int dynam_params, int measure_params, int sample_count)
-
-Allocates ConDensation filter structure
-"""
-
-cvReleaseConDensation.__doc__ = """void cvReleaseConDensation(CvConDensation** condens)
-
-Deallocates ConDensation filter structure
-"""
-
-cvConDensInitSampleSet.__doc__ = """void cvConDensInitSampleSet(CvConDensation* condens, CvMat* lower_bound, CvMat* upper_bound)
-
-Initializes sample set for ConDensation algorithm
-"""
-
-cvConDensUpdateByTime.__doc__ = """void cvConDensUpdateByTime(CvConDensation* condens)
-
-Estimates subsequent model state
-"""
-
-cvLoadHaarClassifierCascade.__doc__ = """CvHaarClassifierCascade* cvLoadHaarClassifierCascade(const char* directory, CvSize orig_window_size)
-
-Loads a trained cascade classifier from file or the classifier database embedded in OpenCV
-"""
-
-cvReleaseHaarClassifierCascade.__doc__ = """void cvReleaseHaarClassifierCascade(CvHaarClassifierCascade** cascade)
-
-Releases haar classifier cascade
-"""
-
-cvHaarDetectObjects.__doc__ = """CvSeq* cvHaarDetectObjects(const CvArr* image, CvHaarClassifierCascade* cascade, CvMemStorage* storage, double scale_factor=1.1, int min_neighbors=3, int flags=0, CvSize min_size=cvSize(0, 0)
-
-Detects objects in the image
-"""
-
-cvSetImagesForHaarClassifierCascade.__doc__ = """void cvSetImagesForHaarClassifierCascade(CvHaarClassifierCascade* cascade, const CvArr* sum, const CvArr* sqsum, const CvArr* tilted_sum, double scale)
-
-Assigns images to the hidden cascade
-"""
-
-cvRunHaarClassifierCascade.__doc__ = """int cvRunHaarClassifierCascade(CvHaarClassifierCascade* cascade, CvPoint pt, int start_stage=0)
-
-Runs cascade of boosted classifier at given image location
-"""
-
-cvProjectPoints2.__doc__ = """void cvProjectPoints2(const CvMat* object_points, const CvMat* rotation_vector, const CvMat* translation_vector, const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs, CvMat* image_points, CvMat* dpdrot=NULL, CvMat* dpdt=NULL, CvMat* dpdf=NULL, CvMat* dpdc=NULL, CvMat* dpddist=NULL)
-
-Projects 3D points to image plane
-"""
-
-cvFindHomography.__doc__ = """void cvFindHomography(const CvMat* src_points, const CvMat* dst_points, CvMat* homography)
-
-Finds perspective transformation between two planes
-"""
-
-cvCalibrateCamera2.__doc__ = """void cvCalibrateCamera2(const CvMat* object_points, const CvMat* image_points, const CvMat* point_counts, CvSize image_size, CvMat* intrinsic_matrix, CvMat* distortion_coeffs, CvMat* rotation_vectors=NULL, CvMat* translation_vectors=NULL, int flags=0)
-
-Finds intrinsic and extrinsic camera parameters using calibration pattern
-"""
-
-cvFindExtrinsicCameraParams2.__doc__ = """void cvFindExtrinsicCameraParams2(const CvMat* object_points, const CvMat* image_points, const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs, CvMat* rotation_vector, CvMat* translation_vector)
-
-Finds extrinsic camera parameters for particular view
-"""
-
-cvRodrigues2.__doc__ = """int cvRodrigues2(const CvMat* src, CvMat* dst, CvMat* jacobian=0)
-
-Converts rotation matrix to rotation vector or vice versa
-"""
-
-cvUndistort2.__doc__ = """void cvUndistort2(const CvArr* src, CvArr* dst, const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs)
-
-Transforms image to compensate lens distortion
-"""
-
-cvInitUndistortMap.__doc__ = """void cvInitUndistortMap(const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs, CvArr* mapx, CvArr* mapy)
-
-Computes undistorion map
-"""
-
-cvFindChessboardCorners.__doc__ = """int cvFindChessboardCorners(const void* image, CvSize pattern_size, CvPoint2D32f* corners, int* corner_count=NULL, int flags=CV_CALIB_CB_ADAPTIVE_THRESH)
-
-Finds positions of internal corners of the chessboard
-"""
-
-cvDrawChessboardCorners.__doc__ = """void cvDrawChessboardCorners(CvArr* image, CvSize pattern_size, CvPoint2D32f* corners, int count, int pattern_was_found)
-
-Renders the detected chessboard corners
-"""
-
-cvCreatePOSITObject.__doc__ = """CvPOSITObject* cvCreatePOSITObject(CvPoint3D32f* points, int point_count)
-
-Initializes structure containing object information
-"""
-
-cvPOSIT.__doc__ = """void cvPOSIT(CvPOSITObject* posit_object, CvPoint2D32f* image_points, double focal_length, CvTermCriteria criteria, CvMatr32f rotation_matrix, CvVect32f translation_vector)
-
-Implements POSIT algorithm
-"""
-
-cvReleasePOSITObject.__doc__ = """void cvReleasePOSITObject(CvPOSITObject** posit_object)
-
-Deallocates 3D object structure
-"""
-
-cvCalcImageHomography.__doc__ = """void cvCalcImageHomography(float* line, CvPoint3D32f* center, float* intrinsic, float* homography)
-
-Calculates homography matrix for oblong planar object (e.g. arm)
-"""
 
 cvFindFundamentalMat.__doc__ = """int cvFindFundamentalMat(const CvMat* points1, const CvMat* points2, CvMat* fundamental_matrix, int method=CV_FM_RANSAC, double param1=1., double param2=0.99, CvMat* status=NUL)
 
