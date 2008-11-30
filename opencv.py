@@ -234,55 +234,7 @@ class CallableToFunc(object):
     
 # --- CONSTANTS AND STUFF FROM CV.H ------------------------------------------------------
 
-CV_INPAINT_NS = 0
-CV_INPAINT_TELEA = 1
-CV_WARP_FILL_OUTLIERS = 8
-CV_WARP_INVERSE_MAP = 16
-CV_SHAPE_RECT = 0
-CV_SHAPE_CROSS = 1
-CV_SHAPE_ELLIPSE = 2
-CV_SHAPE_CUSTOM = 100
-CV_LKFLOW_PYR_A_READY = 1
-CV_LKFLOW_PYR_B_READY = 2
-CV_LKFLOW_INITIAL_GUESSES = 4
-CV_CONTOURS_MATCH_I1 = 1
-CV_CONTOURS_MATCH_I2 = 2
-CV_CONTOURS_MATCH_I3 = 3
-CV_CONTOUR_TREES_MATCH_I1 = 1
-CV_CLOCKWISE = 1
-CV_COUNTER_CLOCKWISE = 2
-CV_CALIB_USE_INTRINSIC_GUESS = 1
-CV_CALIB_FIX_ASPECT_RATIO = 2
-CV_CALIB_FIX_PRINCIPAL_POINT = 4
-CV_CALIB_ZERO_TANGENT_DIST = 8
-CV_CALIB_CB_ADAPTIVE_THRESH = 1
-CV_CALIB_CB_NORMALIZE_IMAGE = 2
-CV_CALIB_CB_FILTER_QUADS = 4
-CV_FM_7POINT = 1
-CV_FM_8POINT = 2
-CV_FM_LMEDS_ONLY = 4
-CV_FM_RANSAC_ONLY = 8
-CV_FM_LMEDS = CV_FM_LMEDS_ONLY + CV_FM_8POINT
-CV_FM_RANSAC = CV_FM_RANSAC_ONLY + CV_FM_8POINT
-
 # --- CONSTANTS AND STUFF FROM highgui.h ----
-CV_WINDOW_AUTOSIZE = 1
-CV_EVENT_MOUSEMOVE = 0
-CV_EVENT_LBUTTONDOWN = 1
-CV_EVENT_RBUTTONDOWN = 2
-CV_EVENT_MBUTTONDOWN = 3
-CV_EVENT_LBUTTONUP = 4
-CV_EVENT_RBUTTONUP = 5
-CV_EVENT_MBUTTONUP = 6
-CV_EVENT_LBUTTONDBLCLK = 7
-CV_EVENT_RBUTTONDBLCLK = 8
-CV_EVENT_MBUTTONDBLCLK = 9
-CV_EVENT_FLAG_LBUTTON = 1
-CV_EVENT_FLAG_RBUTTON = 2
-CV_EVENT_FLAG_MBUTTON = 4
-CV_EVENT_FLAG_CTRLKEY = 8
-CV_EVENT_FLAG_SHIFTKEY = 16
-CV_EVENT_FLAG_ALTKEY = 32
 CV_LOAD_IMAGE_UNCHANGED = -1 # 8 bit, color or gray - deprecated, use CV_LOAD_IMAGE_ANYCOLOR
 CV_LOAD_IMAGE_GRAYSCALE =  0 # 8 bit, gray
 CV_LOAD_IMAGE_COLOR     =  1 # 8 bit unless combined with CV_LOAD_IMAGE_ANYDEPTH, color
@@ -5957,6 +5909,9 @@ cvResize.__doc__ = """void cvResize(const CvArr* src, CvArr* dst, int interpolat
 Resizes image
 """
 
+CV_WARP_FILL_OUTLIERS = 8
+CV_WARP_INVERSE_MAP = 16
+
 # Applies affine transformation to the image
 cvWarpAffine = cfunc('cvWarpAffine', _cvDLL, None,
     ('src', CvArr_p, 1), # const CvArr* src
@@ -6049,6 +6004,11 @@ Remaps image to log-polar space
 # Image Processing: Morphological Operations
 #-----------------------------------------------------------------------------
 
+
+CV_SHAPE_RECT = 0
+CV_SHAPE_CROSS = 1
+CV_SHAPE_ELLIPSE = 2
+CV_SHAPE_CUSTOM = 100
 
 # ------ List of methods not to be called by a user ------
 
@@ -6612,6 +6572,22 @@ cvDistTransform.__doc__ = """void cvDistTransform(const CvArr* src, CvArr* dst, 
 Calculates distance to closest zero pixel for all non-zero pixels of source image
 """
 
+CV_INPAINT_NS = 0
+CV_INPAINT_TELEA = 1
+
+# Inpaints the selected region in the image
+cvInpaint = cfunc('cvInpaint', _cvDLL,  None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('mask', CvArr_p, 1), # const CvArr* mask
+    ('dst', CvArr_p, 1), # const CvArr* dst
+    ('flags', c_int, 1), # int flags
+    ('inpaintRadius', c_double, 1), # double inpaintRadius
+)
+cvInpaint.__doc__ = """void cvInpaint( const CvArr* src, const CvArr* mask, CvArr* dst, int flags, double inpaintRadius )
+
+Inpaints the selected region in the image
+"""
+
 
 #-----------------------------------------------------------------------------
 # Histograms
@@ -6864,6 +6840,13 @@ cvMatchTemplate.__doc__ = """void cvMatchTemplate(const CvArr* image, const CvAr
 
 Compares template against overlapped image regions
 """
+
+CV_CONTOURS_MATCH_I1 = 1
+CV_CONTOURS_MATCH_I2 = 2
+CV_CONTOURS_MATCH_I3 = 3
+CV_CONTOUR_TREES_MATCH_I1 = 1
+CV_CLOCKWISE = 1
+CV_COUNTER_CLOCKWISE = 2
 
 # Compares two shapes
 cvMatchShapes = cfunc('cvMatchShapes', _cvDLL, c_double,
@@ -7464,6 +7447,10 @@ Changes contour position to minimize its energy
 #-----------------------------------------------------------------------------
 
 
+CV_LKFLOW_PYR_A_READY = 1
+CV_LKFLOW_PYR_B_READY = 2
+CV_LKFLOW_INITIAL_GUESSES = 4
+
 # Calculates optical flow for two images
 cvCalcOpticalFlowHS = cfunc('cvCalcOpticalFlowHS', _cvDLL, None,
     ('prev', CvArr_p, 1), # const CvArr* prev
@@ -7731,6 +7718,14 @@ Runs cascade of boosted classifier at given image location
 #-----------------------------------------------------------------------------
 
 
+CV_CALIB_USE_INTRINSIC_GUESS = 1
+CV_CALIB_FIX_ASPECT_RATIO = 2
+CV_CALIB_FIX_PRINCIPAL_POINT = 4
+CV_CALIB_ZERO_TANGENT_DIST = 8
+CV_CALIB_CB_ADAPTIVE_THRESH = 1
+CV_CALIB_CB_NORMALIZE_IMAGE = 2
+CV_CALIB_CB_FILTER_QUADS = 4
+
 # Projects 3D points to image plane
 cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
     ('object_points', POINTER(CvMat), 1), # const CvMat* object_points
@@ -7921,6 +7916,286 @@ Calculates homography matrix for oblong planar object (e.g. arm)
 """
 
 
+#-----------------------------------------------------------------------------
+# Epipolar Geometry
+#-----------------------------------------------------------------------------
+
+
+CV_FM_7POINT = 1
+CV_FM_8POINT = 2
+CV_FM_LMEDS_ONLY = 4
+CV_FM_RANSAC_ONLY = 8
+CV_FM_LMEDS = CV_FM_LMEDS_ONLY + CV_FM_8POINT
+CV_FM_RANSAC = CV_FM_RANSAC_ONLY + CV_FM_8POINT
+
+# Calculates fundamental matrix from corresponding points in two images
+cvFindFundamentalMat = cfunc('cvFindFundamentalMat', _cvDLL, c_int,
+    ('points1', POINTER(CvMat), 1), # const CvMat* points1
+    ('points2', POINTER(CvMat), 1), # const CvMat* points2
+    ('fundamental_matrix', POINTER(CvMat), 1), # CvMat* fundamental_matrix
+    ('method', c_int, 1), # int method
+    ('param1', c_double, 1, 1), # double param1
+    ('param2', c_double, 1, 0), # double param2
+    ('status', POINTER(CvMat), 1, None), # CvMat* status
+)
+cvFindFundamentalMat.__doc__ = """int cvFindFundamentalMat(const CvMat* points1, const CvMat* points2, CvMat* fundamental_matrix, int method=CV_FM_RANSAC, double param1=1., double param2=0.99, CvMat* status=NUL)
+
+Calculates fundamental matrix from corresponding points in two images
+"""
+
+# For points in one image of stereo pair computes the corresponding epilines in the other image
+cvComputeCorrespondEpilines = cfunc('cvComputeCorrespondEpilines', _cvDLL, None,
+    ('points', POINTER(CvMat), 1), # const CvMat* points
+    ('which_image', c_int, 1), # int which_image
+    ('fundamental_matrix', POINTER(CvMat), 1), # const CvMat* fundamental_matrix
+    ('correspondent_lines', POINTER(CvMat), 1), # CvMat* correspondent_lines
+)
+cvComputeCorrespondEpilines.__doc__ = """void cvComputeCorrespondEpilines(const CvMat* points, int which_image, const CvMat* fundamental_matrix, CvMat* correspondent_line)
+
+For points in one image of stereo pair computes the corresponding epilines in the other image
+"""
+
+# Convert points to/from homogeneous coordinates
+cvConvertPointsHomogenious = cfunc('cvConvertPointsHomogenious', _cvDLL, None,
+    ('src', POINTER(CvMat), 1), # const CvMat* src
+    ('dst', POINTER(CvMat), 1), # CvMat* dst 
+)
+cvConvertPointsHomogenious.__doc__ = """void cvConvertPointsHomogeneous(const CvMat* src, CvMat* dst)
+
+Convert points to/from homogeneous coordinates
+"""
+
+cvConvertPointsHomogeneous = cvConvertPointsHomogenious
+
+
+#=============================================================================
+# ml/ml.h
+#=============================================================================
+
+
+# TODO: to provide an interface for this class. Atm, it's pretty tough.
+
+
+#=============================================================================
+# highgui/highgui.h
+#=============================================================================
+
+
+#-----------------------------------------------------------------------------
+# Simple GUI
+#-----------------------------------------------------------------------------
+
+
+CV_WINDOW_AUTOSIZE = 1
+
+# Creates window
+cvNamedWindow = cfunc('cvNamedWindow', _hgDLL, c_int,
+    ('name', c_char_p, 1), # const char* name
+    ('flags', c_int, 1, 1), # int flags 
+)
+cvNamedWindow.__doc__ = """int cvNamedWindow(const char* name, int flags)
+
+Creates window
+"""
+
+# Destroys a window
+cvDestroyWindow = cfunc('cvDestroyWindow', _hgDLL, None,
+    ('name', c_char_p, 1), # const char* name 
+)
+cvDestroyWindow.__doc__ = """void cvDestroyWindow(const char* name)
+
+Destroys a window
+"""
+
+# Destroys all the HighGUI windows
+cvDestroyAllWindows = cfunc('cvDestroyAllWindows', _hgDLL, None,
+)
+cvDestroyAllWindows.__doc__ = """void cvDestroyAllWindows(oi)
+
+Destroys all the HighGUI windows
+"""
+
+# Sets window size
+cvResizeWindow = cfunc('cvResizeWindow', _hgDLL, None,
+    ('name', c_char_p, 1), # const char* name
+    ('width', c_int, 1), # int width
+    ('height', c_int, 1), # int height 
+)
+cvResizeWindow.__doc__ = """void cvResizeWindow(const char* name, int width, int height)
+
+Sets window size
+"""
+
+# Sets window position
+cvMoveWindow = cfunc('cvMoveWindow', _hgDLL, None,
+    ('name', c_char_p, 1), # const char* name
+    ('x', c_int, 1), # int x
+    ('y', c_int, 1), # int y 
+)
+cvMoveWindow.__doc__ = """void cvMoveWindow(const char* name, int x, int y)
+
+Sets window position
+"""
+
+# Gets window handle by name
+cvGetWindowHandle = cfunc('cvGetWindowHandle', _hgDLL, c_void_p,
+    ('name', c_char_p, 1), # const char* name 
+)
+cvGetWindowHandle.__doc__ = """void* cvGetWindowHandle(const char* name)
+
+Gets window handle by name
+"""
+
+# Gets window name by handle
+cvGetWindowName = cfunc('cvGetWindowName', _hgDLL, c_void_p,
+    ('window_handle', c_void_p, 1), # void* window_handle 
+)
+cvGetWindowName.__doc__ = """constchar* cvGetWindowName(void* window_handle)
+
+Gets window name by handle
+"""
+
+# Shows the image in the specified window
+cvShowImage = cfunc('cvShowImage', _hgDLL, None,
+    ('name', c_char_p, 1), # const char* name
+    ('image', CvArr_p, 1), # const CvArr* image 
+)
+cvShowImage.__doc__ = """void cvShowImage(const char* name, const CvArr* image)
+
+Shows the image in the specified window
+"""
+
+# Creates the trackbar and attaches it to the specified window
+CvTrackbarCallback = CFUNCTYPE(None, # void
+    c_int) # int pos
+
+# Creates the trackbar and attaches it to the specified window
+cvCreateTrackbar = cfunc('cvCreateTrackbar', _hgDLL, c_int,
+    ('trackbar_name', c_char_p, 1), # const char* trackbar_name
+    ('window_name', c_char_p, 1), # const char* window_name
+    ('value', c_int_p, 1), # int* value
+    ('count', c_int, 1), # int count
+    ('on_change', CallableToFunc(CvTrackbarCallback), 1), # CvTrackbarCallback on_change 
+)
+cvCreateTrackbar.__doc__ = """int cvCreateTrackbar( const char* trackbar_name, const char* window_name, int* value, int count, CvTrackbarCallback on_change )
+
+Creates the trackbar and attaches it to the specified window
+"""
+
+# Retrieves trackbar position
+cvGetTrackbarPos = cfunc('cvGetTrackbarPos', _hgDLL, c_int,
+    ('trackbar_name', c_char_p, 1), # const char* trackbar_name
+    ('window_name', c_char_p, 1), # const char* window_name 
+)
+cvGetTrackbarPos.__doc__ = """int cvGetTrackbarPos(const char* trackbar_name, const char* window_name)
+
+Retrieves trackbar position
+"""
+
+# Sets trackbar position
+cvSetTrackbarPos = cfunc('cvSetTrackbarPos', _hgDLL, None,
+    ('trackbar_name', c_char_p, 1), # const char* trackbar_name
+    ('window_name', c_char_p, 1), # const char* window_name
+    ('pos', c_int, 1), # int pos 
+)
+cvSetTrackbarPos.__doc__ = """void cvSetTrackbarPos(const char* trackbar_name, const char* window_name, int pos)
+
+Sets trackbar position
+"""
+
+# Assigns callback for mouse events
+CV_EVENT_MOUSEMOVE = 0
+CV_EVENT_LBUTTONDOWN = 1
+CV_EVENT_RBUTTONDOWN = 2
+CV_EVENT_MBUTTONDOWN = 3
+CV_EVENT_LBUTTONUP = 4
+CV_EVENT_RBUTTONUP = 5
+CV_EVENT_MBUTTONUP = 6
+CV_EVENT_LBUTTONDBLCLK = 7
+CV_EVENT_RBUTTONDBLCLK = 8
+CV_EVENT_MBUTTONDBLCLK = 9
+
+CV_EVENT_FLAG_LBUTTON = 1
+CV_EVENT_FLAG_RBUTTON = 2
+CV_EVENT_FLAG_MBUTTON = 4
+CV_EVENT_FLAG_CTRLKEY = 8
+CV_EVENT_FLAG_SHIFTKEY = 16
+CV_EVENT_FLAG_ALTKEY = 32
+
+CvMouseCallback = CFUNCTYPE(None, # void
+    c_int, # int event
+    c_int, # int x
+    c_int, # int y
+    c_int, # int flags
+    c_void_p) # void* param
+
+# Assigns callback for mouse events
+cvSetMouseCallback = cfunc('cvSetMouseCallback', _hgDLL, None,
+    ('window_name', c_char_p, 1), # const char* window_name
+    ('on_mouse', CallableToFunc(CvMouseCallback), 1), # CvMouseCallback on_mouse
+    ('param', c_void_p, 1, None), # void* param
+)
+cvSetMouseCallback.__doc__ = """void cvSetMouseCallback( const char* window_name, CvMouseCallback on_mouse, void* param=NULL )
+
+Assigns callback for mouse events
+"""
+
+# Waits for a pressed key
+cvWaitKey = cfunc('cvWaitKey', _hgDLL, c_int,
+    ('delay', c_int, 1, 0), # int delay
+)
+cvWaitKey.__doc__ = """int cvWaitKey(int delay=0)
+
+Waits for a pressed key
+"""
+
+
+#-----------------------------------------------------------------------------
+# Loading and Saving Images
+#-----------------------------------------------------------------------------
+
+
+# ------ List of methods not to be called by a user ------
+
+# Loads an image from file
+_cvLoadImage = cfunc('cvLoadImage', _hgDLL, POINTER(IplImage),
+    ('filename', c_char_p, 1), # const char* filename
+    ('iscolor', c_int, 1, 1), # int iscolor
+)
+
+# ------ List of methods a user should call ------
+
+
+# Loads an image from file
+def cvLoadImage(filename, iscolor=1):
+    """IplImage* cvLoadImage(const char* filename, int iscolor=1)
+
+    Loads an image from file
+    """
+    z = _cvLoadImage(filename, iscolor)
+    _add_autoclean(z, _cvReleaseImage)
+    return z
+
+# Saves an image to the file
+cvSaveImage = cfunc('cvSaveImage', _hgDLL, c_int,
+    ('filename', c_char_p, 1), # const char* filename
+    ('image', CvArr_p, 1), # const CvArr* image 
+)
+cvSaveImage.__doc__ = """int cvSaveImage(const char* filename, const CvArr* image)
+
+Saves an image to the file
+"""
+
+
+#-----------------------------------------------------------------------------
+# Video I/O Functions
+#-----------------------------------------------------------------------------
+
+
+# ------ List of methods not to be called by a user ------
+
+# ------ List of methods a user should call ------
+
 
 
 
@@ -7957,7 +8232,7 @@ _hack_del(POINTER(CvGraphScanner))
 _hack_del(POINTER(IplConvKernel))
 _hack_del(POINTER(CvKalman))
 _hack_del(POINTER(CvConDensation))
-
+_hack_del(POINTER(CvPOSITObject))
     
 
     
@@ -8061,159 +8336,9 @@ class CvVideoWriter(_Structure):
 
 # --- 5.3 Epipolar Geometry --------------------------------------------------
 
-# Calculates fundamental matrix from corresponding points in two images
-cvFindFundamentalMat = cfunc('cvFindFundamentalMat', _cvDLL, c_int,
-    ('points1', POINTER(CvMat), 1), # const CvMat* points1
-    ('points2', POINTER(CvMat), 1), # const CvMat* points2
-    ('fundamental_matrix', POINTER(CvMat), 1), # CvMat* fundamental_matrix
-    ('method', c_int, 1), # int method
-    ('param1', c_double, 1, 1), # double param1
-    ('param2', c_double, 1, 0), # double param2
-    ('status', POINTER(CvMat), 1, None), # CvMat* status
-)
-
-# For points in one image of stereo pair computes the corresponding epilines in the other image
-cvComputeCorrespondEpilines = cfunc('cvComputeCorrespondEpilines', _cvDLL, None,
-    ('points', POINTER(CvMat), 1), # const CvMat* points
-    ('which_image', c_int, 1), # int which_image
-    ('fundamental_matrix', POINTER(CvMat), 1), # const CvMat* fundamental_matrix
-    ('correspondent_lines', POINTER(CvMat), 1), # CvMat* correspondent_lines
-)
-
-# Convert points to/from homogeneous coordinates
-cvConvertPointsHomogenious = cfunc('cvConvertPointsHomogenious', _cvDLL, None,
-    ('src', POINTER(CvMat), 1), # const CvMat* src
-    ('dst', POINTER(CvMat), 1), # CvMat* dst 
-)
-cvConvertPointsHomogenious.__doc__ = """void cvConvertPointsHomogeneous(const CvMat* src, CvMat* dst)
-
-Convert points to/from homogeneous coordinates
-"""
-
-cvConvertPointsHomogeneous = cvConvertPointsHomogenious
-
 # --- 1 Simple GUI -----------------------------------------------------------
 
-# Creates window
-cvNamedWindow = cfunc('cvNamedWindow', _hgDLL, c_int,
-    ('name', c_char_p, 1), # const char* name
-    ('flags', c_int, 1, 1), # int flags 
-)
-
-# Destroys a window
-cvDestroyWindow = cfunc('cvDestroyWindow', _hgDLL, None,
-    ('name', c_char_p, 1), # const char* name 
-)
-
-# Destroys all the HighGUI windows
-cvDestroyAllWindows = cfunc('cvDestroyAllWindows', _hgDLL, None,
-)
-
-# Sets window size
-cvResizeWindow = cfunc('cvResizeWindow', _hgDLL, None,
-    ('name', c_char_p, 1), # const char* name
-    ('width', c_int, 1), # int width
-    ('height', c_int, 1), # int height 
-)
-
-# Sets window position
-cvMoveWindow = cfunc('cvMoveWindow', _hgDLL, None,
-    ('name', c_char_p, 1), # const char* name
-    ('x', c_int, 1), # int x
-    ('y', c_int, 1), # int y 
-)
-
-# Gets window handle by name
-cvGetWindowHandle = cfunc('cvGetWindowHandle', _hgDLL, c_void_p,
-    ('name', c_char_p, 1), # const char* name 
-)
-
-# Gets window name by handle
-cvGetWindowName = cfunc('cvGetWindowName', _hgDLL, c_void_p,
-    ('window_handle', c_void_p, 1), # void* window_handle 
-)
-
-# Shows the image in the specified window
-cvShowImage = cfunc('cvShowImage', _hgDLL, None,
-    ('name', c_char_p, 1), # const char* name
-    ('image', CvArr_p, 1), # const CvArr* image 
-)
-
-# Creates the trackbar and attaches it to the specified window
-CvTrackbarCallback = CFUNCTYPE(None, # void
-    c_int) # int pos
-
-cvCreateTrackbar = cfunc('cvCreateTrackbar', _hgDLL, c_int,
-    ('trackbar_name', c_char_p, 1), # const char* trackbar_name
-    ('window_name', c_char_p, 1), # const char* window_name
-    ('value', c_int_p, 1), # int* value
-    ('count', c_int, 1), # int count
-    ('on_change', CallableToFunc(CvTrackbarCallback), 1), # CvTrackbarCallback on_change 
-)
-
-# Retrieves trackbar position
-cvGetTrackbarPos = cfunc('cvGetTrackbarPos', _hgDLL, c_int,
-    ('trackbar_name', c_char_p, 1), # const char* trackbar_name
-    ('window_name', c_char_p, 1), # const char* window_name 
-)
-
-# Sets trackbar position
-cvSetTrackbarPos = cfunc('cvSetTrackbarPos', _hgDLL, None,
-    ('trackbar_name', c_char_p, 1), # const char* trackbar_name
-    ('window_name', c_char_p, 1), # const char* window_name
-    ('pos', c_int, 1), # int pos 
-)
-
-# Assigns callback for mouse events
-CV_EVENT_MOUSEMOVE = 0
-CV_EVENT_LBUTTONDOWN = 1
-CV_EVENT_RBUTTONDOWN = 2
-CV_EVENT_MBUTTONDOWN = 3
-CV_EVENT_LBUTTONUP = 4
-CV_EVENT_RBUTTONUP = 5
-CV_EVENT_MBUTTONUP = 6
-CV_EVENT_LBUTTONDBLCLK = 7
-CV_EVENT_RBUTTONDBLCLK = 8
-CV_EVENT_MBUTTONDBLCLK = 9
-
-CV_EVENT_FLAG_LBUTTON = 1
-CV_EVENT_FLAG_RBUTTON = 2
-CV_EVENT_FLAG_MBUTTON = 4
-CV_EVENT_FLAG_CTRLKEY = 8
-CV_EVENT_FLAG_SHIFTKEY = 16
-CV_EVENT_FLAG_ALTKEY = 32
-
-CvMouseCallback = CFUNCTYPE(None, # void
-    c_int, # int event
-    c_int, # int x
-    c_int, # int y
-    c_int, # int flags
-    c_void_p) # void* param
-
-cvSetMouseCallback = cfunc('cvSetMouseCallback', _hgDLL, None,
-    ('window_name', c_char_p, 1), # const char* window_name
-    ('on_mouse', CallableToFunc(CvMouseCallback), 1), # CvMouseCallback on_mouse
-    ('param', c_void_p, 1, None), # void* param
-)
-
-# Waits for a pressed key
-cvWaitKey = cfunc('cvWaitKey', _hgDLL, c_int,
-    ('delay', c_int, 1, 0), # int delay
-)
-
 # --- 2 Loading and Saving Images --------------------------------------------
-
-# Loads an image from file
-cvLoadImage = cfunc('cvLoadImage', _hgDLL, POINTER(IplImage),
-    ('filename', c_char_p, 1), # const char* filename
-    ('iscolor', c_int, 1, 1), # int iscolor
-)
-
-# Saves an image to the file
-cvSaveImage = cfunc('cvSaveImage', _hgDLL, c_int,
-    ('filename', c_char_p, 1), # const char* filename
-    ('image', CvArr_p, 1), # const CvArr* image 
-)
 
 # --- 3 Video I/O functions --------------------------------------------------
 
@@ -8432,81 +8557,6 @@ except ImportError:
     pass
 
 # --- Dokumentationsstrings --------------------------------------------------
-
-cvFindFundamentalMat.__doc__ = """int cvFindFundamentalMat(const CvMat* points1, const CvMat* points2, CvMat* fundamental_matrix, int method=CV_FM_RANSAC, double param1=1., double param2=0.99, CvMat* status=NUL)
-
-Calculates fundamental matrix from corresponding points in two images
-"""
-
-cvComputeCorrespondEpilines.__doc__ = """void cvComputeCorrespondEpilines(const CvMat* points, int which_image, const CvMat* fundamental_matrix, CvMat* correspondent_line)
-
-For points in one image of stereo pair computes the corresponding epilines in the other image
-"""
-
-cvNamedWindow.__doc__ = """int cvNamedWindow(const char* name, int flags)
-
-Creates window
-"""
-
-cvDestroyWindow.__doc__ = """void cvDestroyWindow(const char* name)
-
-Destroys a window
-"""
-
-cvDestroyAllWindows.__doc__ = """void cvDestroyAllWindows(oi)
-
-Destroys all the HighGUI windows
-"""
-
-cvResizeWindow.__doc__ = """void cvResizeWindow(const char* name, int width, int height)
-
-Sets window size
-"""
-
-cvMoveWindow.__doc__ = """void cvMoveWindow(const char* name, int x, int y)
-
-Sets window position
-"""
-
-cvGetWindowHandle.__doc__ = """void* cvGetWindowHandle(const char* name)
-
-Gets window handle by name
-"""
-
-cvGetWindowName.__doc__ = """constchar* cvGetWindowName(void* window_handle)
-
-Gets window name by handle
-"""
-
-cvShowImage.__doc__ = """void cvShowImage(const char* name, const CvArr* image)
-
-Shows the image in the specified window
-"""
-
-cvGetTrackbarPos.__doc__ = """int cvGetTrackbarPos(const char* trackbar_name, const char* window_name)
-
-Retrieves trackbar position
-"""
-
-cvSetTrackbarPos.__doc__ = """void cvSetTrackbarPos(const char* trackbar_name, const char* window_name, int pos)
-
-Sets trackbar position
-"""
-
-cvWaitKey.__doc__ = """int cvWaitKey(int delay=0)
-
-Waits for a pressed key
-"""
-
-cvLoadImage.__doc__ = """IplImage* cvLoadImage(const char* filename, int iscolor=1)
-
-Loads an image from file
-"""
-
-cvSaveImage.__doc__ = """int cvSaveImage(const char* filename, const CvArr* image)
-
-Saves an image to the file
-"""
 
 cvCreateFileCapture.__doc__ = """CvCapture* cvCreateFileCapture(const char* filename)
 
