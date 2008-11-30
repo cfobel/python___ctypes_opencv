@@ -233,50 +233,7 @@ class CallableToFunc(object):
         return self.cbacktype(param)
     
 # --- CONSTANTS AND STUFF FROM CV.H ------------------------------------------------------
-
 # --- CONSTANTS AND STUFF FROM highgui.h ----
-CV_LOAD_IMAGE_UNCHANGED = -1 # 8 bit, color or gray - deprecated, use CV_LOAD_IMAGE_ANYCOLOR
-CV_LOAD_IMAGE_GRAYSCALE =  0 # 8 bit, gray
-CV_LOAD_IMAGE_COLOR     =  1 # 8 bit unless combined with CV_LOAD_IMAGE_ANYDEPTH, color
-CV_LOAD_IMAGE_ANYDEPTH  =  2 # any depth, if specified on its own gray by itself
-                             # equivalent to CV_LOAD_IMAGE_UNCHANGED but can be modified
-                             # with CV_LOAD_IMAGE_ANYDEPTH
-CV_LOAD_IMAGE_ANYCOLOR  =  4
-CV_CVTIMG_FLIP = 1
-CV_CVTIMG_SWAP_RB = 2
-CV_CAP_ANY = 0     # autodetect
-CV_CAP_MIL = 100     # MIL proprietary drivers
-CV_CAP_VFW = 200     # platform native
-CV_CAP_V4L = 200
-CV_CAP_V4L2 = 200
-CV_CAP_FIREWARE = 300     # IEEE 1394 drivers
-CV_CAP_IEEE1394 = 300
-CV_CAP_DC1394 = 300
-CV_CAP_CMU1394 = 300
-CV_CAP_STEREO = 400     # TYZX proprietary drivers
-CV_CAP_TYZX = 400
-CV_TYZX_LEFT = 400
-CV_TYZX_RIGHT = 401
-CV_TYZX_COLOR = 402
-CV_TYZX_Z = 403
-CV_CAP_QT = 500     # Quicktime
-CV_CAP_PROP_POS_MSEC = 0
-CV_CAP_PROP_POS_FRAMES = 1
-CV_CAP_PROP_POS_AVI_RATIO = 2
-CV_CAP_PROP_FRAME_WIDTH = 3
-CV_CAP_PROP_FRAME_HEIGHT = 4
-CV_CAP_PROP_FPS = 5
-CV_CAP_PROP_FOURCC = 6
-CV_CAP_PROP_FRAME_COUNT = 7
-CV_CAP_PROP_FORMAT = 8
-CV_CAP_PROP_MODE = 9
-CV_CAP_PROP_BRIGHTNESS = 10
-CV_CAP_PROP_CONTRAST = 11
-CV_CAP_PROP_SATURATION = 12
-CV_CAP_PROP_HUE = 13
-CV_CAP_PROP_GAIN = 14
-CV_CAP_PROP_CONVERT_RGB = 15
-
 # --- CONSTANTS AND STUFF FROM cxcore.h ----
 CV_MAX_ARR = 10
 CV_NO_DEPTH_CHECK = 1
@@ -284,46 +241,6 @@ CV_NO_CN_CHECK = 2
 CV_NO_SIZE_CHECK = 4
 
 # --- Globale Variablen und Ausnahmen ----------------------------------------
-
-#
-# Sim Harbert 4/9/2007 (start)
-# Added following defines:
-#
-CV_C           = 1
-CV_L1          = 2
-CV_L2          = 4
-
-# Sim Harbert 4/9/2007 (end)
-
-#Viji Periapoilan 4/16/2007 (start)
-# Added the following constants to work with facedetect sample
-CV_INTER_NN     = 0 #nearest-neigbor interpolation, 
-CV_INTER_LINEAR = 1 #bilinear interpolation (used by default) 
-CV_INTER_CUBIC  = 2 # bicubic interpolation. 
-CV_INTER_AREA = 3 #resampling using pixel area relation. It is preferred method for image decimation that gives moire-free results. In case of zooming it is similar to CV_INTER_NN method.
-#Viji Periapoilan 4/16/2007(end)
-
-CV_WINDOW_AUTOSIZE = 1
-
-CV_CAP_PROP_POS_MSEC      = 0
-CV_CAP_PROP_POS_FRAMES    = 1
-CV_CAP_PROP_POS_AVI_RATIO = 2
-CV_CAP_PROP_FRAME_WIDTH   = 3
-CV_CAP_PROP_FRAME_HEIGHT  = 4
-CV_CAP_PROP_FPS           = 5
-CV_CAP_PROP_FOURCC        = 6
-CV_CAP_PROP_FRAME_COUNT   = 7
-CV_CAP_PROP_FORMAT        = 8
-CV_CAP_PROP_MODE          = 9
-CV_CAP_PROP_BRIGHTNESS    =10
-CV_CAP_PROP_CONTRAST      =11
-CV_CAP_PROP_SATURATION    =12
-CV_CAP_PROP_HUE           =13
-CV_CAP_PROP_GAIN          =14
-CV_CAP_PROP_CONVERT_RGB   =15
-
-def CV_FOURCC(c1,c2,c3,c4):
-    return (((ord(c1))&255) + (((ord(c2))&255)<<8) + (((ord(c3))&255)<<16) + (((ord(c4))&255)<<24))
 
 # --- Klassen- und Funktionsdefinitionen -------------------------------------
 
@@ -1583,13 +1500,14 @@ def _add_autoclean(obj, _clean):
             raise Warning, "The content pointed to by this pointer is deleted more than once."
             
     def _my__del__(obj):
-        if obj._allocated is True:
+        if bool(obj) and obj._allocated is True:
             obj._done(obj)
-        
-    obj._allocated = True
-    obj._clean = _clean
-    obj._done = _done
-    obj._my__del__ = _my__del__    
+            
+    if obj:
+        obj._allocated = True
+        obj._clean = _clean
+        obj._done = _done
+        obj._my__del__ = _my__del__    
 
 
 #=============================================================================
@@ -5898,6 +5816,14 @@ cvGetQuadrangleSubPix.__doc__ = """void cvGetQuadrangleSubPix(const CvArr* src, 
 Retrieves pixel quadrangle from image with sub-pixel accuracy
 """
 
+#Viji Periapoilan 4/16/2007 (start)
+# Added the following constants to work with facedetect sample
+CV_INTER_NN     = 0 #nearest-neigbor interpolation, 
+CV_INTER_LINEAR = 1 #bilinear interpolation (used by default) 
+CV_INTER_CUBIC  = 2 # bicubic interpolation. 
+CV_INTER_AREA = 3 #resampling using pixel area relation. It is preferred method for image decimation that gives moire-free results. In case of zooming it is similar to CV_INTER_NN method.
+#Viji Periapoilan 4/16/2007(end)
+
 # Resizes image
 cvResize = cfunc('cvResize', _cvDLL, None,
     ('src', CvArr_p, 1), # const CvArr* src
@@ -7855,7 +7781,12 @@ Renders the detected chessboard corners
 
 
 class CvPOSITObject(_Structure):
-    _fields_ = [] # no field, really
+    _fields_ = [
+        ('N', c_int), # int N
+        ('inv_matr', c_float_p), # float* inv_matr
+        ('obj_vecs', c_float_p), # float* obj_vecs
+        ('img_vecs', c_float_p), # float* img_vecs
+    ]
 
 
 # ------ List of methods not to be called by a user ------
@@ -8155,6 +8086,15 @@ Waits for a pressed key
 #-----------------------------------------------------------------------------
 
 
+CV_LOAD_IMAGE_UNCHANGED = -1 # 8 bit, color or gray - deprecated, use CV_LOAD_IMAGE_ANYCOLOR
+CV_LOAD_IMAGE_GRAYSCALE =  0 # 8 bit, gray
+CV_LOAD_IMAGE_COLOR     =  1 # 8 bit unless combined with CV_LOAD_IMAGE_ANYDEPTH, color
+CV_LOAD_IMAGE_ANYDEPTH  =  2 # any depth, if specified on its own gray by itself
+                             # equivalent to CV_LOAD_IMAGE_UNCHANGED but can be modified
+                             # with CV_LOAD_IMAGE_ANYDEPTH
+CV_LOAD_IMAGE_ANYCOLOR  =  4
+
+
 # ------ List of methods not to be called by a user ------
 
 # Loads an image from file
@@ -8192,9 +8132,253 @@ Saves an image to the file
 #-----------------------------------------------------------------------------
 
 
+CV_CAP_ANY = 0     # autodetect
+CV_CAP_MIL = 100     # MIL proprietary drivers
+CV_CAP_VFW = 200     # platform native
+CV_CAP_V4L = 200
+CV_CAP_V4L2 = 200
+CV_CAP_FIREWARE = 300     # IEEE 1394 drivers
+CV_CAP_IEEE1394 = 300
+CV_CAP_DC1394 = 300
+CV_CAP_CMU1394 = 300
+CV_CAP_STEREO = 400     # TYZX proprietary drivers
+CV_CAP_TYZX = 400
+CV_TYZX_LEFT = 400
+CV_TYZX_RIGHT = 401
+CV_TYZX_COLOR = 402
+CV_TYZX_Z = 403
+CV_CAP_QT = 500     # Quicktime
+
+# CvCapture
+class CvCapture(_Structure): # forward declaration
+    pass
+
+CvCaptureCloseFunc = CFUNCTYPE(None, POINTER(CvCapture))
+CvCaptureGrabFrameFunc = CFUNCTYPE(c_int, POINTER(CvCapture))
+CvCaptureRetrieveFrameFunc = CFUNCTYPE(POINTER(IplImage), POINTER(CvCapture))
+CvCaptureGetPropertyFunc = CFUNCTYPE(c_double, POINTER(CvCapture), c_int)
+CvCaptureSetPropertyFunc = CFUNCTYPE(c_int, POINTER(CvCapture), c_int, c_double)
+CvCaptureGetDescriptionFunc = CFUNCTYPE(c_char_p, POINTER(CvCapture))
+
+class CvCaptureVTable(_Structure):
+    _fields_ = [
+        ('count', c_int),
+        ('close', CvCaptureCloseFunc),
+        ('grab_frame', CvCaptureGrabFrameFunc),
+        ('retrieve_frame', CvCaptureRetrieveFrameFunc),
+        ('get_property', CvCaptureGetPropertyFunc),
+        ('set_property', CvCaptureSetPropertyFunc),
+        ('get_description', CvCaptureGetDescriptionFunc),
+    ]
+
+CvCapture._fields_ = [('vtable', POINTER(CvCaptureVTable))]
+
+# CvCapture
+class CvVideoWriter(_Structure):
+    _fields_ = [] # seriously, no field at all
+
+    
 # ------ List of methods not to be called by a user ------
 
+
+# Initializes capturing video from file
+_cvCreateFileCapture = cfunc('cvCreateFileCapture', _hgDLL, POINTER(CvCapture),
+    ('filename', c_char_p, 1), # const char* filename 
+)
+
+# Initializes capturing video from camera
+_cvCreateCameraCapture = cfunc('cvCreateCameraCapture', _hgDLL, POINTER(CvCapture),
+    ('index', c_int, 1), # int index 
+)
+
+# Releases the CvCapture structure
+_cvReleaseCapture = cfunc('cvReleaseCapture', _hgDLL, None,
+    ('capture', ByRefArg(POINTER(CvCapture)), 1), # CvCapture** capture 
+)
+
+# Creates video file writer
+_cvCreateVideoWriter = cfunc('cvCreateVideoWriter', _hgDLL, POINTER(CvVideoWriter),
+    ('filename', c_char_p, 1), # const char* filename
+    ('fourcc', c_int, 1), # int fourcc
+    ('fps', c_double, 1), # double fps
+    ('frame_size', CvSize, 1), # CvSize frame_size
+    ('is_color', c_int, 1, 1), # int is_color
+)
+
+# Releases AVI writer
+_cvReleaseVideoWriter = cfunc('cvReleaseVideoWriter', _hgDLL, None,
+    ('writer', ByRefArg(POINTER(CvVideoWriter)), 1), # CvVideoWriter** writer 
+)
+
+
 # ------ List of methods a user should call ------
+
+
+# Initializes capturing video from file
+def cvCreateFileCapture(filename):
+    """CvCapture* cvCreateFileCapture(const char* filename)
+
+    Initializes capturing video from file
+    """
+    z = _cvCreateFileCapture(filename)
+    _add_autoclean(z, _cvReleaseCapture)
+    return z
+
+cvCaptureFromFile = cvCreateFileCapture
+cvCaptureFromAVI = cvCaptureFromFile
+
+# Initializes capturing video from camera
+def cvCreateCameraCapture(index):
+    """CvCapture* cvCreateCameraCapture(int index)
+
+    Initializes capturing video from camera
+    """
+    z = _cvCreateCameraCapture(index)
+    _add_autoclean(z, _cvReleaseCapture)
+    return z
+    
+cvCaptureFromCAM = cvCreateCameraCapture
+
+# Releases the CvCapture structure
+cvReleaseCapture = cvFree
+
+# Grabs frame from camera or file
+cvGrabFrame = cfunc('cvGrabFrame', _hgDLL, c_int,
+    ('capture', POINTER(CvCapture), 1), # CvCapture* capture 
+)
+cvGrabFrame.__doc__ = """int cvGrabFrame(CvCapture* capture)
+
+Grabs frame from camera or file
+"""
+
+# Gets the image grabbed with cvGrabFrame
+cvRetrieveFrame = cfunc('cvRetrieveFrame', _hgDLL, POINTER(IplImage),
+    ('capture', POINTER(CvCapture), 1), # CvCapture* capture 
+)
+cvRetrieveFrame.__doc__ = """IplImage* cvRetrieveFrame(CvCapture* capture)
+
+Gets the image grabbed with cvGrabFrame
+"""
+
+# Grabs and returns a frame from camera or file
+cvQueryFrame = cfunc('cvQueryFrame', _hgDLL, POINTER(IplImage),
+    ('capture', POINTER(CvCapture), 1), # CvCapture* capture 
+)
+cvQueryFrame.__doc__ = """IplImage* cvQueryFrame(CvCapture* capture)
+
+Grabs and returns a frame from camera or file
+"""
+
+def CheckNonNull(result, func, args):
+    if not result:
+        raise RuntimeError, 'QueryFrame failed'
+    return args
+
+CV_CAP_PROP_POS_MSEC      = 0
+CV_CAP_PROP_POS_FRAMES    = 1
+CV_CAP_PROP_POS_AVI_RATIO = 2
+CV_CAP_PROP_FRAME_WIDTH   = 3
+CV_CAP_PROP_FRAME_HEIGHT  = 4
+CV_CAP_PROP_FPS           = 5
+CV_CAP_PROP_FOURCC        = 6
+CV_CAP_PROP_FRAME_COUNT   = 7
+CV_CAP_PROP_FORMAT        = 8
+CV_CAP_PROP_MODE          = 9
+CV_CAP_PROP_BRIGHTNESS    =10
+CV_CAP_PROP_CONTRAST      =11
+CV_CAP_PROP_SATURATION    =12
+CV_CAP_PROP_HUE           =13
+CV_CAP_PROP_GAIN          =14
+CV_CAP_PROP_CONVERT_RGB   =15
+
+def CV_FOURCC(c1,c2,c3,c4):
+    return (((ord(c1))&255) + (((ord(c2))&255)<<8) + (((ord(c3))&255)<<16) + (((ord(c4))&255)<<24))
+
+# Gets video capturing properties
+cvGetCaptureProperty = cfunc('cvGetCaptureProperty', _hgDLL, c_double,
+    ('capture', POINTER(CvCapture), 1), # CvCapture* capture
+    ('property_id', c_int, 1), # int property_id 
+)
+cvGetCaptureProperty.__doc__ = """double cvGetCaptureProperty(CvCapture* capture, int property_id)
+
+Gets video capturing properties
+"""
+
+# Sets video capturing properties
+cvSetCaptureProperty = cfunc('cvSetCaptureProperty', _hgDLL, c_int,
+    ('capture', POINTER(CvCapture), 1), # CvCapture* capture
+    ('property_id', c_int, 1), # int property_id
+    ('value', c_double, 1), # double value 
+)
+cvSetCaptureProperty.__doc__ = """int cvSetCaptureProperty(CvCapture* capture, int property_id, double value)
+
+Sets video capturing properties
+"""
+
+# Creates video file writer
+def cvCreateVideoWriter(filename, fourcc, fps, frame_size, is_color=1):
+    """CvVideoWriter* cvCreateVideoWriter(const char* filename, int fourcc, double fps, CvSize frame_size, int is_color=1)
+
+    Creates video file writer
+    """
+    z = _cvCreateVideoWriter(filename, fourcc, fps, frame_size, is_color)
+    _add_autoclean(z, _cvReleaseVideoWriter)
+    return z
+
+cvCreateAVIWriter = cvCreateVideoWriter
+
+# Releases AVI writer
+cvReleaseVideoWriter = cvFree
+
+# Writes a frame to video file
+cvWriteFrame = cfunc('cvWriteFrame', _hgDLL, c_int,
+    ('writer', POINTER(CvVideoWriter), 1), # CvVideoWriter* writer
+    ('image', POINTER(IplImage), 1), # const IplImage* image 
+)
+cvWriteFrame.__doc__ = """int cvWriteFrame(CvVideoWriter* writer, const IplImage* image)
+
+Writes a frame to video file
+"""
+
+cvWriteToAVI = cvWriteFrame
+
+
+#-----------------------------------------------------------------------------
+# Utility and System Functions
+#-----------------------------------------------------------------------------
+
+
+# Initializes HighGUI
+cvInitSystem = cfunc('cvInitSystem', _hgDLL, c_int,
+    ('argc', c_int, 1), # int argc
+    ('argv', POINTER(c_char_p), 1), # char** argv 
+)
+cvInitSystem.__doc__ = """int cvInitSystem(int argc, char** argv)
+
+Initializes HighGUI
+"""
+
+CV_CVTIMG_FLIP = 1
+CV_CVTIMG_SWAP_RB = 2
+
+# Converts one image to another with optional vertical flip
+cvConvertImage = cfunc('cvConvertImage', _hgDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('flags', c_int, 1, 0), # int flags
+)
+cvConvertImage.__doc__ = """void cvConvertImage(const CvArr* src, CvArr* dst, int flags=0)
+
+Converts one image to another with optional vertical flip
+"""
+
+# Start a new thread in X Window
+cvStartWindowThread = cfunc('cvStartWindowThread', _hgDLL, c_int,
+)
+cvStartWindowThread.__doc__ = """int cvStartWindowThread()
+
+Starts a new thread for rendering in X Window
+"""
 
 
 
@@ -8233,54 +8417,13 @@ _hack_del(POINTER(IplConvKernel))
 _hack_del(POINTER(CvKalman))
 _hack_del(POINTER(CvConDensation))
 _hack_del(POINTER(CvPOSITObject))
-    
-
-    
-    
-    
-    
-
-
-
-
-
-
-
-# CvCapture
-class CvCapture(_Structure): # forward declaration
-    pass
-
-CvCaptureCloseFunc = CFUNCTYPE(None, POINTER(CvCapture))
-CvCaptureGrabFrameFunc = CFUNCTYPE(c_int, POINTER(CvCapture))
-CvCaptureRetrieveFrameFunc = CFUNCTYPE(POINTER(IplImage), POINTER(CvCapture))
-CvCaptureGetPropertyFunc = CFUNCTYPE(c_double, POINTER(CvCapture), c_int)
-CvCaptureSetPropertyFunc = CFUNCTYPE(c_int, POINTER(CvCapture), c_int, c_double)
-CvCaptureGetDescriptionFunc = CFUNCTYPE(c_char_p, POINTER(CvCapture))
-
-class CvCaptureVTable(_Structure):
-    _fields_ = [
-        ('count', c_int),
-        ('close', CvCaptureCloseFunc),
-        ('grab_frame', CvCaptureGrabFrameFunc),
-        ('retrieve_frame', CvCaptureRetrieveFrameFunc),
-        ('get_property', CvCaptureGetPropertyFunc),
-        ('set_property', CvCaptureSetPropertyFunc),
-        ('get_description', CvCaptureGetDescriptionFunc),
-    ]
-
-CvCapture._fields_ = [('vtable', POINTER(CvCaptureVTable))]
-
+_hack_del(POINTER(CvCapture))
+_hack_del(POINTER(CvVideoWriter))
 
     
 #=============================================================================
 # End of modification + addition by Minh-Tri Pham
 #=============================================================================
-
-
-# not implemented yet
-class CvVideoWriter(_Structure):
-    _fields_ = []
-
 
 # --- 1 Image Processing -----------------------------------------------------
 
@@ -8342,102 +8485,7 @@ class CvVideoWriter(_Structure):
 
 # --- 3 Video I/O functions --------------------------------------------------
 
-# Initializes capturing video from file
-cvCreateFileCapture = cfunc('cvCreateFileCapture', _hgDLL, POINTER(CvCapture),
-    ('filename', c_char_p, 1), # const char* filename 
-)
-
-# Initializes capturing video from camera
-cvCreateCameraCapture = cfunc('cvCreateCameraCapture', _hgDLL, POINTER(CvCapture),
-    ('index', c_int, 1), # int index 
-)
-
-# Releases the CvCapture structure
-cvReleaseCapture = cfunc('cvReleaseCapture', _hgDLL, None,
-    ('capture', POINTER(POINTER(CvCapture)), 1), # CvCapture** capture 
-)
-
-# Grabs frame from camera or file
-cvGrabFrame = cfunc('cvGrabFrame', _hgDLL, c_int,
-    ('capture', POINTER(CvCapture), 1), # CvCapture* capture 
-)
-
-# Gets the image grabbed with cvGrabFrame
-cvRetrieveFrame = cfunc('cvRetrieveFrame', _hgDLL, POINTER(IplImage),
-    ('capture', POINTER(CvCapture), 1), # CvCapture* capture 
-)
-
-# Grabs and returns a frame from camera or file
-cvQueryFrame = cfunc('cvQueryFrame', _hgDLL, POINTER(IplImage),
-    ('capture', POINTER(CvCapture), 1), # CvCapture* capture 
-)
-def CheckNonNull(result, func, args):
-    if not result:
-        raise RuntimeError, 'QueryFrame failed'
-    return args
-
-# Gets video capturing properties
-cvGetCaptureProperty = cfunc('cvGetCaptureProperty', _hgDLL, c_double,
-    ('capture', POINTER(CvCapture), 1), # CvCapture* capture
-    ('property_id', c_int, 1), # int property_id 
-)
-
-# Sets video capturing properties
-cvSetCaptureProperty = cfunc('cvSetCaptureProperty', _hgDLL, c_int,
-    ('capture', POINTER(CvCapture), 1), # CvCapture* capture
-    ('property_id', c_int, 1), # int property_id
-    ('value', c_double, 1), # double value 
-)
-
-# Creates video file writer
-cvCreateVideoWriter = cfunc('cvCreateVideoWriter', _hgDLL, POINTER(CvVideoWriter),
-    ('filename', c_char_p, 1), # const char* filename
-    ('fourcc', c_int, 1), # int fourcc
-    ('fps', c_double, 1), # double fps
-    ('frame_size', CvSize, 1), # CvSize frame_size
-    ('is_color', c_int, 1, 1), # int is_color
-)
-
-# Releases AVI writer
-cvReleaseVideoWriter = cfunc('cvReleaseVideoWriter', _hgDLL, None,
-    ('writer', POINTER(POINTER(CvVideoWriter)), 1), # CvVideoWriter** writer 
-)
-
-# Writes a frame to video file
-cvWriteFrame = cfunc('cvWriteFrame', _hgDLL, c_int,
-    ('writer', POINTER(CvVideoWriter), 1), # CvVideoWriter* writer
-    ('image', POINTER(IplImage), 1), # const IplImage* image 
-)
-
 # --- 4 Utility and System Functions -----------------------------------------
-
-# Initializes HighGUI
-cvInitSystem = cfunc('cvInitSystem', _hgDLL, c_int,
-    ('argc', c_int, 1), # int argc
-    ('argv', POINTER(c_char_p), 1), # char** argv 
-)
-
-CV_CVTIMG_SWAP_RB = 2
-CV_CVTIMG_FLIP = 1
-
-# Converts one image to another with optional vertical flip
-cvConvertImage = cfunc('cvConvertImage', _hgDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('flags', c_int, 1, 0), # int flags
-)
-
-# ----Begin of extra stuff of Minh-Tri Pham----------------------------------
-
-# Start a new thread in X Window
-cvStartWindowThread = cfunc('cvStartWindowThread', _hgDLL, c_int,
-)
-cvStartWindowThread.__doc__ = """int cvStartWindowThread()
-
-Starts a new thread for rendering in X Window
-"""
-
-# ----End of extra stuff of Minh-Tri Pham------------------------------------
 
 #=============================================================================
 # Helpers for access to images for other GUI packages
@@ -8557,71 +8605,6 @@ except ImportError:
     pass
 
 # --- Dokumentationsstrings --------------------------------------------------
-
-cvCreateFileCapture.__doc__ = """CvCapture* cvCreateFileCapture(const char* filename)
-
-Initializes capturing video from file
-"""
-
-cvCreateCameraCapture.__doc__ = """CvCapture* cvCreateCameraCapture(int index)
-
-Initializes capturing video from camera
-"""
-
-cvReleaseCapture.__doc__ = """void cvReleaseCapture(CvCapture** capture)
-
-Releases the CvCapture structure
-"""
-
-cvGrabFrame.__doc__ = """int cvGrabFrame(CvCapture* capture)
-
-Grabs frame from camera or file
-"""
-
-cvRetrieveFrame.__doc__ = """IplImage* cvRetrieveFrame(CvCapture* capture)
-
-Gets the image grabbed with cvGrabFrame
-"""
-
-cvQueryFrame.__doc__ = """IplImage* cvQueryFrame(CvCapture* capture)
-
-Grabs and returns a frame from camera or file
-"""
-
-cvGetCaptureProperty.__doc__ = """double cvGetCaptureProperty(CvCapture* capture, int property_id)
-
-Gets video capturing properties
-"""
-
-cvSetCaptureProperty.__doc__ = """int cvSetCaptureProperty(CvCapture* capture, int property_id, double value)
-
-Sets video capturing properties
-"""
-
-cvCreateVideoWriter.__doc__ = """CvVideoWriter* cvCreateVideoWriter(const char* filename, int fourcc, double fps, CvSize frame_size, int is_color=1)
-
-Creates video file writer
-"""
-
-cvReleaseVideoWriter.__doc__ = """void cvReleaseVideoWriter(CvVideoWriter** writer)
-
-Releases AVI writer
-"""
-
-cvWriteFrame.__doc__ = """int cvWriteFrame(CvVideoWriter* writer, const IplImage* image)
-
-Writes a frame to video file
-"""
-
-cvInitSystem.__doc__ = """int cvInitSystem(int argc, char** argv)
-
-Initializes HighGUI
-"""
-
-cvConvertImage.__doc__ = """void cvConvertImage(const CvArr* src, CvArr* dst, int flags=0)
-
-Converts one image to another with optional vertical flip
-"""
 
 
 #=============================================================================
