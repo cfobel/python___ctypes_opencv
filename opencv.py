@@ -231,29 +231,15 @@ CV_SHAPE_RECT = 0
 CV_SHAPE_CROSS = 1
 CV_SHAPE_ELLIPSE = 2
 CV_SHAPE_CUSTOM = 100
-CV_TM_SQDIFF = 0
-CV_TM_SQDIFF_NORMED = 1
-CV_TM_CCORR = 2
-CV_TM_CCORR_NORMED = 3
-CV_TM_CCOEFF = 4
-CV_TM_CCOEFF_NORMED = 5
 CV_LKFLOW_PYR_A_READY = 1
 CV_LKFLOW_PYR_B_READY = 2
 CV_LKFLOW_INITIAL_GUESSES = 4
-CV_POLY_APPROX_DP = 0
-CV_DOMINANT_IPAN = 1
 CV_CONTOURS_MATCH_I1 = 1
 CV_CONTOURS_MATCH_I2 = 2
 CV_CONTOURS_MATCH_I3 = 3
 CV_CONTOUR_TREES_MATCH_I1 = 1
 CV_CLOCKWISE = 1
 CV_COUNTER_CLOCKWISE = 2
-CV_COMP_CORREL = 0
-CV_COMP_CHISQR = 1
-CV_COMP_INTERSECT = 2
-CV_COMP_BHATTACHARYYA = 3
-CV_VALUE = 1
-CV_ARRAY = 2
 CV_CALIB_USE_INTRINSIC_GUESS = 1
 CV_CALIB_FIX_ASPECT_RATIO = 2
 CV_CALIB_FIX_PRINCIPAL_POINT = 4
@@ -335,13 +321,6 @@ CV_NO_CN_CHECK = 2
 CV_NO_SIZE_CHECK = 4
 
 # --- Globale Variablen und Ausnahmen ----------------------------------------
-
-CV_TM_SQDIFF        =0
-CV_TM_SQDIFF_NORMED =1
-CV_TM_CCORR         =2
-CV_TM_CCORR_NORMED  =3
-CV_TM_CCOEFF        =4
-CV_TM_CCOEFF_NORMED =5
 
 #
 # Sim Harbert 4/9/2007 (start)
@@ -1433,6 +1412,7 @@ def _hack_contents_getattr(cls):
 _hack_contents_getattr(POINTER(IplImage))
 _hack_contents_getattr(POINTER(CvMat))
 _hack_contents_getattr(POINTER(CvMatND))
+_hack_contents_getattr(POINTER(CvHistogram))
 
 
 #-----------------------------------------------------------------------------
@@ -1761,14 +1741,14 @@ _cvCloneMat = cfunc('cvCloneMat', _cxDLL, POINTER(CvMat),
 # Creates new matrix header
 _cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, POINTER(CvMatND),
     ('dims', c_int, 1), # int dims
-    ('sizes', POINTER(c_int), 1), # const int* sizes
+    ('sizes', c_int_p, 1), # const int* sizes
     ('type', c_int, 1), # int type 
 )
 
 # Creates multi-dimensional dense array
 _cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, POINTER(CvMatND),
     ('dims', c_int, 1), # int dims
-    ('sizes', POINTER(c_int), 1), # const int* sizes
+    ('sizes', c_int_p, 1), # const int* sizes
     ('type', c_int, 1), # int type 
 )
 
@@ -1776,7 +1756,7 @@ _cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, POINTER(CvMatND),
 _cvInitMatNDHeader = cfunc('cvInitMatNDHeader', _cxDLL, POINTER(CvMatND),
     ('mat', POINTER(CvMatND), 1), # CvMatND* mat
     ('dims', c_int, 1), # int dims
-    ('sizes', POINTER(c_int), 1), # const int* sizes
+    ('sizes', c_int_p, 1), # const int* sizes
     ('type', c_int, 1), # int type
     ('data', c_void_p, 1, None), # void* data
 )
@@ -1789,7 +1769,7 @@ _cvCloneMatND = cfunc('cvCloneMatND', _cxDLL, POINTER(CvMatND),
 # Creates sparse array
 _cvCreateSparseMat = cfunc('cvCreateSparseMat', _cxDLL, POINTER(CvSparseMat),
     ('dims', c_int, 1), # int dims
-    ('sizes', POINTER(c_int), 1), # const int* sizes
+    ('sizes', c_int_p, 1), # const int* sizes
     ('type', c_int, 1), # int type 
 )
 
@@ -2115,7 +2095,7 @@ def cvCloneSparseMat(*args):
 # Return number of array dimensions and their sizes or the size of particular dimension
 _cvGetDims = cfunc('cvGetDims', _cxDLL, c_int,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('sizes', POINTER(c_int), 1, None), # int* sizes
+    ('sizes', c_int_p, 1, None), # int* sizes
 )
 
 _cvGetDimSize = cfunc('cvGetDimSize', _cxDLL, c_int,
@@ -2151,7 +2131,7 @@ def cvGetDims(arr):
 cvPtr1D = cfunc('cvPtr1D', _cxDLL, c_void_p,
     ('arr', CvArr_p, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0
-    ('type', POINTER(c_int), 1, None), # int* type
+    ('type', c_int_p, 1, None), # int* type
 )
 cvPtr1D.__doc__ = """uchar* cvPtr1D(const CvArr* arr, int idx0, int* type=NULL)
 
@@ -2162,7 +2142,7 @@ cvPtr2D = cfunc('cvPtr2D', _cxDLL, c_void_p,
     ('arr', CvArr_p, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1
-    ('type', POINTER(c_int), 1, None), # int* type
+    ('type', c_int_p, 1, None), # int* type
 )
 cvPtr2D.__doc__ = """uchar* cvPtr2D(const CvArr* arr, int idx0, int idx1, int idx2, int* type=NULL)
 
@@ -2174,7 +2154,7 @@ cvPtr3D = cfunc('cvPtr3D', _cxDLL, c_void_p,
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1
     ('idx2', c_int, 1), # int idx2
-    ('type', POINTER(c_int), 1, None), # int* type
+    ('type', c_int_p, 1, None), # int* type
 )
 cvPtr3D.__doc__ = """uchar* cvPtr3D(const CvArr* arr, int idx0, int idx1, int idx2, int* type=NULL)
 
@@ -2184,8 +2164,8 @@ Return POINTER to the particular array element
 
 cvPtrND = cfunc('cvPtrND', _cxDLL, c_void_p,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx
-    ('type', POINTER(c_int), 1, None), # int* type
+    ('idx', c_int_p, 1), # int* idx
+    ('type', c_int_p, 1, None), # int* type
     ('create_node', c_int, 1, 1), # int create_node
     ('precalc_hashval', POINTER(c_uint32), 1, None), # unsigned* precalc_hashval
 )
@@ -2228,7 +2208,7 @@ Return the particular array element
 
 cvGetND = cfunc('cvGetND', _cxDLL, CvScalar,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx 
+    ('idx', c_int_p, 1), # int* idx 
 )
 cvGetND.__doc__ = """CvScalar cvGetND(const CvArr* arr, int* idx)
 
@@ -2268,7 +2248,7 @@ Return the particular element of single-channel array
 
 cvGetRealND = cfunc('cvGetRealND', _cxDLL, c_double,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx 
+    ('idx', c_int_p, 1), # int* idx 
 )
 cvGetRealND.__doc__ = """double cvGetRealND(const CvArr* arr, int* idx)
 
@@ -2311,7 +2291,7 @@ Change the particular array element
 
 cvSetND = cfunc('cvSetND', _cxDLL, None,
     ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx
+    ('idx', c_int_p, 1), # int* idx
     ('value', CvScalar, 1), # CvScalar value 
 )
 cvSetND.__doc__ = """void cvSetND(CvArr* arr, int* idx, CvScalar value)
@@ -2355,7 +2335,7 @@ Change the particular array element
 
 cvSetRealND = cfunc('cvSetRealND', _cxDLL, None,
     ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx
+    ('idx', c_int_p, 1), # int* idx
     ('value', c_double, 1), # double value 
 )
 cvSetRealND.__doc__ = """void cvSetRealND(CvArr* arr, int* idx, double value)
@@ -2366,7 +2346,7 @@ Change the particular array element
 # Clears the particular array element
 cvClearND = cfunc('cvClearND', _cxDLL, None,
     ('arr', CvArr_p, 1), # CvArr* arr
-    ('idx', POINTER(c_int), 1), # int* idx 
+    ('idx', c_int_p, 1), # int* idx 
 )
 cvClearND.__doc__ = """void cvClearND(CvArr* arr, int* idx)
 
@@ -2377,7 +2357,7 @@ Clears the particular array element
 cvGetMat = cfunc('cvGetMat', _cxDLL, POINTER(CvMat),
     ('arr', CvArr_p, 1), # const CvArr* arr
     ('header', POINTER(CvMat), 1), # CvMat* header
-    ('coi', POINTER(c_int), 1, None), # int* coi
+    ('coi', c_int_p, 1, None), # int* coi
     ('allowND', c_int, 1, 0), # int allowND
 )
 cvGetMat.__doc__ = """CvMat* cvGetMat(const CvArr* arr, CvMat* header, int* coi=NULL, int allowND=0)
@@ -2408,7 +2388,7 @@ cvReshapeMatND = cfunc('cvReshapeMatND', _cxDLL, c_void_p,
     ('header', CvArr_p, 1), # CvArr* header
     ('new_cn', c_int, 1), # int new_cn
     ('new_dims', c_int, 1), # int new_dims
-    ('new_sizes', POINTER(c_int), 1), # int* new_sizes 
+    ('new_sizes', c_int_p, 1), # int* new_sizes 
 )
 cvReshapeMatND.__doc__ = """CvArr* cvReshapeMatND(const CvArr* arr, int sizeof_header, CvArr* header, int new_cn, int new_dims, int* new_sizes)
 
@@ -2476,7 +2456,7 @@ Assigns user data to the array header
 cvGetRawData = cfunc('cvGetRawData', _cxDLL, None,
     ('arr', CvArr_p, 1), # const CvArr* arr
     ('data', POINTER(POINTER(c_byte)), 1), # uchar** data
-    ('step', POINTER(c_int), 1, None), # int* step
+    ('step', c_int_p, 1, None), # int* step
     ('roi_size', POINTER(CvSize), 1, None), # CvSize* roi_size
 )
 cvGetRawData.__doc__ = """void cvGetRawData(const CvArr* arr, uchar** data, int* step=NULL, CvSize* roi_size=NULL)
@@ -4021,7 +4001,7 @@ cvSeqSearch = cfunc('cvSeqSearch', _cxDLL, c_void_p,
     ('elem', c_void_p, 1), # const void* elem
     ('func', CvCmpFunc, 1), # CvCmpFunc func
     ('is_sorted', c_int, 1), # int is_sorted
-    ('elem_idx', POINTER(c_int), 1), # int* elem_idx
+    ('elem_idx', c_int_p, 1), # int* elem_idx
     ('userdata', c_void_p, 1, None), # void* userdata
 )
 cvSeqSearch.__doc__ = """char* cvSeqSearch(CvSeq* seq, const void* elem, CvCmpFunc func, int is_sorted, int* elem_idx, void* userdata=NULL)
@@ -4574,7 +4554,7 @@ def cvEllipseBox(img, box, color, thickness=1, line_type=8, shift=0):
 cvFillPoly = cfunc('cvFillPoly', _cxDLL, None,
     ('img', CvArr_p, 1), # CvArr* img
     ('pts', POINTER(POINTER(CvPoint)), 1), # CvPoint** pts
-    ('npts', POINTER(c_int), 1), # int* npts
+    ('npts', c_int_p, 1), # int* npts
     ('contours', c_int, 1), # int contours
     ('color', CvScalar, 1), # CvScalar color
     ('line_type', c_int, 1, 8), # int line_type
@@ -4603,7 +4583,7 @@ Fills convex polygon
 cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,
     ('img', CvArr_p, 1), # CvArr* img
     ('pts', POINTER(POINTER(CvPoint)), 1), # CvPoint** pts
-    ('npts', POINTER(c_int), 1), # int* npts
+    ('npts', c_int_p, 1), # int* npts
     ('contours', c_int, 1), # int contours
     ('is_closed', c_int, 1), # int is_closed
     ('color', CvScalar, 1), # CvScalar color
@@ -4694,7 +4674,7 @@ cvGetTextSize = cfunc('cvGetTextSize', _cxDLL, None,
     ('text_string', c_char_p, 1), # const char* text_string
     ('font', POINTER(CvFont), 1), # const CvFont* font
     ('text_size', POINTER(CvSize), 1), # CvSize* text_size
-    ('baseline', POINTER(c_int), 1), # int* baseline 
+    ('baseline', c_int_p, 1), # int* baseline 
 )
 cvGetTextSize.__doc__ = """void cvGetTextSize(const char* text_string, const CvFont* font, CvSize* text_size, int* baseline)
 
@@ -4746,7 +4726,7 @@ def CV_NEXT_LINE_POINT(line_iterator):
     """void CV_NEXT_LINE_POINT(CvLineIerator line_iterator)
     
     Moves iterator to the next line point
-    [ctypes-opencv] I haven't tested this function.
+    [ctypes-opencv] Warning: I haven't tested this function.
     """
     mask = -1 if line_iterator.err < 0 else 0
     line_iterator.err += line_iterator.minus_delta + (line_iterator.plus_delta & mask)
@@ -5639,6 +5619,15 @@ CV_NEXT_AROUND_RIGHT = 0x31
 CV_PREV_AROUND_LEFT  = 0x20
 CV_PREV_AROUND_RIGHT = 0x02
 
+# Gets the next edge with the same origin point (counterwise)
+def CV_SUBDIV2D_NEXT_EDGE( edge ):
+    """CvSubdiv2DEdge CV_SUBDIV2D_NEXT_EDGE(CvSubdiv2DEdge edge)
+    
+    Gets the next edge with the same origin point (counterwise)
+    """
+    return cast(c_void_p(edge & ~3), POINTER(CvQuadEdge2D)).contents.next[edge&3]
+
+
 # Defines for Distance Transform
 CV_DIST_USER    = -1  # User defined distance
 CV_DIST_L1      = 1   # distance = |x1-x2| + |y1-y2|
@@ -5663,8 +5652,8 @@ class CvMatrix3(_Structure):
 
 # Computes "minimal work" distance between two weighted point configurations
 CvDistanceFunction = CFUNCTYPE(c_float, # float
-    c_void_p, # const float* f1
-    c_void_p, # const float* f2
+    c_float_p, # const float* f1
+    c_float_p, # const float* f2
     c_void_p) # void* userdata
 
 # CvRandState
@@ -5912,7 +5901,7 @@ cvGoodFeaturesToTrack = cfunc('cvGoodFeaturesToTrack', _cvDLL, None,
     ('eig_image', CvArr_p, 1), # CvArr* eig_image
     ('temp_image', CvArr_p, 1), # CvArr* temp_image
     ('corners', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* corners
-    ('corner_count', POINTER(c_int), 1), # int* corner_count
+    ('corner_count', c_int_p, 1), # int* corner_count
     ('quality_level', c_double, 1), # double quality_level
     ('min_distance', c_double, 1), # double min_distance
     ('mask', CvArr_p, 1, None), # const CvArr* mask
@@ -6079,7 +6068,7 @@ _cvCreateStructuringElementEx = cfunc('cvCreateStructuringElementEx', _cvDLL, PO
     ('anchor_x', c_int, 1), # int anchor_x
     ('anchor_y', c_int, 1), # int anchor_y
     ('shape', c_int, 1), # int shape
-    ('values', POINTER(c_int), 1, None), # int* values
+    ('values', c_int_p, 1, None), # int* values
 )
 
 # Deletes structuring element
@@ -6413,10 +6402,10 @@ cvFindContours = cfunc('cvFindContours', _cvDLL, c_int,
     ('image', CvArr_p, 1), # CvArr* image
     ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
     ('first_contour', POINTER(POINTER(CvSeq)), 1), # CvSeq** first_contour
-    ('header_size', c_int, 1), # int header_size
-    ('mode', c_int, 1), # int mode
-    ('method', c_int, 1), # int method
-    ('offset', CvPoint, 1), # CvPoint offset
+    ('header_size', c_int, 1, sizeof(CvContour)), # int header_size
+    ('mode', c_int, 1, CV_RETR_LIST), # int mode
+    ('method', c_int, 1, CV_CHAIN_APPROX_SIMPLE), # int method
+    ('offset', CvPoint, 1, cvPoint(0,0)), # CvPoint offset
 )
 cvFindContours.__doc__ = """int cvFindContours(CvArr* image, CvMemStorage* storage, CvSeq** first_contour, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
 
@@ -6427,10 +6416,10 @@ Finds contours in binary image
 cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
     ('image', CvArr_p, 1), # CvArr* image
     ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('header_size', c_int, 1), # int header_size
-    ('mode', c_int, 1), # int mode
-    ('method', c_int, 1), # int method
-    ('offset', CvPoint, 1), # CvPoint offset
+    ('header_size', c_int, 1, sizeof(CvContour)), # int header_size
+    ('mode', c_int, 1, CV_RETR_LIST), # int mode
+    ('method', c_int, 1, CV_CHAIN_APPROX_SIMPLE), # int method
+    ('offset', CvPoint, 1, cvPoint(0,0)), # CvPoint offset
 )
 cvStartFindContours.__doc__ = """CvContourScanner cvStartFindContours(CvArr* image, CvMemStorage* storage, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
 
@@ -6638,9 +6627,692 @@ Calculates distance to closest zero pixel for all non-zero pixels of source imag
 #-----------------------------------------------------------------------------
 
 
+# ------ List of methods not to be called by a user ------
+
+# Creates histogram
+_cvCreateHist = cfunc('cvCreateHist', _cvDLL, POINTER(CvHistogram),
+    ('dims', c_int, 1), # int dims
+    ('sizes', ListPOINTER(c_int), 1), # int* sizes
+    ('type', c_int, 1), # int type
+    ('ranges', ListPOINTER2(c_float), 1, None), # float** ranges=NULL
+    ('uniform', c_int, 1, 1), # int uniform=1
+)
+
+# Releases histogram
+_cvReleaseHist = cfunc('cvReleaseHist', _cvDLL, None,
+    ('hist', ByRefArg(POINTER(CvHistogram)), 1), # CvHistogram** hist 
+)
+
+# Finds minimum and maximum histogram bins
+_cvGetMinMaxHistValue = cfunc('cvGetMinMaxHistValue', _cvDLL, None,
+    ('hist', POINTER(CvHistogram), 1), # const CvHistogram* hist
+    ('min_value', ByRefArg(c_float), 1), # float* min_value
+    ('max_value', ByRefArg(c_float), 1), # float* max_value
+    ('min_idx', ByRefArg(c_int), 1, None), # int* min_idx
+    ('max_idx', ByRefArg(c_int), 1, None), # int* max_idx
+)
+
+# Copies histogram
+_cvCopyHist = cfunc('cvCopyHist', _cvDLL, None,
+    ('src', POINTER(CvHistogram), 1), # const CvHistogram* src
+    ('dst', ByRefArg(POINTER(CvHistogram)), 1, POINTER(CvHistogram)()), # CvHistogram** dst 
+)
+
+# ------ List of methods a user should call ------
+
+# Creates histogram
+def cvCreateHist(sizes, hist_type, ranges=None, uniform=1):
+    """CvHistogram* cvCreateHist(sizes = list or tuple of integers, int type, float** ranges=NULL, int uniform=1)
+
+    Creates histogram
+    """
+    dims, sz = _sizes2ctypes(sizes)
+    z = _cvCreateHist(dims, sz, hist_type, ranges, uniform)
+    _add_autoclean(z, _cvReleaseHist)
+    return z
+
+# Releases histogram
+cvReleaseHist = cvFree
+
+# Sets bounds of histogram bins
+cvSetHistBinRanges = cfunc('cvSetHistBinRanges', _cvDLL, None,
+    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
+    ('ranges', ListPOINTER2(c_float), 1), # float** ranges
+    ('uniform', c_int, 1, 1), # int uniform
+)
+cvSetHistBinRanges.__doc__ = """void cvSetHistBinRanges(CvHistogram* hist, float** ranges, int uniform=1)
+
+Sets bounds of histogram bins
+"""
+
+# Clears histogram
+cvClearHist = cfunc('cvClearHist', _cvDLL, None,
+    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist 
+)
+cvClearHist.__doc__ = """void cvClearHist(CvHistogram* hist)
+
+Clears histogram
+"""
+
+# Makes a histogram out of array
+cvMakeHistHeaderForArray = cfunc('cvMakeHistHeaderForArray', _cvDLL, POINTER(CvHistogram),
+    ('dims', c_int, 1), # int dims
+    ('sizes', c_int_p, 1), # int* sizes
+    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
+    ('data', POINTER(c_float), 1), # float* data
+    ('ranges', ListPOINTER2(c_float), 1, None), # float** ranges
+    ('uniform', c_int, 1, 1), # int uniform
+)
+cvMakeHistHeaderForArray.__doc__ = """CvHistogram* cvMakeHistHeaderForArray(int dims, int* sizes, CvHistogram* hist, float* data, float** ranges=NULL, int uniform=1)
+
+Makes a histogram out of array
+"""
+
+# Finds minimum and maximum histogram bins
+def cvGetMinMaxHistValue(hist, min_idx=None, max_idx=None):
+    """float min_value, max_value = cvGetMinMaxHistValue(const CvHistogram* hist, int* min_idx=NULL, int* max_idx=NULL)
+
+    Finds minimum and maximum histogram bins
+    [ctypes-opencv] Note that both min_value and max_value are returned.
+    """
+    min_value = c_float()
+    max_value = c_float()
+    _cvGetMinMaxHistValue(hist, min_value, max_value, min_idx, max_idx)
+    
+    return min_value.value, max_value.value
+
+# Normalizes histogram
+cvNormalizeHist = cfunc('cvNormalizeHist', _cvDLL, None,
+    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
+    ('factor', c_double, 1), # double factor 
+)
+cvNormalizeHist.__doc__ = """void cvNormalizeHist(CvHistogram* hist, double factor)
+
+Normalizes histogram
+"""
+
+# Thresholds histogram
+cvThreshHist = cfunc('cvThreshHist', _cvDLL, None,
+    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
+    ('threshold', c_double, 1), # double threshold 
+)
+cvThreshHist.__doc__ = """void cvThreshHist(CvHistogram* hist, double threshold)
+
+Thresholds histogram
+"""
+
+CV_COMP_CORREL       = 0
+CV_COMP_CHISQR       = 1
+CV_COMP_INTERSECT    = 2
+CV_COMP_BHATTACHARYYA= 3
+
+# Compares two dense histograms
+cvCompareHist = cfunc('cvCompareHist', _cvDLL, c_double,
+    ('hist1', POINTER(CvHistogram), 1), # const CvHistogram* hist1
+    ('hist2', POINTER(CvHistogram), 1), # const CvHistogram* hist2
+    ('method', c_int, 1), # int method 
+)
+cvCompareHist.__doc__ = """double cvCompareHist(const CvHistogram* hist1, const CvHistogram* hist2, int method)
+
+Compares two dense histograms
+"""
+
+# Copies histogram
+def cvCopyHist(src, dst=None):
+    """CvHistogram* cvCopyHist(const CvHistogram* src, CvHistogram* dst=NULL)
+
+    Copies histogram
+    [ctypes-opencv] If dst is NULL, a new CvHistogram is created and the address of it is returned. Otherwise, dst supplies the address of the CvHistogram to be copied to. Warning: I haven't tested this function.
+    """
+    if dst is None:
+        z = _cvCopyHist(src)
+        _add_autoclean(z, _cvReleaseHist)
+        return z
+    _cvCopyHist(src, dst)
+    return dst
+    
+# Calculate the histogram
+cvCalcHist = cfunc('cvCalcArrHist', _cvDLL, None,
+    ('image', ListPOINTER(POINTER(IplImage)), 1), # IplImage** image
+    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
+    ('accumulate', c_int, 1, 0), # int accumulate
+    ('mask', CvArr_p, 1, None), # CvArr* mask
+)
+cvCalcHist.__doc = """void cvCalcHist( CvArr** arr, CvHistogram* hist, int accumulate=0, const CvArr* mask=NULL )
+
+Calculates array histogram
+"""
+
+cvCalcArrHist = cvCalcHist
+
+# Calculates back projection
+cvCalcBackProject = cfunc('cvCalcArrBackProject', _cvDLL, None,
+    ('image', ListPOINTER(POINTER(IplImage)), 1), # IplImage** image
+    ('back_project', POINTER(IplImage), 1), # IplImage* back_project
+    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
+)
+cvCalcBackProject.__doc = """void cvCalcBackProject( CvArr** image, CvArr* dst, const CvHistogram* hist )
+
+Calculates back projection
+"""
+
+# Calculates back projection
+cvCalcBackProjectPatch = cfunc('cvCalcArrBackProjectPatch', _cvDLL, None,
+    ('image', ListPOINTER(POINTER(IplImage)), 1), # IplImage** image
+    ('dst', CvArr_p, 1), # CvArr* dst
+    ('range', CvSize, 1), # CvSize range
+    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
+    ('method', c_int, 1), # int method
+    ('factor', c_double, 1), # double factor
+)
+cvCalcBackProjectPatch.__doc = """void cvCalcBackProjectPatch( CvArr** image, CvArr* dst, CvSize range, CvHistogram* hist, int method, double factor )
+
+Calculates back projection
+"""
+
+cvCalcArrBackProjectPatch = cvCalcBackProjectPatch
+
+# Divides one histogram by another
+cvCalcProbDensity = cfunc('cvCalcProbDensity', _cvDLL, None,
+    ('hist1', POINTER(CvHistogram), 1), # const CvHistogram* hist1
+    ('hist2', POINTER(CvHistogram), 1), # const CvHistogram* hist2
+    ('dst_hist', POINTER(CvHistogram), 1), # CvHistogram* dst_hist
+    ('scale', c_double, 1, 255), # double scale
+)
+cvCalcProbDensity.__doc__ = """void cvCalcProbDensity(const CvHistogram* hist1, const CvHistogram* hist2, CvHistogram* dst_hist, double scale=255)
+
+Divides one histogram by another
+"""
+
+def cvQueryHistValue_1D(hist, i1, i2):
+    """Queries value of histogram bin"""
+    return cvGetReal1D(hist.contents.bins, i1)
+
+def cvQueryHistValue_2D(hist, i1, i2):
+    """Queries value of histogram bin"""
+    return cvGetReal2D(hist.contents.bins, i1, i2)
+
+def cvQueryHistValue_3D(hist, i1, i2, i3):
+    """Queries value of histogram bin"""
+    return cvGetReal2D(hist.contents.bins, i1, i2, i3)
+
+# Equalizes histogram of grayscale image
+cvEqualizeHist = cfunc('cvEqualizeHist', _cvDLL, None,
+    ('src', CvArr_p, 1), # const CvArr* src
+    ('dst', CvArr_p, 1), # CvArr* dst 
+)
+cvEqualizeHist.__doc__ = """void cvEqualizeHist(const CvArr* src, CvArr* dst)
+
+Equalizes histogram of grayscale image
+"""
+
+def cvGetHistValue_1D(hist, i1, i2):
+    """Returns pointer to histogram bin"""
+    return cvPtr1D(hist.contents.bins, i1, 0)
+
+def cvQueryHistValue_2D(hist, i1, i2):
+    """Returns pointer to histogram bin"""
+    return cvPtr2D(hist.contents.bins, i1, i2, 0)
+
+def cvQueryHistValue_3D(hist, i1, i2, i3):
+    """Returns pointer to histogram bin"""
+    return cvPtr3D(hist.contents.bins, i1, i2, i3, 0)
 
 
+#-----------------------------------------------------------------------------
+# Matching
+#-----------------------------------------------------------------------------
 
+
+CV_TM_SQDIFF = 0
+CV_TM_SQDIFF_NORMED = 1
+CV_TM_CCORR = 2
+CV_TM_CCORR_NORMED = 3
+CV_TM_CCOEFF = 4
+CV_TM_CCOEFF_NORMED = 5
+
+# Compares template against overlapped image regions
+cvMatchTemplate = cfunc('cvMatchTemplate', _cvDLL, None,
+    ('image', CvArr_p, 1), # const CvArr* image
+    ('templ', CvArr_p, 1), # const CvArr* templ
+    ('result', CvArr_p, 1), # CvArr* result
+    ('method', c_int, 1), # int method 
+)
+cvMatchTemplate.__doc__ = """void cvMatchTemplate(const CvArr* image, const CvArr* templ, CvArr* result, int method)
+
+Compares template against overlapped image regions
+"""
+
+# Compares two shapes
+cvMatchShapes = cfunc('cvMatchShapes', _cvDLL, c_double,
+    ('object1', c_void_p, 1), # const void* object1
+    ('object2', c_void_p, 1), # const void* object2
+    ('method', c_int, 1), # int method
+    ('parameter', c_double, 1, 0), # double parameter
+)
+cvMatchShapes.__doc__ = """double cvMatchShapes(const void* object1, const void* object2, int method, double parameter=0)
+
+Compares two shapes
+"""
+
+cvCalcEMD2 = cfunc('cvCalcEMD2', _cvDLL, c_float,
+    ('signature1', CvArr_p, 1), # const CvArr* signature1
+    ('signature2', CvArr_p, 1), # const CvArr* signature2
+    ('distance_type', c_int, 1), # int distance_type
+    ('distance_func', CvDistanceFunction, 1, None), # CvDistanceFunction distance_func
+    ('cost_matrix', c_void_p, 1, None), # const CvArr* cost_matrix
+    ('flow', CvArr_p, 1, None), # CvArr* flow
+    ('lower_bound', POINTER(c_float), 1, None), # float* lower_bound
+    ('userdata', c_void_p, 1, None), # void* userdata
+)
+cvCalcEMD2.__doc__ = """float cvCalcEMD2( const CvArr* signature1, const CvArr* signature2, int distance_type, CvDistanceFunction distance_func=NULL, const CvArr* cost_matrix=NULL, CvArr* flow=NULL, float* lower_bound=NULL, void* userdata=NULL )
+
+Computes earth mover distance between two weighted point sets (called signatures)
+"""
+
+
+#-----------------------------------------------------------------------------
+# Contour Processing Functions
+#-----------------------------------------------------------------------------
+
+
+# Approximates Freeman chain(s) with polygonal curve
+cvApproxChains = cfunc('cvApproxChains', _cvDLL, POINTER(CvSeq),
+    ('src_seq', POINTER(CvSeq), 1), # CvSeq* src_seq
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('method', c_int, 1), # int method
+    ('parameter', c_double, 1, 0), # double parameter
+    ('minimal_perimeter', c_int, 1, 0), # int minimal_perimeter
+    ('recursive', c_int, 1, 0), # int recursive
+)
+cvApproxChains.__doc__ = """CvSeq* cvApproxChains(CvSeq* src_seq, CvMemStorage* storage, int method=CV_CHAIN_APPROX_SIMPLE, double parameter=0, int minimal_perimeter=0, int recursive=0)
+
+Approximates Freeman chain(s) with polygonal curve
+"""
+
+# Initializes chain reader
+cvStartReadChainPoints = cfunc('cvStartReadChainPoints', _cvDLL, None,
+    ('chain', POINTER(CvChain), 1), # CvChain* chain
+    ('reader', POINTER(CvChainPtReader), 1), # CvChainPtReader* reader 
+)
+cvStartReadChainPoints.__doc__ = """void cvStartReadChainPoints(CvChain* chain, CvChainPtReader* reader)
+
+Initializes chain reader
+"""
+
+# Gets next chain point
+cvReadChainPoint = cfunc('cvReadChainPoint', _cvDLL, CvPoint,
+    ('reader', POINTER(CvChainPtReader), 1), # CvChainPtReader* reader 
+)
+cvReadChainPoint.__doc__ = """CvPoint cvReadChainPoint(CvChainPtReader* reader)
+
+Gets next chain point
+"""
+
+CV_POLY_APPROX_DP = 0
+
+# Approximates polygonal curve(s) with desired precision
+cvApproxPoly = cfunc('cvApproxPoly', _cvDLL, POINTER(CvSeq),
+    ('src_seq', c_void_p, 1), # const void* src_seq
+    ('header_size', c_int, 1), # int header_size
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('method', c_int, 1), # int method
+    ('parameter', c_double, 1), # double parameter
+    ('parameter2', c_int, 1, 0), # int parameter2
+)
+cvApproxPoly.__doc__ = """CvSeq* cvApproxPoly(const void* src_seq, int header_size, CvMemStorage* storage, int method, double parameter, int parameter2=0)
+
+Approximates polygonal curve(s) with desired precision
+"""
+
+CV_DOMINANT_IPAN = 1
+
+# Finds high-curvature points of the contour
+cvFindDominantPoints = cfunc('cvFindDominantPoints', _cvDLL, POINTER(CvSeq),
+    ('contour', POINTER(CvSeq), 1), # CvSeq* contour
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('method', c_int, 1, CV_DOMINANT_IPAN), # int header_size
+    ('parameter1', c_double, 1, 0), # double parameter1
+    ('parameter2', c_double, 1, 0), # double parameter2
+    ('parameter3', c_double, 1, 0), # double parameter3
+    ('parameter4', c_double, 1, 0), # double parameter4
+)
+cvFindDominantPoints.__doc__ = """CvSeq* cvFindDominantPoints( CvSeq* contour, CvMemStorage* storage, int method=CV_DOMINANT_IPAN, double parameter1=0, double parameter2=0, double parameter3=0, double parameter4=0)
+
+Finds high-curvature points of the contour
+"""
+
+# Calculates up-right bounding rectangle of point set
+cvBoundingRect = cfunc('cvBoundingRect', _cvDLL, CvRect,
+    ('points', CvArr_p, 1), # CvArr* points
+    ('update', c_int, 1, 0), # int update
+)
+cvBoundingRect.__doc__ = """CvRect cvBoundingRect(CvArr* points, int update=0)
+
+Calculates up-right bounding rectangle of point set
+"""
+
+# Calculates area of the whole contour or contour section
+cvContourArea = cfunc('cvContourArea', _cvDLL, c_double,
+    ('contour', CvArr_p, 1), # const CvArr* contour
+    ('slice', CvSlice, 1), # CvSlice slice
+)
+cvContourArea.__doc__ = """double cvContourArea(const CvArr* contour, CvSlice slice=CV_WHOLE_SEQ)
+
+Calculates area of the whole contour or contour section
+"""
+
+# Calculates contour perimeter or curve length
+cvArcLength = cfunc('cvArcLength', _cvDLL, c_double,
+    ('curve', c_void_p, 1), # const void* curve
+    ('slice', CvSlice, 1), # CvSlice slice
+    ('is_closed', c_int, 1), # int is_closed
+)
+cvArcLength.__doc__ = """double cvArcLength(const void* curve, CvSlice slice=CV_WHOLE_SEQ, int is_closed=-1)
+
+Calculates contour perimeter or curve length
+"""
+
+def cvContourPerimeter(contour):
+    """Calculates the contour perimeter of a contour."""
+    return cvArcLength( contour, CV_WHOLE_SEQ, 1 )
+
+# Creates hierarchical representation of contour
+cvCreateContourTree = cfunc('cvCreateContourTree', _cvDLL, POINTER(CvContourTree),
+    ('contour', POINTER(CvSeq), 1), # const CvSeq* contour
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('threshold', c_double, 1), # double threshold 
+)
+cvCreateContourTree.__doc__ = """CvContourTree* cvCreateContourTree(const CvSeq* contour, CvMemStorage* storage, double threshold)
+
+Creates hierarchical representation of contour
+"""
+
+# Restores contour from tree
+cvContourFromContourTree = cfunc('cvContourFromContourTree', _cvDLL, POINTER(CvSeq),
+    ('tree', POINTER(CvContourTree), 1), # const CvContourTree* tree
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria 
+)
+cvContourFromContourTree.__doc__ = """CvSeq* cvContourFromContourTree(const CvContourTree* tree, CvMemStorage* storage, CvTermCriteria criteria)
+
+Restores contour from tree
+"""
+
+# Compares two contours using their tree representations
+cvMatchContourTrees = cfunc('cvMatchContourTrees', _cvDLL, c_double,
+    ('tree1', POINTER(CvContourTree), 1), # const CvContourTree* tree1
+    ('tree2', POINTER(CvContourTree), 1), # const CvContourTree* tree2
+    ('method', c_int, 1), # int method
+    ('threshold', c_double, 1), # double threshold 
+)
+cvMatchContourTrees.__doc__ = """double cvMatchContourTrees(const CvContourTree* tree1, const CvContourTree* tree2, int method, double threshold)
+
+Compares two contours using their tree representations
+"""
+
+
+#-----------------------------------------------------------------------------
+# Computational Geometry
+#-----------------------------------------------------------------------------
+
+
+# Finds bounding rectangle for two given rectangles
+cvMaxRect = cfunc('cvMaxRect', _cvDLL, CvRect,
+    ('rect1', POINTER(CvRect), 1), # const CvRect* rect1
+    ('rect2', POINTER(CvRect), 1), # const CvRect* rect2 
+)
+cvMaxRect.__doc__ = """CvRect cvMaxRect(const CvRect* rect1, const CvRect* rect2)
+
+Finds bounding rectangle for two given rectangles
+"""
+
+# Initializes point sequence header from a point vector
+cvPointSeqFromMat = cfunc('cvPointSeqFromMat', _cvDLL, POINTER(CvSeq),
+    ('seq_kind', c_int, 1), # int seq_kind
+    ('mat', CvArr_p, 1), # const CvArr* mat
+    ('contour_header', POINTER(CvContour), 1), # CvContour* contour_header
+    ('block', POINTER(CvSeqBlock), 1), # CvSeqBlock* block 
+)
+cvPointSeqFromMat.__doc__ = """CvSeq* cvPointSeqFromMat(int seq_kind, const CvArr* mat, CvContour* contour_header, CvSeqBlock* block)
+
+Initializes point sequence header from a point vector
+"""
+
+# Finds box vertices
+cvBoxPoints = cfunc('cvBoxPoints', _cvDLL, None,
+    ('box', CvBox2D, 1), # CvBox2D box
+    ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
+)
+cvBoxPoints.__doc__ = """void cvBoxPoints(CvBox2D box, CvPoint2D32f pt[4])
+
+Finds box vertices
+"""
+
+# Fits ellipse to set of 2D points
+cvFitEllipse2 = cfunc('cvFitEllipse2', _cvDLL, CvBox2D,
+    ('points', CvArr_p, 1), # const CvArr* points 
+)
+cvFitEllipse2.__doc__ = """CvBox2D cvFitEllipse2(const CvArr* points)
+
+Fits ellipse to set of 2D points
+"""
+
+# Fits line to 2D or 3D point set
+cvFitLine = cfunc('cvFitLine', _cvDLL, None,
+    ('points', CvArr_p, 1), # const CvArr* points
+    ('dist_type', c_int, 1), # int dist_type
+    ('param', c_double, 1), # double param
+    ('reps', c_double, 1), # double reps
+    ('aeps', c_double, 1), # double aeps
+    ('line', POINTER(c_float), 1), # float* line 
+)
+cvFitLine.__doc__ = """void cvFitLine(const CvArr* points, int dist_type, double param, double reps, double aeps, float* line)
+
+Fits line to 2D or 3D point set
+"""
+
+# Finds convex hull of point set
+cvConvexHull2 = cfunc('cvConvexHull2', _cvDLL, POINTER(CvSeq),
+    ('input', CvArr_p, 1), # const CvArr* input
+    ('hull_storage', c_void_p, 1, None), # void* hull_storage
+    ('orientation', c_int, 1), # int orientation
+    ('return_points', c_int, 1, 0), # int return_points
+)
+cvConvexHull2.__doc__ = """CvSeq* cvConvexHull2(const CvArr* input, void* hull_storage=NULL, int orientation=CV_CLOCKWISE, int return_points=0)
+
+Finds convex hull of point set
+"""
+
+# Tests contour convex
+cvCheckContourConvexity = cfunc('cvCheckContourConvexity', _cvDLL, c_int,
+    ('contour', CvArr_p, 1), # const CvArr* contour 
+)
+cvCheckContourConvexity.__doc__ = """int cvCheckContourConvexity(const CvArr* contour)
+
+Tests contour convex
+"""
+
+# Finds convexity defects of contour
+cvConvexityDefects = cfunc('cvConvexityDefects', _cvDLL, POINTER(CvSeq),
+    ('contour', CvArr_p, 1), # const CvArr* contour
+    ('convexhull', CvArr_p, 1), # const CvArr* convexhull
+    ('storage', POINTER(CvMemStorage), 1, None), # CvMemStorage* storage
+)
+cvConvexityDefects.__doc__ = """CvSeq* cvConvexityDefects(const CvArr* contour, const CvArr* convexhull, CvMemStorage* storage=NULL)
+
+Finds convexity defects of contour
+"""
+
+# Point in contour test
+cvPointPolygonTest = cfunc('cvPointPolygonTest', _cvDLL, c_double,
+    ('contour', CvArr_p, 1), # const CvArr* contour
+    ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
+    ('measure_dist', c_int, 1), # int measure_dist 
+)
+cvPointPolygonTest.__doc__ = """double cvPointPolygonTest(const CvArr* contour, CvPoint2D32f pt, int measure_dist)
+
+Point in contour test
+"""
+
+# Finds circumscribed rectangle of minimal area for given 2D point set
+cvMinAreaRect2 = cfunc('cvMinAreaRect2', _cvDLL, CvBox2D,
+    ('points', CvArr_p, 1), # const CvArr* points
+    ('storage', POINTER(CvMemStorage), 1, None), # CvMemStorage* storage
+)
+cvMinAreaRect2.__doc__ = """CvBox2D cvMinAreaRect2(const CvArr* points, CvMemStorage* storage=NULL)
+
+Finds circumscribed rectangle of minimal area for given 2D point set
+"""
+
+# Finds circumscribed circle of minimal area for given 2D point set
+cvMinEnclosingCircle = cfunc('cvMinEnclosingCircle', _cvDLL, c_int,
+    ('points', CvArr_p, 1), # const CvArr* points
+    ('center', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* center
+    ('radius', POINTER(c_float), 1), # float* radius 
+)
+cvMinEnclosingCircle.__doc__ = """int cvMinEnclosingCircle(const CvArr* points, CvPoint2D32f* center, float* radius)
+
+Finds circumscribed circle of minimal area for given 2D point set
+"""
+
+# Calculates pair-wise geometrical histogram for contour
+cvCalcPGH = cfunc('cvCalcPGH', _cvDLL, None,
+    ('contour', POINTER(CvSeq), 1), # const CvSeq* contour
+    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist 
+)
+cvCalcPGH.__doc__ = """void cvCalcPGH(const CvSeq* contour, CvHistogram* hist)
+
+Calculates pair-wise geometrical histogram for contour
+"""
+
+
+#-----------------------------------------------------------------------------
+# Planar Subdivisions
+#-----------------------------------------------------------------------------
+
+
+cvSubdiv2DNextEdge = CV_SUBDIV2D_NEXT_EDGE
+
+# Returns one of edges related to given
+def cvSubdiv2DGetEdge(edge, next_edge_type):
+    """CvSubdiv2DEdge  cvSubdiv2DGetEdge( CvSubdiv2DEdge edge, CvNextEdgeType type )
+
+    Returns one of edges related to given
+    [ctypes-opencv] Warning: I haven't tested this function.
+    """
+    e = cast(c_void_p(edge & ~3), POINTER(CvQuadEdge2D))
+    edge = e.contents.next[(edge + next_edge_type) & 3]
+    return (edge & ~3) + ((edge + (next_edge_type >> 4)) & 3)
+
+# Returns another edge of the same quad-edge
+def cvSubdiv2DRotateEdge(edge, rotate):
+    """CvSubdiv2DEdge  cvSubdiv2DRotateEdge( CvSubdiv2DEdge edge, int rotate )
+
+    Returns another edge of the same quad-edge
+    """
+    return  (edge & ~3) + ((edge + rotate) & 3)
+
+# Returns edge origin
+def cvSubdiv2DEdgeOrg(edge):
+    """CvSubdiv2DPoint* cvSubdiv2DEdgeOrg( CvSubdiv2DEdge edge )
+
+    Returns edge origin
+    """
+    e = cast(c_void_p(edge & ~3), POINTER(CvQuadEdge2D))
+    return e.contents.pt[edge & 3]
+
+# Returns edge destination
+def cvSubdiv2DEdgeDst(edge):
+    """CvSubdiv2DPoint* cvSubdiv2DEdgeDst( CvSubdiv2DEdge edge )
+
+    Returns edge destination
+    """
+    e = cast(c_void_p(edge & ~3), POINTER(CvQuadEdge2D))
+    return e.contents.pt[(edge + 2) & 3]
+
+# Initializes Delaunay triangulation
+cvInitSubdivDelaunay2D = cfunc('cvInitSubdivDelaunay2D', _cvDLL, None,
+    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubDiv2D* subdiv
+    ('rect', CvRect, 1), # CvRect rect
+)
+cvInitSubdivDelaunay2D.__doc__ = """void cvInitSubdivDelaunay2D( CvSubdiv2D* subdiv, CvRect rect )
+
+Initializes Delaunay triangulation
+"""
+
+# Creates new subdivision
+cvCreateSubdiv2D = cfunc('cvCreateSubdiv2D', _cvDLL, POINTER(CvSubdiv2D),
+    ('subdiv_type', c_int, 1), # int subdiv_type
+    ('header_size', c_int, 1), # int header_size
+    ('vtx_size', c_int, 1), # int vtx_size
+    ('quadedge_size', c_int, 1), # int quadedge_size
+    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+)
+cvCreateSubdiv2D.__doc__ = """CvSubdiv2D* cvCreateSubdiv2D( int subdiv_type, int header_size, int vtx_size, int quadedge_size, CvMemStorage* storage )
+
+Creates new subdivision
+"""
+
+# Simplified Delaunay diagram creation
+def cvCreateSubdivDelaunay2D(rect, storage):
+    """CvSubdiv2D* cvCreateSubdivDelaunay2D(CvRect rect, CvMemStorage* storage)
+    
+    Simplified Delaunay diagram creation
+    """
+    subdiv = cvCreateSubdiv2D(CV_SEQ_KIND_SUBDIV2D, sizeof(CvSubdiv2D), sizeof(CvSubdiv2DPoint), sizeof(CvQuadEdge2D), storage)
+    cvInitSubdivDelaunay2D(subdiv, rect)
+    return subdiv
+    
+# Inserts a single point to Delaunay triangulation
+cvSubdivDelaunay2DInsert = cfunc('cvSubdivDelaunay2DInsert', _cvDLL, POINTER(CvSubdiv2DPoint),
+    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubdiv2D* subdiv
+    ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
+)
+cvSubdivDelaunay2DInsert.__doc__ = """CvSubdiv2DPoint* cvSubdivDelaunay2DInsert(CvSubdiv2D* subdiv, CvPoint2D32f p)
+
+Inserts a single point to Delaunay triangulation
+"""
+
+# Inserts a single point to Delaunay triangulation
+cvSubdiv2DLocate = cfunc('cvSubdiv2DLocate', _cvDLL, CvSubdiv2DPointLocation,
+    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubdiv2D* subdiv
+    ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
+    ('edge', POINTER(CvSubdiv2DEdge), 1), # CvSubdiv2DEdge* edge
+    ('vertex', POINTER(POINTER(CvSubdiv2DPoint)), 1, None), # CvSubdiv2DPoint** vertex
+)
+cvSubdiv2DLocate.__doc__ = """CvSubdiv2DPointLocation cvSubdiv2DLocate(CvSubdiv2D* subdiv, CvPoint2D32f pt, CvSubdiv2DEdge* edge, CvSubdiv2DPoint** vertex=NULL)
+
+Inserts a single point to Delaunay triangulation
+"""
+
+# Finds the closest subdivision vertex to given point
+cvFindNearestPoint2D = cfunc('cvFindNearestPoint2D', _cvDLL, POINTER(CvSubdiv2DPoint),
+    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubdiv2D* subdiv
+    ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt 
+)
+cvFindNearestPoint2D.__doc__ = """CvSubdiv2DPoint* cvFindNearestPoint2D(CvSubdiv2D* subdiv, CvPoint2D32f pt)
+
+Finds the closest subdivision vertex to given point
+"""
+
+# Calculates coordinates of Voronoi diagram cells
+cvCalcSubdivVoronoi2D = cfunc('cvCalcSubdivVoronoi2D', _cvDLL, None,
+    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubdiv2D* subdiv 
+)
+cvCalcSubdivVoronoi2D.__doc__ = """void cvCalcSubdivVoronoi2D(CvSubdiv2D* subdiv)
+
+Calculates coordinates of Voronoi diagram cells
+"""
+
+# Removes all virtual points
+cvClearSubdivVoronoi2D = cfunc('cvClearSubdivVoronoi2D', _cvDLL, None,
+    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubdiv2D* subdiv 
+)
+cvClearSubdivVoronoi2D.__doc__ = """void cvClearSubdivVoronoi2D(CvSubdiv2D* subdiv)
+
+Removes all virtual points
+"""
 
 
 # here, start from here
@@ -6719,338 +7391,15 @@ class CvVideoWriter(_Structure):
 
 # --- 1.9 Histograms ---------------------------------------------------------
 
-# Creates histogram
-cvCreateHist = cfunc('cvCreateHist', _cvDLL, POINTER(CvHistogram),
-    ('dims', c_int, 1), # int dims
-    ('sizes', ListPOINTER(c_int), 1), # int* sizes
-    ('type', c_int, 1), # int type
-    ('ranges', ListPOINTER2(c_float), 1, None), # float** ranges=NULL
-    ('uniform', c_int, 1, 1), # int uniform=1
-)
-
-# Sets bounds of histogram bins
-cvSetHistBinRanges = cfunc('cvSetHistBinRanges', _cvDLL, None,
-    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
-    ('ranges', ListPOINTER2(c_float), 1), # float** ranges
-    ('uniform', c_int, 1, 1), # int uniform
-)
-
-# Releases histogram
-cvReleaseHist = cfunc('cvReleaseHist', _cvDLL, None,
-    ('hist', ByRefArg(POINTER(CvHistogram)), 1), # CvHistogram** hist 
-)
-
-# Clears histogram
-cvClearHist = cfunc('cvClearHist', _cvDLL, None,
-    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist 
-)
-
-# Makes a histogram out of array
-cvMakeHistHeaderForArray = cfunc('cvMakeHistHeaderForArray', _cvDLL, POINTER(CvHistogram),
-    ('dims', c_int, 1), # int dims
-    ('sizes', POINTER(c_int), 1), # int* sizes
-    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
-    ('data', POINTER(c_float), 1), # float* data
-    ('ranges', ListPOINTER2(c_float), 1, None), # float** ranges
-    ('uniform', c_int, 1, 1), # int uniform
-)
-
-# Finds minimum and maximum histogram bins
-cvGetMinMaxHistValue = cfunc('cvGetMinMaxHistValue', _cvDLL, None,
-    ('hist', POINTER(CvHistogram), 1), # const CvHistogram* hist
-    ('min_value', POINTER(c_float), 2), # float* min_value
-    ('max_value', POINTER(c_float), 2), # float* max_value
-    ('min_idx', POINTER(c_int), 2), # int* min_idx
-    ('max_idx', POINTER(c_int), 2), # int* max_idx
-)
-
-# Normalizes histogram
-cvNormalizeHist = cfunc('cvNormalizeHist', _cvDLL, None,
-    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
-    ('factor', c_double, 1), # double factor 
-)
-
-# Thresholds histogram
-cvThreshHist = cfunc('cvThreshHist', _cvDLL, None,
-    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
-    ('threshold', c_double, 1), # double threshold 
-)
-
-CV_COMP_CORREL       = 0
-CV_COMP_CHISQR       = 1
-CV_COMP_INTERSECT    = 2
-CV_COMP_BHATTACHARYYA= 3
-
-# Compares two dense histograms
-cvCompareHist = cfunc('cvCompareHist', _cvDLL, c_double,
-    ('hist1', POINTER(CvHistogram), 1), # const CvHistogram* hist1
-    ('hist2', POINTER(CvHistogram), 1), # const CvHistogram* hist2
-    ('method', c_int, 1), # int method 
-)
-
-# Copies histogram
-cvCopyHist = cfunc('cvCopyHist', _cvDLL, None,
-    ('src', POINTER(CvHistogram), 1), # const CvHistogram* src
-    ('dst', POINTER(POINTER(CvHistogram)), 1), # CvHistogram** dst 
-)
-
-# Calculate the histogram
-cvCalcHist = cfunc('cvCalcArrHist', _cvDLL, None,
-    ('image', ListPOINTER(POINTER(IplImage)), 1), # IplImage** image
-    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
-    ('accumulate', c_int, 1, 0), # int accumulate
-    ('mask', CvArr_p, 1, None), # CvArr* mask
-)
-
-# Calculates back projection
-cvCalcBackProject = cfunc('cvCalcArrBackProject', _cvDLL, None,
-    ('image', ListPOINTER(POINTER(IplImage)), 1), # IplImage** image
-    ('back_project', POINTER(IplImage), 1), # IplImage* back_project
-    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist
- )
-
-# Divides one histogram by another
-cvCalcProbDensity = cfunc('cvCalcProbDensity', _cvDLL, None,
-    ('hist1', POINTER(CvHistogram), 1), # const CvHistogram* hist1
-    ('hist2', POINTER(CvHistogram), 1), # const CvHistogram* hist2
-    ('dst_hist', POINTER(CvHistogram), 1), # CvHistogram* dst_hist
-    ('scale', c_double, 1, 255), # double scale
-)
-
-def QueryHistValue_1D(hist, i1, i2):
-    return cvGetReal1D(hist[0].bins, i1)
-
-def QueryHistValue_2D(hist, i1, i2):
-    return cvGetReal2D(hist[0].bins, i1, i2)
-
-def QueryHistValue_3D(hist, i1, i2, i3):
-    return cvGetReal2D(hist[0].bins, i1, i2, i3)
-
-# Equalizes histogram of grayscale image
-cvEqualizeHist = cfunc('cvEqualizeHist', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
-)
-
 # --- 1.10 Matching ----------------------------------------------------------
-
-# Compares template against overlapped image regions
-cvMatchTemplate = cfunc('cvMatchTemplate', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('templ', CvArr_p, 1), # const CvArr* templ
-    ('result', CvArr_p, 1), # CvArr* result
-    ('method', c_int, 1), # int method 
-)
-
-# Compares two shapes
-cvMatchShapes = cfunc('cvMatchShapes', _cvDLL, c_double,
-    ('object1', c_void_p, 1), # const void* object1
-    ('object2', c_void_p, 1), # const void* object2
-    ('method', c_int, 1), # int method
-    ('parameter', c_double, 1, 0), # double parameter
-)
-
-cvCalcEMD2 = cfunc('cvCalcEMD2', _cvDLL, c_float,
-    ('signature1', CvArr_p, 1), # const CvArr* signature1
-    ('signature2', CvArr_p, 1), # const CvArr* signature2
-    ('distance_type', c_int, 1), # int distance_type
-    ('distance_func', CvDistanceFunction, 1, None), # CvDistanceFunction distance_func
-    ('cost_matrix', c_void_p, 1, None), # const CvArr* cost_matrix
-    ('flow', CvArr_p, 1, None), # CvArr* flow
-    ('lower_bound', POINTER(c_float), 1, None), # float* lower_bound
-    ('userdata', c_void_p, 1, None), # void* userdata
-)
 
 # --- 2 Structural Analysis --------------------------------------------------
 
 # --- 2.1 Contour Processing Functions ---------------------------------------
 
-# Approximates Freeman chain(s) with polygonal curve
-cvApproxChains = cfunc('cvApproxChains', _cvDLL, POINTER(CvSeq),
-    ('src_seq', POINTER(CvSeq), 1), # CvSeq* src_seq
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('method', c_int, 1), # int method
-    ('parameter', c_double, 1, 0), # double parameter
-    ('minimal_perimeter', c_int, 1, 0), # int minimal_perimeter
-    ('recursive', c_int, 1, 0), # int recursive
-)
-
-# Initializes chain reader
-cvStartReadChainPoints = cfunc('cvStartReadChainPoints', _cvDLL, None,
-    ('chain', POINTER(CvChain), 1), # CvChain* chain
-    ('reader', POINTER(CvChainPtReader), 1), # CvChainPtReader* reader 
-)
-
-# Gets next chain point
-cvReadChainPoint = cfunc('cvReadChainPoint', _cvDLL, CvPoint,
-    ('reader', POINTER(CvChainPtReader), 1), # CvChainPtReader* reader 
-)
-
-# Approximates polygonal curve(s) with desired precision
-cvApproxPoly = cfunc('cvApproxPoly', _cvDLL, POINTER(CvSeq),
-    ('src_seq', c_void_p, 1), # const void* src_seq
-    ('header_size', c_int, 1), # int header_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('method', c_int, 1), # int method
-    ('parameter', c_double, 1), # double parameter
-    ('parameter2', c_int, 1, 0), # int parameter2
-)
-
-# Calculates up-right bounding rectangle of point set
-cvBoundingRect = cfunc('cvBoundingRect', _cvDLL, CvRect,
-    ('points', CvArr_p, 1), # CvArr* points
-    ('update', c_int, 1, 0), # int update
-)
-
-# Calculates area of the whole contour or contour section
-cvContourArea = cfunc('cvContourArea', _cvDLL, c_double,
-    ('contour', CvArr_p, 1), # const CvArr* contour
-    ('slice', CvSlice, 1), # CvSlice slice
-)
-
-# Calculates contour perimeter or curve length
-cvArcLength = cfunc('cvArcLength', _cvDLL, c_double,
-    ('curve', c_void_p, 1), # const void* curve
-    ('slice', CvSlice, 1), # CvSlice slice
-    ('is_closed', c_int, 1), # int is_closed
-)
-
-# Creates hierarchical representation of contour
-cvCreateContourTree = cfunc('cvCreateContourTree', _cvDLL, POINTER(CvContourTree),
-    ('contour', POINTER(CvSeq), 1), # const CvSeq* contour
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('threshold', c_double, 1), # double threshold 
-)
-
-# Restores contour from tree
-cvContourFromContourTree = cfunc('cvContourFromContourTree', _cvDLL, POINTER(CvSeq),
-    ('tree', POINTER(CvContourTree), 1), # const CvContourTree* tree
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria 
-)
-
-# Compares two contours using their tree representations
-cvMatchContourTrees = cfunc('cvMatchContourTrees', _cvDLL, c_double,
-    ('tree1', POINTER(CvContourTree), 1), # const CvContourTree* tree1
-    ('tree2', POINTER(CvContourTree), 1), # const CvContourTree* tree2
-    ('method', c_int, 1), # int method
-    ('threshold', c_double, 1), # double threshold 
-)
-
 # --- 2.2 Computational Geometry ---------------------------------------------
 
-# Finds bounding rectangle for two given rectangles
-cvMaxRect = cfunc('cvMaxRect', _cvDLL, CvRect,
-    ('rect1', POINTER(CvRect), 1), # const CvRect* rect1
-    ('rect2', POINTER(CvRect), 1), # const CvRect* rect2 
-)
-
-# Initializes point sequence header from a point vector
-cvPointSeqFromMat = cfunc('cvPointSeqFromMat', _cvDLL, POINTER(CvSeq),
-    ('seq_kind', c_int, 1), # int seq_kind
-    ('mat', CvArr_p, 1), # const CvArr* mat
-    ('contour_header', POINTER(CvContour), 1), # CvContour* contour_header
-    ('block', POINTER(CvSeqBlock), 1), # CvSeqBlock* block 
-)
-
-# Finds box vertices
-cvBoxPoints = cfunc('cvBoxPoints', _cvDLL, None,
-    ('box', CvBox2D, 1), # CvBox2D box
-    ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
-)
-
-# Fits ellipse to set of 2D points
-cvFitEllipse2 = cfunc('cvFitEllipse2', _cvDLL, CvBox2D,
-    ('points', CvArr_p, 1), # const CvArr* points 
-)
-
-# Fits line to 2D or 3D point set
-cvFitLine = cfunc('cvFitLine', _cvDLL, None,
-    ('points', CvArr_p, 1), # const CvArr* points
-    ('dist_type', c_int, 1), # int dist_type
-    ('param', c_double, 1), # double param
-    ('reps', c_double, 1), # double reps
-    ('aeps', c_double, 1), # double aeps
-    ('line', POINTER(c_float), 1), # float* line 
-)
-
-# Finds convex hull of point set
-cvConvexHull2 = cfunc('cvConvexHull2', _cvDLL, POINTER(CvSeq),
-    ('input', CvArr_p, 1), # const CvArr* input
-    ('hull_storage', c_void_p, 1, None), # void* hull_storage
-    ('orientation', c_int, 1), # int orientation
-    ('return_points', c_int, 1, 0), # int return_points
-)
-
-# Tests contour convex
-cvCheckContourConvexity = cfunc('cvCheckContourConvexity', _cvDLL, c_int,
-    ('contour', CvArr_p, 1), # const CvArr* contour 
-)
-
-# Finds convexity defects of contour
-cvConvexityDefects = cfunc('cvConvexityDefects', _cvDLL, POINTER(CvSeq),
-    ('contour', CvArr_p, 1), # const CvArr* contour
-    ('convexhull', CvArr_p, 1), # const CvArr* convexhull
-    ('storage', POINTER(CvMemStorage), 1, None), # CvMemStorage* storage
-)
-
-# Point in contour test
-cvPointPolygonTest = cfunc('cvPointPolygonTest', _cvDLL, c_double,
-    ('contour', CvArr_p, 1), # const CvArr* contour
-    ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
-    ('measure_dist', c_int, 1), # int measure_dist 
-)
-
-# Finds circumscribed rectangle of minimal area for given 2D point set
-cvMinAreaRect2 = cfunc('cvMinAreaRect2', _cvDLL, CvBox2D,
-    ('points', CvArr_p, 1), # const CvArr* points
-    ('storage', POINTER(CvMemStorage), 1, None), # CvMemStorage* storage
-)
-
-# Finds circumscribed circle of minimal area for given 2D point set
-cvMinEnclosingCircle = cfunc('cvMinEnclosingCircle', _cvDLL, c_int,
-    ('points', CvArr_p, 1), # const CvArr* points
-    ('center', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* center
-    ('radius', POINTER(c_float), 1), # float* radius 
-)
-
-# Calculates pair-wise geometrical histogram for contour
-cvCalcPGH = cfunc('cvCalcPGH', _cvDLL, None,
-    ('contour', POINTER(CvSeq), 1), # const CvSeq* contour
-    ('hist', POINTER(CvHistogram), 1), # CvHistogram* hist 
-)
-
 # --- 2.3 Planar Subdivisions ------------------------------------------------
-
-# Inserts a single point to Delaunay triangulation
-cvSubdivDelaunay2DInsert = cfunc('cvSubdivDelaunay2DInsert', _cvDLL, POINTER(CvSubdiv2DPoint),
-    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubdiv2D* subdiv
-    ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
-)
-
-# Inserts a single point to Delaunay triangulation
-cvSubdiv2DLocate = cfunc('cvSubdiv2DLocate', _cvDLL, CvSubdiv2DPointLocation,
-    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubdiv2D* subdiv
-    ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
-    ('edge', POINTER(CvSubdiv2DEdge), 1), # CvSubdiv2DEdge* edge
-    ('vertex', POINTER(POINTER(CvSubdiv2DPoint)), 1, None), # CvSubdiv2DPoint** vertex
-)
-
-# Finds the closest subdivision vertex to given point
-cvFindNearestPoint2D = cfunc('cvFindNearestPoint2D', _cvDLL, POINTER(CvSubdiv2DPoint),
-    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubdiv2D* subdiv
-    ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt 
-)
-
-# Calculates coordinates of Voronoi diagram cells
-cvCalcSubdivVoronoi2D = cfunc('cvCalcSubdivVoronoi2D', _cvDLL, None,
-    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubdiv2D* subdiv 
-)
-
-# Removes all virtual points
-cvClearSubdivVoronoi2D = cfunc('cvClearSubdivVoronoi2D', _cvDLL, None,
-    ('subdiv', POINTER(CvSubdiv2D), 1), # CvSubdiv2D* subdiv 
-)
 
 # --- 3 Motion Analysis and Object Tracking ----------------------------------
 
@@ -7142,6 +7491,9 @@ cvCamShift = cfunc('cvCamShift', _cvDLL, c_int,
     ('comp', POINTER(CvConnectedComp), 2), # CvConnectedComp* comp
     ('box', POINTER(CvBox2D), 2), # CvBox2D* box
 )
+
+CV_VALUE = 1
+CV_ARRAY = 2
 
 # Changes contour position to minimize its energy
 cvSnakeImage = cfunc('cvSnakeImage', _cvDLL, None,
@@ -7394,7 +7746,7 @@ cvFindChessboardCorners = cfunc('cvFindChessboardCorners', _cvDLL, c_int,
     ('image', c_void_p, 1), # const void* image
     ('pattern_size', CvSize, 1), # CvSize pattern_size
     ('corners', POINTER(CvPoint2D32f), 1), # CvPoint2D32f* corners
-    ('corner_count', POINTER(c_int), 1, None), # int* corner_count
+    ('corner_count', c_int_p, 1, None), # int* corner_count
     ('flags', c_int, 1), # int flags
 )
 
@@ -7525,7 +7877,7 @@ CvTrackbarCallback = CFUNCTYPE(None, # void
 cvCreateTrackbar = cfunc('cvCreateTrackbar', _hgDLL, c_int,
     ('trackbar_name', c_char_p, 1), # const char* trackbar_name
     ('window_name', c_char_p, 1), # const char* window_name
-    ('value', POINTER(c_int), 1), # int* value
+    ('value', c_int_p, 1), # int* value
     ('count', c_int, 1), # int count
     ('on_change', CallableToFunc(CvTrackbarCallback), 1), # CvTrackbarCallback on_change 
 )
@@ -7811,211 +8163,6 @@ except ImportError:
     pass
 
 # --- Dokumentationsstrings --------------------------------------------------
-
-cvCreateHist.__doc__ = """CvHistogram* cvCreateHist(int dims, int* sizes, int type, float** ranges=NULL, int uniform=1)
-
-Creates histogram
-"""
-
-cvSetHistBinRanges.__doc__ = """void cvSetHistBinRanges(CvHistogram* hist, float** ranges, int uniform=1)
-
-Sets bounds of histogram bins
-"""
-
-cvReleaseHist.__doc__ = """void cvReleaseHist(CvHistogram** hist)
-
-Releases histogram
-"""
-
-cvClearHist.__doc__ = """void cvClearHist(CvHistogram* hist)
-
-Clears histogram
-"""
-
-cvMakeHistHeaderForArray.__doc__ = """CvHistogram* cvMakeHistHeaderForArray(int dims, int* sizes, CvHistogram* hist, float* data, float** ranges=NULL, int uniform=1)
-
-Makes a histogram out of array
-"""
-
-cvGetMinMaxHistValue.__doc__ = """void cvGetMinMaxHistValue(const CvHistogram* hist, float* min_value, float* max_value, int* min_idx=NULL, int* max_idx=NULL)
-
-Finds minimum and maximum histogram bins
-"""
-
-cvNormalizeHist.__doc__ = """void cvNormalizeHist(CvHistogram* hist, double factor)
-
-Normalizes histogram
-"""
-
-cvThreshHist.__doc__ = """void cvThreshHist(CvHistogram* hist, double threshold)
-
-Thresholds histogram
-"""
-
-cvCompareHist.__doc__ = """double cvCompareHist(const CvHistogram* hist1, const CvHistogram* hist2, int method)
-
-Compares two dense histograms
-"""
-
-cvCopyHist.__doc__ = """void cvCopyHist(const CvHistogram* src, CvHistogram** dst)
-
-Copies histogram
-"""
-
-cvCalcProbDensity.__doc__ = """void cvCalcProbDensity(const CvHistogram* hist1, const CvHistogram* hist2, CvHistogram* dst_hist, double scale=255)
-
-Divides one histogram by another
-"""
-
-cvEqualizeHist.__doc__ = """void cvEqualizeHist(const CvArr* src, CvArr* dst)
-
-Equalizes histogram of grayscale image
-"""
-
-cvMatchTemplate.__doc__ = """void cvMatchTemplate(const CvArr* image, const CvArr* templ, CvArr* result, int method)
-
-Compares template against overlapped image regions
-"""
-
-cvMatchShapes.__doc__ = """double cvMatchShapes(const void* object1, const void* object2, int method, double parameter=0)
-
-Compares two shapes
-"""
-
-cvApproxChains.__doc__ = """CvSeq* cvApproxChains(CvSeq* src_seq, CvMemStorage* storage, int method=CV_CHAIN_APPROX_SIMPLE, double parameter=0, int minimal_perimeter=0, int recursive=0)
-
-Approximates Freeman chain(s) with polygonal curve
-"""
-
-cvStartReadChainPoints.__doc__ = """void cvStartReadChainPoints(CvChain* chain, CvChainPtReader* reader)
-
-Initializes chain reader
-"""
-
-cvReadChainPoint.__doc__ = """CvPoint cvReadChainPoint(CvChainPtReader* reader)
-
-Gets next chain point
-"""
-
-cvApproxPoly.__doc__ = """CvSeq* cvApproxPoly(const void* src_seq, int header_size, CvMemStorage* storage, int method, double parameter, int parameter2=0)
-
-Approximates polygonal curve(s) with desired precision
-"""
-
-cvBoundingRect.__doc__ = """CvRect cvBoundingRect(CvArr* points, int update=0)
-
-Calculates up-right bounding rectangle of point set
-"""
-
-cvContourArea.__doc__ = """double cvContourArea(const CvArr* contour, CvSlice slice=CV_WHOLE_SEQ)
-
-Calculates area of the whole contour or contour section
-"""
-
-cvArcLength.__doc__ = """double cvArcLength(const void* curve, CvSlice slice=CV_WHOLE_SEQ, int is_closed=-1)
-
-Calculates contour perimeter or curve length
-"""
-
-cvCreateContourTree.__doc__ = """CvContourTree* cvCreateContourTree(const CvSeq* contour, CvMemStorage* storage, double threshold)
-
-Creates hierarchical representation of contour
-"""
-
-cvContourFromContourTree.__doc__ = """CvSeq* cvContourFromContourTree(const CvContourTree* tree, CvMemStorage* storage, CvTermCriteria criteria)
-
-Restores contour from tree
-"""
-
-cvMatchContourTrees.__doc__ = """double cvMatchContourTrees(const CvContourTree* tree1, const CvContourTree* tree2, int method, double threshold)
-
-Compares two contours using their tree representations
-"""
-
-cvMaxRect.__doc__ = """CvRect cvMaxRect(const CvRect* rect1, const CvRect* rect2)
-
-Finds bounding rectangle for two given rectangles
-"""
-
-cvPointSeqFromMat.__doc__ = """CvSeq* cvPointSeqFromMat(int seq_kind, const CvArr* mat, CvContour* contour_header, CvSeqBlock* block)
-
-Initializes point sequence header from a point vector
-"""
-
-cvBoxPoints.__doc__ = """void cvBoxPoints(CvBox2D box, CvPoint2D32f pt[4])
-
-Finds box vertices
-"""
-
-cvFitEllipse2.__doc__ = """CvBox2D cvFitEllipse2(const CvArr* points)
-
-Fits ellipse to set of 2D points
-"""
-
-cvFitLine.__doc__ = """void cvFitLine(const CvArr* points, int dist_type, double param, double reps, double aeps, float* line)
-
-Fits line to 2D or 3D point set
-"""
-
-cvConvexHull2.__doc__ = """CvSeq* cvConvexHull2(const CvArr* input, void* hull_storage=NULL, int orientation=CV_CLOCKWISE, int return_points=0)
-
-Finds convex hull of point set
-"""
-
-cvCheckContourConvexity.__doc__ = """int cvCheckContourConvexity(const CvArr* contour)
-
-Tests contour convex
-"""
-
-cvConvexityDefects.__doc__ = """CvSeq* cvConvexityDefects(const CvArr* contour, const CvArr* convexhull, CvMemStorage* storage=NULL)
-
-Finds convexity defects of contour
-"""
-
-cvPointPolygonTest.__doc__ = """double cvPointPolygonTest(const CvArr* contour, CvPoint2D32f pt, int measure_dist)
-
-Point in contour test
-"""
-
-cvMinAreaRect2.__doc__ = """CvBox2D cvMinAreaRect2(const CvArr* points, CvMemStorage* storage=NULL)
-
-Finds circumscribed rectangle of minimal area for given 2D point set
-"""
-
-cvMinEnclosingCircle.__doc__ = """int cvMinEnclosingCircle(const CvArr* points, CvPoint2D32f* center, float* radius)
-
-Finds circumscribed circle of minimal area for given 2D point set
-"""
-
-cvCalcPGH.__doc__ = """void cvCalcPGH(const CvSeq* contour, CvHistogram* hist)
-
-Calculates pair-wise geometrical histogram for contour
-"""
-
-cvSubdivDelaunay2DInsert.__doc__ = """CvSubdiv2DPoint* cvSubdivDelaunay2DInsert(CvSubdiv2D* subdiv, CvPoint2D32f p)
-
-Inserts a single point to Delaunay triangulation
-"""
-
-cvSubdiv2DLocate.__doc__ = """CvSubdiv2DPointLocation cvSubdiv2DLocate(CvSubdiv2D* subdiv, CvPoint2D32f pt, CvSubdiv2DEdge* edge, CvSubdiv2DPoint** vertex=NULL)
-
-Inserts a single point to Delaunay triangulation
-"""
-
-cvFindNearestPoint2D.__doc__ = """CvSubdiv2DPoint* cvFindNearestPoint2D(CvSubdiv2D* subdiv, CvPoint2D32f pt)
-
-Finds the closest subdivision vertex to given point
-"""
-
-cvCalcSubdivVoronoi2D.__doc__ = """void cvCalcSubdivVoronoi2D(CvSubdiv2D* subdiv)
-
-Calculates coordinates of Voronoi diagram cells
-"""
-
-cvClearSubdivVoronoi2D.__doc__ = """void cvClearSubdivVoronoi2D(CvSubdiv2D* subdiv)
-
-Removes all virtual points
-"""
 
 cvAcc.__doc__ = """void cvAcc(const CvArr* image, CvArr* sum, const CvArr* mask=NULL)
 
