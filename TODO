@@ -1,0 +1,10 @@
+restructure ctypes-opencv so that it can be distributed/installed using distutils, done
+
+rowrange and colrange? done
+
+CvSeq and CvSet with array indexing, array slicing?
+
+To provide an interface for machine learning classes. Atm, it's pretty tough.
+
+
+
