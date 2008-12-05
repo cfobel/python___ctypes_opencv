@@ -17,6 +17,7 @@
 
 from ctypes import *
 from cxcore import *
+from cxcore import _cvReleaseImage
 
 
 #-----------------------------------------------------------------------------
@@ -108,17 +109,23 @@ CvTrackbarCallback = CFUNCTYPE(None, # void
     c_int) # int pos
 
 # Creates the trackbar and attaches it to the specified window
-cvCreateTrackbar = cfunc('cvCreateTrackbar', _hgDLL, c_int,
+_cvCreateTrackbar = cfunc('cvCreateTrackbar', _hgDLL, c_int,
     ('trackbar_name', c_char_p, 1), # const char* trackbar_name
     ('window_name', c_char_p, 1), # const char* window_name
     ('value', ByRefArg(c_int), 1), # int* value
     ('count', c_int, 1), # int count
     ('on_change', CallableToFunc(CvTrackbarCallback), 1), # CvTrackbarCallback on_change 
 )
-cvCreateTrackbar.__doc__ = """int cvCreateTrackbar( const char* trackbar_name, const char* window_name, int* value, int count, CvTrackbarCallback on_change )
 
-Creates the trackbar and attaches it to the specified window
-"""
+def cvCreateTrackbar(trackbar_name, window_name, value, count, on_change):
+    """int cvCreateTrackbar( const char* trackbar_name, const char* window_name, c_int_or_int value, int count, CvTrackbarCallback on_change )
+
+    Creates the trackbar and attaches it to the specified window
+    [ctypes-opencv] value can be a c_int or int, if it is a c_int, it holds the current value of the trackbar
+    """
+    if not isinstance(value, c_int):
+        value = c_int(value)
+    return _cvCreateTrackbar(trackbar_name, window_name, value, count, on_change)
 
 # Retrieves trackbar position
 cvGetTrackbarPos = cfunc('cvGetTrackbarPos', _hgDLL, c_int,
@@ -179,13 +186,17 @@ Assigns callback for mouse events
 """
 
 # Waits for a pressed key
-cvWaitKey = cfunc('cvWaitKey', _hgDLL, c_int,
+_cvWaitKey = cfunc('cvWaitKey', _hgDLL, c_int,
     ('delay', c_int, 1, 0), # int delay
 )
-cvWaitKey.__doc__ = """int cvWaitKey(int delay=0)
+def cvWaitKey(delay=0):
+    """int cvWaitKey(int delay=0)
 
-Waits for a pressed key
-"""
+    Waits for a pressed key
+    [ctypes-opencv] returns -1 if no key is pressed, or a string representing the key character
+    """
+    z = _cvWaitKey(delay)
+    return z if z <= 0 else '%c' %z
 
 
 #-----------------------------------------------------------------------------
@@ -205,7 +216,7 @@ CV_LOAD_IMAGE_ANYCOLOR  =  4
 # ------ List of methods not to be called by a user ------
 
 # Loads an image from file
-_cvLoadImage = cfunc('cvLoadImage', _hgDLL, POINTER(IplImage),
+_cvLoadImage = cfunc('cvLoadImage', _hgDLL, IplImage_p,
     ('filename', c_char_p, 1), # const char* filename
     ('iscolor', c_int, 1, 1), # int iscolor
 )
@@ -259,13 +270,14 @@ CV_CAP_QT = 500     # Quicktime
 # CvCapture
 class CvCapture(_Structure): # forward declaration
     pass
-
-CvCaptureCloseFunc = CFUNCTYPE(None, POINTER(CvCapture))
-CvCaptureGrabFrameFunc = CFUNCTYPE(c_int, POINTER(CvCapture))
-CvCaptureRetrieveFrameFunc = CFUNCTYPE(POINTER(IplImage), POINTER(CvCapture))
-CvCaptureGetPropertyFunc = CFUNCTYPE(c_double, POINTER(CvCapture), c_int)
-CvCaptureSetPropertyFunc = CFUNCTYPE(c_int, POINTER(CvCapture), c_int, c_double)
-CvCaptureGetDescriptionFunc = CFUNCTYPE(c_char_p, POINTER(CvCapture))
+CvCapture_p = POINTER(CvCapture)
+    
+CvCaptureCloseFunc = CFUNCTYPE(None, CvCapture_p)
+CvCaptureGrabFrameFunc = CFUNCTYPE(c_int, CvCapture_p)
+CvCaptureRetrieveFrameFunc = CFUNCTYPE(IplImage_p, CvCapture_p)
+CvCaptureGetPropertyFunc = CFUNCTYPE(c_double, CvCapture_p, c_int)
+CvCaptureSetPropertyFunc = CFUNCTYPE(c_int, CvCapture_p, c_int, c_double)
+CvCaptureGetDescriptionFunc = CFUNCTYPE(c_char_p, CvCapture_p)
 
 class CvCaptureVTable(_Structure):
     _fields_ = [
@@ -277,24 +289,26 @@ class CvCaptureVTable(_Structure):
         ('set_property', CvCaptureSetPropertyFunc),
         ('get_description', CvCaptureGetDescriptionFunc),
     ]
+CvCaptureVTable_p = POINTER(CvCaptureVTable)
 
-CvCapture._fields_ = [('vtable', POINTER(CvCaptureVTable))]
+CvCapture._fields_ = [('vtable', CvCaptureVTable_p)]
 
 # Minh-Tri's hacks
-sdHack_del(POINTER(CvCapture))
+sdHack_del(CvCapture_p)
 
 # CvCapture
 class CvVideoWriter(_Structure):
     _fields_ = [] # seriously, no field at all
+CvVideoWriter_p = POINTER(CvVideoWriter)
     
 # Minh-Tri's hacks
-sdHack_del(POINTER(CvVideoWriter))
+sdHack_del(CvVideoWriter_p)
 
 _cvReleaseCapture = cfunc('cvReleaseCapture', _hgDLL, None,
-    ('capture', ByRefArg(POINTER(CvCapture)), 1), # CvCapture** capture 
+    ('capture', ByRefArg(CvCapture_p), 1), # CvCapture** capture 
 )
 
-_cvCreateFileCapture = cfunc('cvCreateFileCapture', _hgDLL, POINTER(CvCapture),
+_cvCreateFileCapture = cfunc('cvCreateFileCapture', _hgDLL, CvCapture_p,
     ('filename', c_char_p, 1), # const char* filename 
 )
 
@@ -311,7 +325,7 @@ def cvCreateFileCapture(filename):
 cvCaptureFromFile = cvCreateFileCapture
 cvCaptureFromAVI = cvCaptureFromFile
 
-_cvCreateCameraCapture = cfunc('cvCreateCameraCapture', _hgDLL, POINTER(CvCapture),
+_cvCreateCameraCapture = cfunc('cvCreateCameraCapture', _hgDLL, CvCapture_p,
     ('index', c_int, 1), # int index 
 )
 
@@ -332,7 +346,7 @@ cvReleaseCapture = cvFree
 
 # Grabs frame from camera or file
 cvGrabFrame = cfunc('cvGrabFrame', _hgDLL, c_int,
-    ('capture', POINTER(CvCapture), 1), # CvCapture* capture 
+    ('capture', CvCapture_p, 1), # CvCapture* capture 
 )
 cvGrabFrame.__doc__ = """int cvGrabFrame(CvCapture* capture)
 
@@ -340,8 +354,8 @@ Grabs frame from camera or file
 """
 
 # Gets the image grabbed with cvGrabFrame
-cvRetrieveFrame = cfunc('cvRetrieveFrame', _hgDLL, POINTER(IplImage),
-    ('capture', POINTER(CvCapture), 1), # CvCapture* capture 
+cvRetrieveFrame = cfunc('cvRetrieveFrame', _hgDLL, IplImage_p,
+    ('capture', CvCapture_p, 1), # CvCapture* capture 
 )
 cvRetrieveFrame.__doc__ = """IplImage* cvRetrieveFrame(CvCapture* capture)
 
@@ -349,8 +363,8 @@ Gets the image grabbed with cvGrabFrame
 """
 
 # Grabs and returns a frame from camera or file
-cvQueryFrame = cfunc('cvQueryFrame', _hgDLL, POINTER(IplImage),
-    ('capture', POINTER(CvCapture), 1), # CvCapture* capture 
+cvQueryFrame = cfunc('cvQueryFrame', _hgDLL, IplImage_p,
+    ('capture', CvCapture_p, 1), # CvCapture* capture 
 )
 cvQueryFrame.__doc__ = """IplImage* cvQueryFrame(CvCapture* capture)
 
@@ -384,7 +398,7 @@ def CV_FOURCC(c1,c2,c3,c4):
 
 # Gets video capturing properties
 cvGetCaptureProperty = cfunc('cvGetCaptureProperty', _hgDLL, c_double,
-    ('capture', POINTER(CvCapture), 1), # CvCapture* capture
+    ('capture', CvCapture_p, 1), # CvCapture* capture
     ('property_id', c_int, 1), # int property_id 
 )
 cvGetCaptureProperty.__doc__ = """double cvGetCaptureProperty(CvCapture* capture, int property_id)
@@ -394,7 +408,7 @@ Gets video capturing properties
 
 # Sets video capturing properties
 cvSetCaptureProperty = cfunc('cvSetCaptureProperty', _hgDLL, c_int,
-    ('capture', POINTER(CvCapture), 1), # CvCapture* capture
+    ('capture', CvCapture_p, 1), # CvCapture* capture
     ('property_id', c_int, 1), # int property_id
     ('value', c_double, 1), # double value 
 )
@@ -404,10 +418,10 @@ Sets video capturing properties
 """
 
 _cvReleaseVideoWriter = cfunc('cvReleaseVideoWriter', _hgDLL, None,
-    ('writer', ByRefArg(POINTER(CvVideoWriter)), 1), # CvVideoWriter** writer 
+    ('writer', ByRefArg(CvVideoWriter_p), 1), # CvVideoWriter** writer 
 )
 
-_cvCreateVideoWriter = cfunc('cvCreateVideoWriter', _hgDLL, POINTER(CvVideoWriter),
+_cvCreateVideoWriter = cfunc('cvCreateVideoWriter', _hgDLL, CvVideoWriter_p,
     ('filename', c_char_p, 1), # const char* filename
     ('fourcc', c_int, 1), # int fourcc
     ('fps', c_double, 1), # double fps
@@ -432,8 +446,8 @@ cvReleaseVideoWriter = cvFree
 
 # Writes a frame to video file
 cvWriteFrame = cfunc('cvWriteFrame', _hgDLL, c_int,
-    ('writer', POINTER(CvVideoWriter), 1), # CvVideoWriter* writer
-    ('image', POINTER(IplImage), 1), # const IplImage* image 
+    ('writer', CvVideoWriter_p, 1), # CvVideoWriter* writer
+    ('image', IplImage_p, 1), # const IplImage* image 
 )
 cvWriteFrame.__doc__ = """int cvWriteFrame(CvVideoWriter* writer, const IplImage* image)
 

@@ -28,9 +28,12 @@ from math import floor, ceil, pi
 
 # Added by Minh-Tri Pham
 c_int_p = POINTER(c_int)
+c_int8_p = POINTER(c_int8)
+c_ubyte_p = POINTER(c_ubyte)
 c_float_p = POINTER(c_float)
 c_double_p = POINTER(c_double)
-size_t = c_uint
+c_void_p_p = POINTER(c_void_p)
+c_short_p = POINTER(c_short)
 
 # ----Load the DLLs ----------------------------------------------------------
 # modified a little bit by Minh-Tri Pham
@@ -65,12 +68,12 @@ def cfunc(name, dll, result, *args):
     '''build and apply a ctypes prototype complete with parameter flags
     e.g.
 cvMinMaxLoc = cfunc('cvMinMaxLoc', _cxDLL, None,
-                    ('image', POINTER(IplImage), 1),
-                    ('min_val', POINTER(double), 2),
-                    ('max_val', POINTER(double), 2),
-                    ('min_loc', POINTER(CvPoint), 2),
-                    ('max_loc', POINTER(CvPoint), 2),
-                    ('mask', POINTER(IplImage), 1, None))
+                    ('image', IplImage_p, 1),
+                    ('min_val', c_double_p, 2),
+                    ('max_val', c_double_p, 2),
+                    ('min_loc', CvPoint_p, 2),
+                    ('max_loc', CvPoint_p, 2),
+                    ('mask', IplImage_p, 1, None))
 means locate cvMinMaxLoc in dll _cxDLL, it returns nothing.
 The first argument is an input image. The next 4 arguments are output, and the last argument is
 input with an optional value. A typical call might look like:
@@ -92,14 +95,14 @@ class _Structure(Structure):
         for field in self._fields_:
             res.append('%s=%s' % (field[0], repr(getattr(self, field[0]))))
         return self.__class__.__name__ + '(' + ','.join(res) + ')'
-    @classmethod
-    def from_param(cls, obj):
-        '''Magically construct from a tuple'''
-        if isinstance(obj, cls):
-            return obj
-        if isinstance(obj, tuple):
-            return cls(*obj)
-        raise TypeError
+    # @classmethod
+    # def from_param(cls, obj):
+        # '''Magically construct from a tuple'''
+        # if isinstance(obj, cls):
+            # return obj
+        # if isinstance(obj, tuple):
+            # return cls(*obj)
+        # raise TypeError
 
         
 class ListPOINTER(object):
@@ -111,8 +114,8 @@ class ListPOINTER(object):
         if isinstance(param, (list,tuple)):
             return (self.etype * len(param))(*param)
 
-class AdjustableListPOINTER(object):
-    '''Just like a POINTER but accept a list of ctype as an argument'''
+class FlexibleListPOINTER(object):
+    '''Just like a POINTER but accept a list of ctype as an argument, with element type determined from the first element'''
     def __init__(self, etype):
         self.etype = etype
 
@@ -186,13 +189,13 @@ CV_VERSION          = "1.0.0"
 
 
 #-----------------------------------------------------------------------------
-# A hack in OpenCV's POINTER(IplImage)
+# A hack in OpenCV's IplImage_p
 #-----------------------------------------------------------------------------
 # allows to access pixels directly using image indexing with 2 parameters (row then column)
 # while disabling ctypes' array indexing
 # and ctypes' array slicing,  to avoid confusion
 # If you want image slicing, convert the image into a CvMat.
-# e.g.: let img be an instance of POINTER(IplImage)
+# e.g.: let img be an instance of IplImage_p
 # img[3,4] means the pixel located at row 3, column 4 (zero-based) in the image
 #    a pixel can be a CvScalar or a number variable, depending on its type specified by img.depth
 # img[3:4] is *invalid*
@@ -209,7 +212,7 @@ def sdHack_iplimage(cls):
     }
     
     def slicing_disabled(self, *args):
-        raise KeyError("Slicing for POINTER(IplImage) is disabled.")
+        raise KeyError("Slicing for IplImage_p is disabled.")
     
     def get_pixel(self, key):
         if not isinstance(key, tuple) or len(key) != 2 or not isinstance(key[0], int) or not isinstance(key[1], int):
@@ -224,8 +227,11 @@ def sdHack_iplimage(cls):
         x = key[1]
         if not 0 <= x < w:
             raise IndexError("Column %d is not in [0,%d)" % (x, w))
-                
-        datatype = depth2ctype[self.contents.depth]*self.contents.nChannels
+
+        d = self.contents.depth
+        if d < 0:
+            d += 0x100000000
+        datatype = depth2ctype[d]*self.contents.nChannels
         return datatype.from_address(addressof(self.contents.imageData.contents)+self.contents.widthStep*y+x*sizeof(datatype))
 
     def my__getitem__(self, key):
@@ -238,6 +244,9 @@ def sdHack_iplimage(cls):
         if isinstance(value, CvScalar):
             for i in xrange(len(pixel)):
                 pixel[i] = value.val[i]
+        elif getattr(value, '__getitem__', None) is not None:
+            for i in xrange(len(pixel)):
+                pixel[i] = value[i]
         else:
             pixel[0] = value
         
@@ -248,10 +257,10 @@ def sdHack_iplimage(cls):
     
 
 #-----------------------------------------------------------------------------
-# A hack in OpenCV's POINTER(CvMat)
+# A hack in OpenCV's CvMat_p
 #-----------------------------------------------------------------------------
 # allows to access pixels directly using image indexing with 2 parameters, row then column
-# and also image slicing, for POINTER(CvMat)
+# and also image slicing, for CvMat_p
 # at the same time, ctypes' array indexing and slicing are disabled to avoid confusion
 def sdHack_cvmat(cls):
     def check_slice(sl, length):
@@ -350,14 +359,22 @@ def sdHack_cvmat(cls):
 
     def my__getitem__(self, key):
         z = get_pixel_or_slice2d(self, key)
-        return z if isinstance(z, POINTER(CvMat)) or len(z) > 1 else z[0]
+        return z if isinstance(z, CvMat_p) or len(z) > 1 else z[0]
                     
     def my__setitem__(self, key, value):
         z = get_pixel_or_slice2d(self, key)
-        if isinstance(z, POINTER(CvMat)):
-            if not isinstance(value, CvScalar):
-                value = cvScalar(value)
-            cvSet(z, value)
+        if isinstance(z, CvMat_p):
+            if isinstance(value, CvMat_p):
+                cvCopy(value, z)
+            elif isinstance(value, tuple) or isinstance(value, list):
+                for y in xrange(z.rows):
+                    vy = value[y]
+                    for x in xrange(z.cols):
+                        z[y,x] = vy[x]
+            else:
+                if not isinstance(value, CvScalar):
+                    value = cvScalar(value)
+                cvSet(z, value)
         else:
             y = getattr(value, '__getitem__', None)
             if y:
@@ -379,7 +396,7 @@ def sdHack_cvmat(cls):
     
 
 #-----------------------------------------------------------------------------
-# Another hack in OpenCV's POINTER(CvMat)
+# Another hack in OpenCV's CvMat_p
 #-----------------------------------------------------------------------------
 # With respect to the previous hack, this hack allows:
 #  - Iteration of rows. For example:
@@ -393,47 +410,117 @@ def sdHack_cvmat(cls):
 # Note that if you want to extract a row or a column by index, use
 # image slicing from the previous hack.
 def sdHack_cvmat2(cls):
-    class row_iterator(object):
-        def __init__(self, mat):
-            self.mat = mat
-            self.i = -1
-            self.x = pointer(CvMat())
-
-        def next(self):
-            self.i += 1
-            if self.i >= self.mat.rows:
-                raise StopIteration
-            return cvGetRows(self.mat, self.x, self.i, self.i+1)
-
-        def __iter__(self):
-            return self
-        
-    class col_iterator(object):
-        def __init__(self, mat):
-            self.mat = mat
-            self.i = -1
-            self.x = pointer(CvMat())
-
-        def next(self):
-            self.i += 1
-            if self.i >= self.mat.cols:
-                raise StopIteration
-            return cvGetCols(self.mat, self.x, self.i, self.i+1)
-
-        def __iter__(self):
-            return self
-        
-
     def my__iter__(self):
-        return row_iterator(self)
+        for i in xrange(self.contents.rows):
+            yield cvGetRows(self, i, i+1)
         
     def colrange(self):
-        return col_iterator(self)
+        for i in xrange(self.contents.cols):
+            yield cvGetCols(self, i, i+1)
 
     cls.__iter__ = my__iter__
     cls.colrange = colrange
         
 
+#-----------------------------------------------------------------------------
+# A useful converter for CvSeq_p
+#-----------------------------------------------------------------------------
+class CvArrayFromSequence(object):
+    """Converts a CvSeq_p into an array of elements.
+
+    Allows to return an element's address directly using array indexing e.g. seq[i]
+    Allows to iterate elements, e.g. for x in seq: <tada>
+    
+    Elements of seq are accessed directly. No copy of elements is made.
+    """
+    def __init__(self, seq, elem_type, return_ptr=False):
+        """Initializes the class.
+        
+        :Parameters:
+            seq : CvSeq_p
+                pointer to a (possible subclass of) CvSeq
+            elem_type : type
+                type of an element, its meaning depends on 'return_ptr'
+            return_ptr : bool
+                False: each item is an element, 'elem_type' is its type
+                True: each item is a pointer to an element, 'elem_type' is the type of a pointer
+        """
+        self.seq = cast(seq, CvSeq_p)
+        self.elem_type = elem_type
+        self.return_ptr = return_ptr
+        
+    def __getitem__(self, key):
+        if not isinstance(key, int):
+            raise KeyError("Key '%s' must be an integer." % str(key))
+            
+        z = cvGetSeqElem(self.seq, key)
+        
+        if self.return_ptr:
+            try:
+                return self.elem_type(z)
+            except TypeError:
+                return cast(z, self.elem_type)
+            
+        return cast(z, POINTER(self.elem_type)).contents
+
+    def __setitem__(self, key, value):
+        raise NotImplementedError("I haven't implemented this method yet.")
+
+    def slicing_disabled(self, *args):
+        raise KeyError("Slicing for CvSeq_p is currently disabled.")
+        
+    __getslice__ = slicing_disabled
+    __setslice__ = slicing_disabled
+        
+    def __iter__(self):
+        for i in xrange(self.seq.contents.total):
+            yield self.__getitem__(i)
+
+def sdHack_cvseq(cls):
+    def asarrayptr(self, elem_type):
+        """Converts this CvSeq_p into an array of element pointers. The pointers are of type 'elem_type'."""
+        return CvArrayFromSequence(self, elem_type, True)
+        
+    def asarray(self, elem_type):
+        """Converts this CvSeq_p into an array of elements of type 'elem_type'."""
+        return CvArrayFromSequence(self, elem_type, False)
+        
+    def append(self, ptr):
+        """Adds element to sequence end
+        
+        :Parameters:
+            ptr : a pointer to the element, its content is to be copied        
+        """
+        
+        cvSeqPush(self, ptr)
+        
+    def vrange(self):
+        """
+        generator function iterating along v_next
+        """
+        s = self
+        t = type(self)
+        while s:
+            yield s
+            s = cast(s.v_next, t)
+            
+    def hrange(self):
+        """
+        generator function iterating along h_next
+        """
+        s = self
+        t = type(self)
+        while s:
+            yield s
+            s = cast(s.h_next, t)
+            
+    cls.asarray = asarray
+    cls.asarrayptr = asarrayptr
+    cls.append = append
+    cls.vrange = vrange
+    cls.hrange = hrange
+
+    
 #-----------------------------------------------------------------------------
 # Add an auto-clean feature to an object
 #-----------------------------------------------------------------------------
@@ -515,6 +602,7 @@ class Cv32suf(Union):
         ('u', c_uint32),
         ('f', c_float),
     ]
+Cv32suf_p = POINTER(Cv32suf)
 
 class Cv64suf(Union):
     _fields_ = [
@@ -522,6 +610,7 @@ class Cv64suf(Union):
         ('u', c_uint64),
         ('f', c_double),
     ]
+Cv64suf_p = POINTER(Cv64suf)
 
 
 #-----------------------------------------------------------------------------
@@ -551,6 +640,7 @@ def cvCeil(val): # here, this function is not correct
 # It's slow and doesn't guarrantee a large cycle.
 
 CvRNG = c_uint64
+CvRNG_p = POINTER(CvRNG)
 
 def cvRNG(seed=-1):
     """CvRNG cvRNG( int64 seed = CV_DEFAULT(-1))
@@ -566,7 +656,7 @@ def cvRandInt(rng):
     
     Returns random 32-bit unsigned integer. 
     """
-    if isinstance(rng, POINTER(CvRNG)):
+    if isinstance(rng, CvRNG_p):
         temp = rng.contents.value
         temp = c_uint32(temp*1554115554).value + (temp >> 32)
         rng.contents.value = temp
@@ -627,7 +717,8 @@ IPL_BORDER_REFLECT = 2
 IPL_BORDER_WRAP = 3
 
 class IplTileInfo(_Structure):
-    _fields_ = []
+    _fields_ = []    
+IplTileInfo_p = POINTER(IplTileInfo)
 
 class IplROI(_Structure):
     _fields_ = [
@@ -636,7 +727,8 @@ class IplROI(_Structure):
         ('yOffset', c_int),
         ('width', c_int),
         ('height', c_int),
-    ]
+    ]    
+IplROI_p = POINTER(IplROI)
 
 class IplConvKernel(_Structure):
     _fields_ = [
@@ -647,9 +739,10 @@ class IplConvKernel(_Structure):
         ('values', c_int_p),
         ('nShiftR', c_int),
     ]
-
+IplConvKernel_p = POINTER(IplConvKernel)
+    
 # Minh-Tri's hacks
-sdHack_del(POINTER(IplConvKernel))
+sdHack_del(IplConvKernel_p)
 
 class IplConvKernelFP(_Structure):
     _fields_ = [
@@ -658,7 +751,8 @@ class IplConvKernelFP(_Structure):
         ('anchorX', c_int),
         ('anchorY', c_int),
         ('values', c_int_p),
-    ]
+    ]    
+IplConvKernelFP_p = POINTER(IplConvKernelFP)
 
 IPL_IMAGE_HEADER = 1
 IPL_IMAGE_DATA = 2
@@ -675,6 +769,7 @@ class IplImage(_Structure):
             if field[0] in ['imageData', 'imageDataOrigin']: continue
             res.append('%s=%s' % (field[0], repr(getattr(self, field[0]))))
         return self.__class__.__name__ + '(' + ','.join(res) + ')'
+IplImage_p = POINTER(IplImage)
 
 IplImage._fields_ = [("nSize", c_int),
         ("ID", c_int),
@@ -688,23 +783,23 @@ IplImage._fields_ = [("nSize", c_int),
         ("align", c_int),
         ("width", c_int),
         ("height", c_int),
-        ("roi", POINTER(IplROI)),
-        ("maskROI", POINTER(IplImage)),
+        ("roi", IplROI_p),
+        ("maskROI", IplImage_p),
         ("imageID", c_void_p),
-        ("tileInfo", POINTER(IplTileInfo)),
+        ("tileInfo", IplTileInfo_p),
         ("imageSize", c_int),
-        ("imageData", POINTER(c_int8)),
+        ("imageData", c_int8_p),
         ("widthStep", c_int),
         ("BorderMode", c_int * 4),
         ("BorderConst", c_int * 4),
-        ("imageDataOrigin", POINTER(c_int8))]
-
+        ("imageDataOrigin", c_int8_p)]
+        
 CV_TYPE_NAME_IMAGE = "opencv-image"
 
 # Minh-Tri's hacks
-sdHack_iplimage(POINTER(IplImage))
-sdHack_contents_getattr(POINTER(IplImage))
-sdHack_del(POINTER(IplImage))
+sdHack_iplimage(IplImage_p)
+sdHack_contents_getattr(IplImage_p)
+sdHack_del(IplImage_p)
 
 
 #-----------------------------------------------------------------------------
@@ -714,7 +809,8 @@ sdHack_del(POINTER(IplImage))
 class CvSlice(_Structure):
     _fields_ = [('start_index', c_int),
                 ('end_index', c_int)]
-
+CvSlice_p = POINTER(CvSlice)                
+                
 def cvSlice(start, end):
     """CvSlice cvSlice(int start, int end)
     
@@ -812,12 +908,27 @@ CV_TYPE_NAME_MAT = "opencv-matrix"
 
 class CvMatData(Union):
     _fields_ = [
-        ('ptr', POINTER(c_ubyte)),
-        ('s', POINTER(c_short)),
+        ('ptr', c_ubyte_p),
+        ('s', c_short_p),
         ('i', c_int_p),
         ('fl', c_float_p),
         ('db', c_double_p),
     ]
+CvMatData_p = POINTER(CvMatData)
+    
+class CvMatRows(Union):
+    _fields_ = [
+        ('rows', c_int),
+        ('height', c_int),
+    ]    
+CvMatRows_p = POINTER(CvMatRows)
+    
+class CvMatCols(Union):
+    _fields_ = [
+        ('cols', c_int),
+        ('width', c_int),
+    ]    
+CvMatCols_p = POINTER(CvMatCols)
     
 # Multi-channel matrix
 class CvMat(_Structure):
@@ -826,14 +937,16 @@ class CvMat(_Structure):
                 ("refcount", c_void_p),
                 ("hdr_refcount", c_int),
                 ("data", CvMatData),
-                ("rows", c_int),
-                ("cols", c_int)]
-
+                ("r", CvMatRows),
+                ("c", CvMatCols)]
+    _anonymous_ = ("r", "c",)
+CvMat_p = POINTER(CvMat)
+    
 # Minh-Tri's hacks
-sdHack_cvmat(POINTER(CvMat))
-sdHack_cvmat2(POINTER(CvMat))
-sdHack_contents_getattr(POINTER(CvMat))
-sdHack_del(POINTER(CvMat))
+sdHack_cvmat(CvMat_p)
+sdHack_cvmat2(CvMat_p)
+sdHack_contents_getattr(CvMat_p)
+sdHack_del(CvMat_p)
 
 #-----------------------------------------------------------------------------
 # Multi-dimensional dense array (CvMatND)
@@ -848,7 +961,9 @@ CV_MAX_DIM_HEAP = (1 << 16)
 # Multi-dimensional dense multi-channel matrix
 class CvMatNDdim(_Structure):
     _fields_ = [("size", c_int),
-                ("step", c_int)]
+                ("step", c_int)]                
+CvMatNDdim_p = POINTER(CvMatNDdim)
+                
 class CvMatND(_Structure):
     _fields_ = [("type", c_int),
                 ("dims", c_int),
@@ -856,10 +971,11 @@ class CvMatND(_Structure):
                 ("hdrefcount", c_int),
                 ("data", CvMatData),
                 ("dim", CvMatNDdim*CV_MAX_DIM)]
+CvMatND_p = POINTER(CvMatND)
 
 # Minh-Tri's hacks
-sdHack_contents_getattr(POINTER(CvMatND))
-sdHack_del(POINTER(CvMatND))
+sdHack_contents_getattr(CvMatND_p)
+sdHack_del(CvMatND_p)
 
 
 #-----------------------------------------------------------------------------
@@ -868,9 +984,10 @@ sdHack_del(POINTER(CvMatND))
 
 class CvMemBlock(_Structure): # forward declaration
     pass
+CvMemBlock_p = POINTER(CvMemBlock)
 CvMemBlock._fields_ = [
-    ('prev', POINTER(CvMemBlock)),
-    ('next', POINTER(CvMemBlock)),
+    ('prev', CvMemBlock_p),
+    ('next', CvMemBlock_p),
 ]
 
 CV_STORAGE_MAGIC_VAL = 0x42890000
@@ -878,20 +995,22 @@ CV_STORAGE_MAGIC_VAL = 0x42890000
 # Memory storage
 class CvMemStorage(_Structure): # forward declaration
     pass
+CvMemStorage_p = POINTER(CvMemStorage)
 CvMemStorage._fields_ = [
     ("signature", c_int),
-    ("bottom", POINTER(CvMemBlock)), # first allocated block
-    ("top", POINTER(CvMemBlock)), # current memory block - top of the stack
-    ("parent", POINTER(CvMemStorage)), # borrows new blocks from
+    ("bottom", CvMemBlock_p), # first allocated block
+    ("top", CvMemBlock_p), # current memory block - top of the stack
+    ("parent", CvMemStorage_p), # borrows new blocks from
     ("block_size", c_int), # block size
     ("free_space", c_int)] # free space in the current block
-
+    
 # Minh-Tri's hacks
-sdHack_del(POINTER(CvMemStorage))
+sdHack_del(CvMemStorage_p)
 
 class CvMemStoragePos(_Structure):
-    _fields_ = [('top', POINTER(CvMemBlock)),
-                ('free_space', c_int)]
+    _fields_ = [('top', CvMemBlock_p),
+                ('free_space', c_int)]                
+CvMemStoragePos_p = POINTER(CvMemStoragePos)
     
 #-----------------------------------------------------------------------------
 # Sequence
@@ -899,9 +1018,10 @@ class CvMemStoragePos(_Structure):
 
 class CvSeqBlock(_Structure): # forward declaration
     pass
+CvSeqBlock_p = POINTER(CvSeqBlock)
 CvSeqBlock._fields_ = [
-    ('prev', POINTER(CvSeqBlock)), # previous sequence block
-    ('next', POINTER(CvSeqBlock)), # next sequence block
+    ('prev', CvSeqBlock_p), # previous sequence block
+    ('next', CvSeqBlock_p), # next sequence block
     ('start_index', c_int), # index of the first element in the block + sequence->first->start_index
     ('count', c_int), # number of elements in the block
     ('data', c_char_p), # POINTER to the first element of the block
@@ -919,6 +1039,7 @@ def CV_TREE_NODE_FIELDS(node_type):
 
 class CvSeq(_Structure): # forward declaration
     pass
+CvSeq_p = POINTER(CvSeq)
     
 def CV_SEQUENCE_FIELDS():
     return CV_TREE_NODE_FIELDS(CvSeq) + [
@@ -927,16 +1048,18 @@ def CV_SEQUENCE_FIELDS():
         ('block_max', c_char_p), # maximal bound of the last block
         ('ptr', c_char_p), # current write POINTER
         ('delta_elems', c_int), # how many elements allocated when the seq grows
-        ('storage', POINTER(CvMemStorage)), # where the seq is stored
-        ('free_blocks', POINTER(CvSeqBlock)), # free blocks list
-        ('first', POINTER(CvSeqBlock)), # POINTER to the first sequence block
+        ('storage', CvMemStorage_p), # where the seq is stored
+        ('free_blocks', CvSeqBlock_p), # free blocks list
+        ('first', CvSeqBlock_p), # POINTER to the first sequence block
     ]
 
 # Sequence
 CvSeq._fields_ = CV_SEQUENCE_FIELDS()
+sizeof_CvSeq = sizeof(CvSeq)
 
 # Minh-Tri's hacks
-sdHack_contents_getattr(POINTER(CvSeq))
+sdHack_contents_getattr(CvSeq_p)
+sdHack_cvseq(CvSeq_p)
 
 CV_TYPE_NAME_SEQ             = "opencv-sequence"
 CV_TYPE_NAME_SEQ_TREE        = "opencv-sequence-tree"
@@ -947,24 +1070,31 @@ CV_TYPE_NAME_SEQ_TREE        = "opencv-sequence-tree"
 
 class CvSetElem(_Structure):
     pass
+CvSetElem_p = POINTER(CvSetElem)
 CvSetElem._fields_ = [
     ('flags', c_int),
-    ('next_free', POINTER(CvSetElem))]
+    ('next_free', CvSetElem_p)]
     
 def CV_SET_FIELDS():
     return CV_SEQUENCE_FIELDS() + [
-        ('free_elems', POINTER(CvSetElem)),
+        ('free_elems', CvSetElem_p),
         ('active_count', c_int),
     ]
 
 class CvSet(_Structure):
     _fields_ = CV_SET_FIELDS()
-
+CvSet_p = POINTER(CvSet)
+    
 # Minh-Tri's hacks
-sdHack_contents_getattr(POINTER(CvSet))
+sdHack_contents_getattr(CvSet_p)
+sdHack_cvseq(CvSet_p)
 
 CV_SET_ELEM_IDX_MASK   = ((1 << 26) - 1)
 CV_SET_ELEM_FREE_FLAG  = (1 << (sizeof(c_int)*8-1))
+
+# Checks whether the element pointed by ptr belongs to a set or not
+def CV_IS_SET_ELEM(ptr):
+    return cast(ptr, CvSetElem_p).contents.flags >= 0
 
 #-----------------------------------------------------------------------------
 # Multi-dimensional sparse array (CvSparseMat) 
@@ -978,24 +1108,26 @@ class CvSparseMat(_Structure):
                 ('dims', c_int),
                 ('refcount', c_int_p),
                 ('hdr_refcount', c_int),
-                ('heap', POINTER(CvSet)),
-                ('hashtable', POINTER(c_void_p)),
+                ('heap', CvSet_p),
+                ('hashtable', c_void_p_p),
                 ('hashsize', c_int),
                 ('valoffset', c_int),
                 ('idxoffset', c_int),
                 ('size', c_int * CV_MAX_DIM)]
-
+CvSparseMat_p = POINTER(CvSparseMat)
+                
 class CvSparseNode(_Structure):
     pass
+CvSparseNode_p = POINTER(CvSparseNode)
 CvSparseNode._fields_ = [
         ('hashval', c_uint),
-        ('next', POINTER(CvSparseNode))
+        ('next', CvSparseNode_p)
     ]
 
 class CvSparseMatIterator(_Structure):
     _fields_ = [
-        ('mat', POINTER(CvSparseMat)),
-        ('node', POINTER(CvSparseNode)),
+        ('mat', CvSparseMat_p),
+        ('node', CvSparseNode_p),
     ]
 
 #-----------------------------------------------------------------------------
@@ -1021,10 +1153,11 @@ class CvHistogram(_Structure):
                 ('thresh', (c_float*2)*CV_MAX_DIM), # for uniform histograms
                 ('thresh2', POINTER(c_float_p)), # for non-uniform histograms
                 ('mat', CvMatND)] # embedded matrix header for array histograms
-    
+CvHistogram_p = POINTER(CvHistogram)
+                
 # Minh-Tri's hacks
-sdHack_contents_getattr(POINTER(CvHistogram))
-sdHack_del(POINTER(CvHistogram))
+sdHack_contents_getattr(CvHistogram_p)
+sdHack_del(CvHistogram_p)
 
 #-----------------------------------------------------------------------------
 # CvRect
@@ -1038,7 +1171,8 @@ class CvRect(_Structure):
                 ("height", c_int)]
     def bloat(self, s):
         return CvRect(self.x-s, self.y-s, self.width+2*s, self.height+2*s)
-
+CvRect_p = POINTER(CvRect)
+        
 def cvRect(x, y, width, height):
     return CvRect(c_int(x), c_int(y), c_int(width), c_int(height))
     
@@ -1069,7 +1203,8 @@ class CvTermCriteria(_Structure):
     _fields_ = [("type", c_int),
                 ("max_iter", c_int),
                 ("epsilon", c_double)]
-
+CvTermCriteria_p = POINTER(CvTermCriteria)
+                
 def cvTermCriteria(type, max_iter, epsilon):
     return CvTermCriteria(c_int(type), c_int(max_iter), c_double(epsilon))
     
@@ -1081,6 +1216,8 @@ def cvTermCriteria(type, max_iter, epsilon):
 class CvPoint(_Structure):
     _fields_ = [("x", c_int),
                 ("y", c_int)]
+CvPoint_p = POINTER(CvPoint)
+sizeof_CvPoint = sizeof(CvPoint)
                 
 def cvPoint(x, y):
     return CvPoint(c_int(x), c_int(y))
@@ -1089,15 +1226,26 @@ def cvPoint(x, y):
 class CvPoint2D32f(_Structure):
     _fields_ = [("x", c_float),
                 ("y", c_float)]
+CvPoint2D32f_p = POINTER(CvPoint2D32f)
                 
 def cvPoint2D32f(x, y):
     return CvPoint2D32f(c_float(x), c_float(y))
+    
+def cvPointTo32f(point):
+    """Converts a CvPoint into a CvPoint2D32f"""
+    return CvPoint2D32f(point.x, point.y)
+
+# Minh-Tri's helper function
+def cvPointFrom32f(point):
+    """Converts a CvPoint32f into a CvPoint"""
+    return CvPoint(cvRound(point.x), cvRound(point.y))
 
 # 3D point with floating-point coordinates
 class CvPoint3D32f(_Structure):
     _fields_ = [("x", c_float),
                 ("y", c_float),
                 ("z", c_float)]
+CvPoint3D32f_p = POINTER(CvPoint3D32f)
 
 def cvPoint3D32f(x, y, z):
     return CvPoint3D32f(c_float(x), c_float(y), c_float(z))
@@ -1106,7 +1254,9 @@ def cvPoint3D32f(x, y, z):
 class CvPoint2D64f(_Structure):
     _fields_ = [("x", c_double),
                 ("y", c_double)]
+CvPoint2D64f_p = POINTER(CvPoint2D64f)
 CvPoint2D64d = CvPoint2D64f
+CvPoint2D64d_p = CvPoint2D64f
 
 def cvPoint2D64f(x, y):
     return CvPoint2D64f(float(x), float(y))
@@ -1117,7 +1267,9 @@ class CvPoint3D64f(_Structure):
     _fields_ = [("x", c_double),
                 ("y", c_double),
                 ("z", c_double)]
+CvPoint3D64f_p = POINTER(CvPoint3D64f)
 CvPoint3D64d = CvPoint3D64f
+CvPoint3D64d_p = CvPoint3D64f
 
 def cvPoint3D64f(x, y, z):
     return CvPoint3D64f(float(x), float(y), float(z))
@@ -1131,7 +1283,8 @@ cvPoint3D64d = cvPoint3D64f
 class CvSize(_Structure):
     _fields_ = [("width", c_int),
                 ("height", c_int)]
-
+CvSize_p = POINTER(CvSize)
+                
 def cvSize(x, y):
     return CvSize(c_int(x), c_int(y))
 
@@ -1139,7 +1292,8 @@ def cvSize(x, y):
 class CvSize2D32f(_Structure):
     _fields_ = [("width", c_float),
                 ("height", c_float)]
-
+CvSize2D32f_p = POINTER(CvSize2D32f)
+                
 def cvSize2D32f(x, y):
     return CvSize2D32f(c_float(x), c_float(y))
 
@@ -1147,16 +1301,18 @@ class CvBox2D(_Structure):
     _fields_ = [('center', CvPoint2D32f),
                 ('size', CvSize2D32f),
                 ('angle', c_float)]
-
+CvBox2D_p = POINTER(CvBox2D)
+                
 class CvLineIterator(_Structure):
     _fields_ = [
-        ('ptr', POINTER(c_ubyte)), # POINTER to the current point
+        ('ptr', c_ubyte_p), # POINTER to the current point
         ('err', c_int),
         ('plus_delta', c_int),
         ('minus_delta', c_int),
         ('plus_step', c_int),
         ('minus_step', c_int),        
     ]
+CvLineIterator_p = POINTER(CvLineIterator)
     
     
 #-----------------------------------------------------------------------------
@@ -1173,6 +1329,7 @@ class CvScalar(_Structure):
             # super(CvScalar, self).__init__(vals[0])
         else:
             super(CvScalar, self).__init__(vals)
+CvScalar_p = POINTER(CvScalar)
 
 def cvScalar(val0, val1=0, val2=0, val3=0):
     return CvScalar(val0, val1, val2, val3)
@@ -1192,51 +1349,59 @@ def cvScalarAll(val0123):
 # Graph
 class CvGraphEdge(_Structure): # forward declaration
     pass
+CvGraphEdge_p = POINTER(CvGraphEdge)
     
 class CvGraphVtx(_Structure): # forward declaration
     pass
+CvGraphVtx_p = POINTER(CvGraphVtx)
     
 def CV_GRAPH_EDGE_FIELDS():
     return [
         ('flags', c_int),
         ('weight', c_float),
-        ('next', POINTER(CvGraphEdge)*2),
-        ('vtx', POINTER(CvGraphVtx)*2),
+        ('next', CvGraphEdge_p*2),
+        ('vtx', CvGraphVtx_p*2),
     ]
 
 def CV_GRAPH_VERTEX_FIELDS():
     return [('flags', c_int),
-            ('first', POINTER(CvGraphEdge))]
+            ('first', CvGraphEdge_p)]
 
 CvGraphEdge._fields_ = CV_GRAPH_EDGE_FIELDS()
 CvGraphVtx._fields_ = CV_GRAPH_VERTEX_FIELDS()
 
 class CvGraphVtx2D(_Structure):
-    _fields_ = CV_GRAPH_VERTEX_FIELDS() + [('ptr', POINTER(CvPoint2D32f))]
-
+    _fields_ = CV_GRAPH_VERTEX_FIELDS() + [('ptr', CvPoint2D32f_p)]
+CvGraphVtx2D_p = POINTER(CvGraphVtx2D)
+    
 #    Graph is "derived" from the set (this is set a of vertices) and includes another set (edges)
 def CV_GRAPH_FIELDS():
-    return CV_SET_FIELDS() + [('edges', POINTER(CvSet))]
+    return CV_SET_FIELDS() + [('edges', CvSet_p)]
     
 class CvGraph(_Structure): 
     _fields_ = CV_GRAPH_FIELDS()
+CvGraph_p = POINTER(CvGraph)
+    
+# Minh-Tri's hacks
+sdHack_cvseq(CvGraph_p)
 
 CV_TYPE_NAME_GRAPH = "opencv-graph"
 
 # CvGraphScanner is taken out from cxcore.h
 class CvGraphScanner(_Structure):
     _fields_ = [
-        ('vtx', POINTER(CvGraphVtx)), # current graph vertex (or current edge origin)
-        ('dst', POINTER(CvGraphVtx)), # current graph edge destination vertex
-        ('edge', POINTER(CvGraphEdge)), # current edge
-        ('graph', POINTER(CvGraph)), # the graph
-        ('stack', POINTER(CvSeq)), # the graph vertex stack
+        ('vtx', CvGraphVtx_p), # current graph vertex (or current edge origin)
+        ('dst', CvGraphVtx_p), # current graph edge destination vertex
+        ('edge', CvGraphEdge_p), # current edge
+        ('graph', CvGraph_p), # the graph
+        ('stack', CvSeq_p), # the graph vertex stack
         ('index', c_int), # the lower bound of certainly visited vertices
         ('mask', c_int), # event mask
     ]    
-
+CvGraphScanner_p = POINTER(CvGraphScanner)
+    
 # Minh-Tri's hacks
-sdHack_del(POINTER(CvGraphScanner))
+sdHack_del(CvGraphScanner_p)
 
     
 #-----------------------------------------------------------------------------
@@ -1246,7 +1411,11 @@ sdHack_del(POINTER(CvGraphScanner))
 # Chain/contour
 class CvChain(_Structure):
     _fields_ = CV_SEQUENCE_FIELDS() + [('origin', CvPoint)]
+CvChain_p = POINTER(CvChain)
     
+# Minh-Tri's hacks
+sdHack_cvseq(CvChain_p)
+
 def CV_CONTOUR_FIELDS():
     return CV_SEQUENCE_FIELDS() + [
         ('rect', CvRect),
@@ -1256,6 +1425,11 @@ def CV_CONTOUR_FIELDS():
 
 class CvContour(_Structure):
     _fields_ = CV_CONTOUR_FIELDS()
+CvContour_p = POINTER(CvContour)    
+sizeof_CvContour = sizeof(CvContour)
+
+# Minh-Tri's hacks
+sdHack_cvseq(CvContour_p)
 
 CvPoint2DSeq = CvContour
 
@@ -1352,8 +1526,8 @@ CV_SEQ_INDEX           = (CV_SEQ_KIND_GENERIC  | CV_SEQ_ELTYPE_INDEX)
 def CV_SEQ_WRITER_FIELDS():
     return [
         ('header_size', c_int),
-        ('seq', POINTER(CvSeq)), # the sequence written
-        ('block', POINTER(CvSeqBlock)), # current block
+        ('seq', CvSeq_p), # the sequence written
+        ('block', CvSeqBlock_p), # current block
         ('ptr', c_char_p), # POINTER to free space
         ('block_min', c_char_p), # POINTER to the beginning of block
         ('block_max', c_char_p), # POINTER to the end of block
@@ -1361,12 +1535,13 @@ def CV_SEQ_WRITER_FIELDS():
 
 class CvSeqWriter(_Structure):
     _fields_ = CV_SEQ_WRITER_FIELDS()
-
+CvSeqWriter_p = POINTER(CvSeqWriter)
+    
 def CV_SEQ_READER_FIELDS():
     return [
         ('header_size', c_int),
-        ('seq', POINTER(CvSeq)), # sequence, begin read
-        ('block', POINTER(CvSeqBlock)), # current block
+        ('seq', CvSeq_p), # sequence, begin read
+        ('block', CvSeqBlock_p), # current block
         ('ptr', c_char_p), # POINTER to free space
         ('block_min', c_char_p), # POINTER to the beginning of block
         ('block_max', c_char_p), # POINTER to the end of block
@@ -1376,7 +1551,8 @@ def CV_SEQ_READER_FIELDS():
 
 class CvSeqReader(_Structure):
     _fields_ = CV_SEQ_READER_FIELDS()
-
+CvSeqReader_p = POINTER(CvSeqReader)
+    
 #-----------------------------------------------------------------------------
 # Data structures for persistence (a.k.a serialization) functionality
 #-----------------------------------------------------------------------------
@@ -1384,7 +1560,8 @@ class CvSeqReader(_Structure):
 # File storage
 class CvFileStorage(_Structure):
     _fields_ = []
-
+CvFileStorage_p = POINTER(CvFileStorage)
+    
 # Data structures for persistence (a.k.a serialization) functionality
 CV_STORAGE_READ = 0
 CV_STORAGE_WRITE = 1
@@ -1395,9 +1572,10 @@ CV_STORAGE_APPEND = 2
 # List of attributes
 class CvAttrList(_Structure):
     pass
+CvAttrList_p = POINTER(CvAttrList)
 CvAttrList._fields_ = [
     ("attr", POINTER(c_char_p)), # NULL-terminated array of (attribute_name,attribute_value) pairs
-    ("next", POINTER(CvAttrList)), # POINTER to next chunk of the attributes list
+    ("next", CvAttrList_p), # POINTER to next chunk of the attributes list
 ]
 
 def cvAttrList(attr=None, next=None):
@@ -1409,6 +1587,7 @@ def cvAttrList(attr=None, next=None):
 
 class CvTypeInfo(_Structure): # forward declaration
     pass
+CvTypeInfo_p = POINTER(CvTypeInfo)
     
 CV_NODE_NONE        = 0
 CV_NODE_INT         = 1
@@ -1468,43 +1647,50 @@ def CV_NODE_SEQ_IS_SIMPLE(seq):
 class CvString(_Structure):
     _fields_ = [("len", c_int),
                 ("ptr", c_char_p)]
-
+CvString_p = POINTER(CvString)
+                
 class CvStringHashNode(_Structure):
     pass
+CvStringHashNode_p = POINTER(CvStringHashNode)
 CvStringHashNode._fields_ = [("hashval", c_uint32),
                 ("str", CvString),
-                ("next", POINTER(CvStringHashNode))]
+                ("next", CvStringHashNode_p)]
 
 class CvFileNodeHash(_Structure):
     _fields_ = [] # CvGenericHash, to be expanded in the future
+CvFileNodeHash_p = POINTER(CvFileNodeHash)
+    
+class CvFileNode(_Structure): # forward declaration
+    pass
+CvFileNode_p = POINTER(CvFileNode)
     
 class CvFileNodeData(Union):
     _fields_ = [
         ('f', c_double), # scalar floating-point number
         ('i', c_int), # scalar integer number
         ('str', CvString), # text string
-        ('seq', POINTER(CvSeq)), # sequence (ordered collection of file nodes)
-        ('map', POINTER(CvFileNodeHash)), # map (collection of named file nodes)
+        ('seq', CvFileNode_p), # sequence (ordered collection of file nodes)
+        ('map', CvFileNodeHash_p), # map (collection of named file nodes)
     ]
+CvFileNodeData_p = POINTER(CvFileNodeData)
     
-class CvFileNode(_Structure):
-    _fields_ = [
-        ('tag', c_int),
-        ('info', POINTER(CvTypeInfo)), # type information(only for user-defined object, for others it is 0)
-        ('data', CvFileNodeData),
-    ]
+CvFileNode._fields_ = [
+    ('tag', c_int),
+    ('info', CvTypeInfo_p), # type information(only for user-defined object, for others it is 0)
+    ('data', CvFileNodeData),
+]
 
 CvIsInstanceFunc = CFUNCTYPE(c_int, c_void_p)
-CvReleaseFunc = CFUNCTYPE(None, POINTER(c_void_p))
-CvReadFunc = CFUNCTYPE(c_void_p, POINTER(CvFileStorage), POINTER(CvFileNode))
-CvWriteFunc = CFUNCTYPE(None, POINTER(CvFileStorage), c_char_p, c_void_p, CvAttrList)
+CvReleaseFunc = CFUNCTYPE(None, c_void_p_p)
+CvReadFunc = CFUNCTYPE(c_void_p, CvFileStorage_p, CvFileNode_p)
+CvWriteFunc = CFUNCTYPE(None, CvFileStorage_p, c_char_p, c_void_p, CvAttrList)
 CvCloneFunc = CFUNCTYPE(c_void_p, c_void_p)
 
 CvTypeInfo._fields_ = [
     ('flags', c_int),
     ('header_size', c_int),
-    ('prev', POINTER(CvTypeInfo)),
-    ('next', POINTER(CvTypeInfo)),
+    ('prev', CvTypeInfo_p),
+    ('next', CvTypeInfo_p),
     ('type_name', c_char_p),
     ('is_instance', CvIsInstanceFunc),
     ('release', CvReleaseFunc),
@@ -1518,20 +1704,22 @@ CvTypeInfo._fields_ = [
 
 class CvPluginFuncInfo(_Structure):
     _fields_ = [
-        ('func_addr', POINTER(c_void_p)),
+        ('func_addr', c_void_p_p),
         ('default_func_addr', c_void_p),
         ('func_names', c_char_p),
         ('search_modules', c_int),
         ('loaded_from', c_int),
     ]
+CvPluginFuncInfo_p = POINTER(CvPluginFuncInfo)
 
 class CvModuleInfo(_Structure):
     pass
+CvModuleInfo_p = POINTER(CvModuleInfo)
 CvModuleInfo._fields_ = [
-    ('next', POINTER(CvModuleInfo)),
+    ('next', CvModuleInfo_p),
     ('name', c_char_p),
     ('version', c_char_p),
-    ('func_tab', POINTER(CvPluginFuncInfo)),
+    ('func_tab', CvPluginFuncInfo_p),
 ]
 
 #=============================================================================
@@ -1587,10 +1775,10 @@ def cvFree(ptr):
 
 
 _cvReleaseImageHeader = cfunc('cvReleaseImageHeader', _cxDLL, None,
-    ('image', ByRefArg(POINTER(IplImage)), 1), # IplImage** image 
+    ('image', ByRefArg(IplImage_p), 1), # IplImage** image 
 )
 
-_cvCreateImageHeader = cfunc('cvCreateImageHeader', _cxDLL, POINTER(IplImage),
+_cvCreateImageHeader = cfunc('cvCreateImageHeader', _cxDLL, IplImage_p,
     ('size', CvSize, 1), # CvSize size
     ('depth', c_int, 1), # int depth
     ('channels', c_int, 1), # int channels 
@@ -1607,8 +1795,8 @@ def cvCreateImageHeader(*args):
     return z
 
 # Initializes allocated by user image header
-cvInitImageHeader = cfunc('cvInitImageHeader', _cxDLL, POINTER(IplImage),
-    ('image', POINTER(IplImage), 1), # IplImage* image
+cvInitImageHeader = cfunc('cvInitImageHeader', _cxDLL, IplImage_p,
+    ('image', IplImage_p, 1), # IplImage* image
     ('size', CvSize, 1), # CvSize size
     ('depth', c_int, 1), # int depth
     ('channels', c_int, 1), # int channels
@@ -1621,10 +1809,10 @@ Initializes allocated by user image header
 """
 
 _cvReleaseImage = cfunc('cvReleaseImage', _cxDLL, None,
-    ('image', ByRefArg(POINTER(IplImage)), 1), # IplImage** image 
+    ('image', ByRefArg(IplImage_p), 1), # IplImage** image 
 )
 
-_cvCreateImage = cfunc('cvCreateImage', _cxDLL, POINTER(IplImage),
+_cvCreateImage = cfunc('cvCreateImage', _cxDLL, IplImage_p,
     ('size', CvSize, 1), # CvSize size
     ('depth', c_int, 1), # int depth
     ('channels', c_int, 1), # int channels 
@@ -1646,8 +1834,8 @@ cvReleaseImageHeader = cvFree
 # Releases header and image data
 cvReleaseImage = cvFree
 
-_cvCloneImage = cfunc('cvCloneImage', _cxDLL, POINTER(IplImage),
-    ('image', POINTER(IplImage), 1), # const IplImage* image 
+_cvCloneImage = cfunc('cvCloneImage', _cxDLL, IplImage_p,
+    ('image', IplImage_p, 1), # const IplImage* image 
 )
 
 # Makes a full copy of image (widthStep may differ)
@@ -1662,7 +1850,7 @@ def cvCloneImage(*args):
 
 # Sets channel of interest to given value
 cvSetImageCOI = cfunc('cvSetImageCOI', _cxDLL, None,
-    ('image', POINTER(IplImage), 1), # IplImage* image
+    ('image', IplImage_p, 1), # IplImage* image
     ('coi', c_int, 1), # int coi 
 )
 cvSetImageCOI.__doc__ = """void cvSetImageCOI(IplImage* image, int coi)
@@ -1672,7 +1860,7 @@ Sets channel of interest to given value
 
 # Returns index of channel of interest
 cvGetImageCOI = cfunc('cvGetImageCOI', _cxDLL, c_int,
-    ('image', POINTER(IplImage), 1), # const IplImage* image 
+    ('image', IplImage_p, 1), # const IplImage* image 
 )
 cvGetImageCOI.__doc__ = """int cvGetImageCOI(const IplImage* image)
 
@@ -1681,7 +1869,7 @@ Returns index of channel of interest
 
 # Sets image ROI to given rectangle
 cvSetImageROI = cfunc('cvSetImageROI', _cxDLL, None,
-    ('image', POINTER(IplImage), 1), # IplImage* image
+    ('image', IplImage_p, 1), # IplImage* image
     ('rect', CvRect, 1), # CvRect rect 
 )
 cvSetImageROI.__doc__ = """void cvSetImageROI(IplImage* image, CvRect rect)
@@ -1691,7 +1879,7 @@ Sets image ROI to given rectangle
 
 # Releases image ROI
 cvResetImageROI = cfunc('cvResetImageROI', _cxDLL, None,
-    ('image', POINTER(IplImage), 1), # IplImage* image 
+    ('image', IplImage_p, 1), # IplImage* image 
 )
 cvResetImageROI.__doc__ = """void cvResetImageROI(IplImage* image)
 
@@ -1700,7 +1888,7 @@ Releases image ROI
 
 # Returns image ROI coordinates
 cvGetImageROI = cfunc('cvGetImageROI', _cxDLL, CvRect,
-    ('image', POINTER(IplImage), 1), # const IplImage* image 
+    ('image', IplImage_p, 1), # const IplImage* image 
 )
 cvGetImageROI.__doc__ = """CvRect cvGetImageROI(const IplImage* image)
 
@@ -1708,10 +1896,10 @@ Returns image ROI coordinates
 """
 
 _cvReleaseMat = cfunc('cvReleaseMat', _cxDLL, None,
-    ('mat', ByRefArg(POINTER(CvMat)), 1), # CvMat** mat 
+    ('mat', ByRefArg(CvMat_p), 1), # CvMat** mat 
 )
 
-_cvCreateMatHeader = cfunc('cvCreateMatHeader', _cxDLL, POINTER(CvMat),
+_cvCreateMatHeader = cfunc('cvCreateMatHeader', _cxDLL, CvMat_p,
     ('rows', c_int, 1), # int rows
     ('cols', c_int, 1), # int cols
     ('type', c_int, 1), # int type 
@@ -1730,8 +1918,8 @@ def cvCreateMatHeader(*args):
 CV_AUTOSTEP = 0x7fffffff
 
 # Initializes matrix header
-cvInitMatHeader = cfunc('cvInitMatHeader', _cxDLL, POINTER(CvMat),
-    ('mat', POINTER(CvMat), 1), # CvMat* mat
+cvInitMatHeader = cfunc('cvInitMatHeader', _cxDLL, CvMat_p,
+    ('mat', CvMat_p, 1), # CvMat* mat
     ('rows', c_int, 1), # int rows
     ('cols', c_int, 1), # int cols
     ('type', c_int, 1), # int type
@@ -1743,7 +1931,7 @@ cvInitMatHeader.__doc__ = """CvMat* cvInitMatHeader(CvMat* mat, int rows, int co
 Initializes matrix header
 """
 
-_cvCreateMat = cfunc('cvCreateMat', _cxDLL, POINTER(CvMat),
+_cvCreateMat = cfunc('cvCreateMat', _cxDLL, CvMat_p,
     ('rows', c_int, 1), # int rows
     ('cols', c_int, 1), # int cols
     ('type', c_int, 1), # int type 
@@ -1762,8 +1950,37 @@ def cvCreateMat(*args):
 # Deallocates matrix
 cvReleaseMat = cvFree    
 
-_cvCloneMat = cfunc('cvCloneMat', _cxDLL, POINTER(CvMat),
-    ('mat', POINTER(CvMat), 1), # const CvMat* mat 
+# Minh-Tri's helpers
+def cvCreateMatFromCvPoint2D32fList(points):
+    """CvMat* cvCreateMatFromCvPoint2D32fList(list_or_tuple_of_CvPoint2D32f points)
+    
+    Creates a new matrix from a list/tuple of CvPoint2D32f points
+    """
+    cols = len(points)
+    z = cvCreateMat(1, cols, CV_32FC2)
+    for i in xrange(cols):
+        x = points[i]
+        y = z[0,i]
+        y[0] = x.x
+        y[1] = x.y
+    return z
+
+def cvCreateMatFromCvPointList(points):
+    """CvMat* cvCreateMatFromCvPointList(list_or_tuple_of_CvPoint points)
+    
+    Creates a new matrix from a list/tuple of CvPoint points
+    """
+    cols = len(points)
+    z = cvCreateMat(1, cols, CV_32SC2)
+    for i in xrange(cols):
+        x = points[i]
+        y = z[0,i]
+        y[0] = x.x
+        y[1] = x.y
+    return z
+
+_cvCloneMat = cfunc('cvCloneMat', _cxDLL, CvMat_p,
+    ('mat', CvMat_p, 1), # const CvMat* mat 
 )
 
 # Creates matrix copy
@@ -1778,7 +1995,7 @@ def cvCloneMat(*args):
 
 _cvGetSubRect = cfunc('cvGetSubRect', _cxDLL, None,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('submat', POINTER(CvMat), 1), # CvMat* submat
+    ('submat', CvMat_p, 1), # CvMat* submat
     ('rect', CvRect, 1), # CvRect rect 
 )
 
@@ -1797,34 +2014,46 @@ def cvGetSubRect(arr, rect, submat=None):
 cvGetSubArr = cvGetSubRect
 
 # Returns array row or row span
-cvGetRows = cfunc('cvGetRows', _cxDLL, POINTER(CvMat),
+_cvGetRows = cfunc('cvGetRows', _cxDLL, CvMat_p,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('submat', POINTER(CvMat), 1), # CvMat* submat
+    ('submat', CvMat_p, 1), # CvMat* submat
     ('start_row', c_int, 1), # int start_row
     ('end_row', c_int, 1), # int end_row
     ('delta_row', c_int, 1, 1), # int delta_row
 )
-cvGetRows.__doc__ = """CvMat* cvGetRows(const CvArr* arr, CvMat* submat, int start_row, int end_row, int delta_row=1)
 
-Returns array row or row span
-"""
+def cvGetRows(arr, start_row, end_row, delta_row=1):
+    """CvMat* cvGetRows(const CvArr* arr, int start_row, int end_row, int delta_row=1)
+
+    Returns array row or row span
+    [ctypes-opencv] A CvMat* is automatically created for each call.
+    """
+    x = pointer(CvMat())
+    _cvGetRows(arr, x, start_row, end_row, delta_row)
+    return x
 
 # Returns array column or column span
-cvGetCols = cfunc('cvGetCols', _cxDLL, POINTER(CvMat),
+_cvGetCols = cfunc('cvGetCols', _cxDLL, CvMat_p,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('submat', POINTER(CvMat), 1), # CvMat* submat
+    ('submat', CvMat_p, 1), # CvMat* submat
     ('start_col', c_int, 1), # int start_col
     ('end_col', c_int, 1), # int end_col 
 )
-cvGetCols.__doc__ = """CvMat* cvGetCols(const CvArr* arr, CvMat* submat, int start_col, int end_col)
 
-Returns array column or column span
-"""
+def cvGetCols(arr, start_col, end_col):
+    """CvMat* cvGetCols(const CvArr* arr, int start_col, int end_col)
+
+    Returns array column or column span
+    [ctypes-opencv] A CvMat* is automatically created for each call.
+    """
+    x = pointer(CvMat())
+    _cvGetCols(arr, x, start_col, end_col)
+    return x
 
 # Returns one of array diagonals
-cvGetDiag = cfunc('cvGetDiag', _cxDLL, POINTER(CvMat),
+cvGetDiag = cfunc('cvGetDiag', _cxDLL, CvMat_p,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('submat', POINTER(CvMat), 1), # CvMat* submat
+    ('submat', CvMat_p, 1), # CvMat* submat
     ('diag', c_int, 1, 0), # int diag
 )
 cvGetDiag.__doc__ = """CvMat* cvGetDiag(const CvArr* arr, CvMat* submat, int diag=0)
@@ -1832,7 +2061,7 @@ cvGetDiag.__doc__ = """CvMat* cvGetDiag(const CvArr* arr, CvMat* submat, int dia
 Returns one of array diagonals
 """
 
-_cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, POINTER(CvMatND),
+_cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, CvMatND_p,
     ('dims', c_int, 1), # int dims
     ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type 
@@ -1840,7 +2069,7 @@ _cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, POINTER(CvMatND),
 
 # Creates new matrix header
 def cvCreateMatNDHeader(sizes, cvmat_type):
-    """CvMatND* cvCreateMatNDHeader(sizes = list or tuple of integers, int type)
+    """CvMatND* cvCreateMatNDHeader(list_or_tuple_of_int sizes, int type)
 
     Creates new matrix header
     """
@@ -1848,7 +2077,7 @@ def cvCreateMatNDHeader(sizes, cvmat_type):
     sdAdd_autoclean(z, _cvReleaseMat)
     return z
 
-_cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, POINTER(CvMatND),
+_cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, CvMatND_p,
     ('dims', c_int, 1), # int dims
     ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type 
@@ -1856,7 +2085,7 @@ _cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, POINTER(CvMatND),
 
 # Creates multi-dimensional dense array
 def cvCreateMatND(sizes, cvmat_type):
-    """CvMatND* cvCreateMatND(sizes = list or tuple of integers, int type)
+    """CvMatND* cvCreateMatND(list_or_tuple_of_int sizes, int type)
 
     Creates multi-dimensional dense array
     """
@@ -1864,8 +2093,8 @@ def cvCreateMatND(sizes, cvmat_type):
     sdAdd_autoclean(z, _cvReleaseMat)
     return z
 
-_cvInitMatNDHeader = cfunc('cvInitMatNDHeader', _cxDLL, POINTER(CvMatND),
-    ('mat', POINTER(CvMatND), 1), # CvMatND* mat
+_cvInitMatNDHeader = cfunc('cvInitMatNDHeader', _cxDLL, CvMatND_p,
+    ('mat', CvMatND_p, 1), # CvMatND* mat
     ('dims', c_int, 1), # int dims
     ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type
@@ -1874,7 +2103,7 @@ _cvInitMatNDHeader = cfunc('cvInitMatNDHeader', _cxDLL, POINTER(CvMatND),
 
 # Initializes multi-dimensional array header
 def cvInitMatNDHeader(mat, sizes, cvmat_type, data=None):
-    """CvMatND* cvInitMatNDHeader(CvMatND* mat, sizes = list or tuple of integers, int type, void* data=NULL)
+    """CvMatND* cvInitMatNDHeader(CvMatND* mat, list_or_tuple_of_int sizes, int type, void* data=NULL)
 
     Initializes multi-dimensional array header
     """
@@ -1883,8 +2112,8 @@ def cvInitMatNDHeader(mat, sizes, cvmat_type, data=None):
 # Releases CvMatND
 cvReleaseMatND = cvReleaseMat
 
-_cvCloneMatND = cfunc('cvCloneMatND', _cxDLL, POINTER(CvMatND),
-    ('mat', POINTER(CvMatND), 1), # const CvMatND* mat 
+_cvCloneMatND = cfunc('cvCloneMatND', _cxDLL, CvMatND_p,
+    ('mat', CvMatND_p, 1), # const CvMatND* mat 
 )
 
 # Creates full copy of multi-dimensional array
@@ -1898,10 +2127,10 @@ def cvCloneMatND(*args):
     return z
 
 _cvReleaseSparseMat = cfunc('cvReleaseSparseMat', _cxDLL, None,
-    ('mat', ByRefArg(POINTER(CvSparseMat)), 1), # CvSparseMat** mat 
+    ('mat', ByRefArg(CvSparseMat_p), 1), # CvSparseMat** mat 
 )
 
-_cvCreateSparseMat = cfunc('cvCreateSparseMat', _cxDLL, POINTER(CvSparseMat),
+_cvCreateSparseMat = cfunc('cvCreateSparseMat', _cxDLL, CvSparseMat_p,
     ('dims', c_int, 1), # int dims
     ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type 
@@ -1909,7 +2138,7 @@ _cvCreateSparseMat = cfunc('cvCreateSparseMat', _cxDLL, POINTER(CvSparseMat),
 
 # Creates sparse array
 def cvCreateSparseMat(sizes, cvmat_type):
-    """CvSparseMat* cvCreateSparseMat(sizes = list or tuple of integers, int type)
+    """CvSparseMat* cvCreateSparseMat(list_or_tuple_of_int sizes, int type)
 
     Creates sparse array
     """
@@ -1920,8 +2149,8 @@ def cvCreateSparseMat(sizes, cvmat_type):
 # Deallocates sparse array
 cvReleaseSparseMat = cvFree
 
-_cvCloneSparseMat = cfunc('cvCloneSparseMat', _cxDLL, POINTER(CvSparseMat),
-    ('mat', POINTER(CvSparseMat), 1), # const CvSparseMat* mat 
+_cvCloneSparseMat = cfunc('cvCloneSparseMat', _cxDLL, CvSparseMat_p,
+    ('mat', CvSparseMat_p, 1), # const CvSparseMat* mat 
 )
 
 # Creates full copy of sparse array
@@ -1940,7 +2169,7 @@ def cvCloneSparseMat(*args):
 # ------------------------------------------------
 # Initializes sparse array elements iterator
 #cvInitSparseMatIterator = _cxDLL.cvInitSparseMatIterator
-#cvInitSparseMatIterator.restype = POINTER(CvSparseNode) # CvSparseNode*
+#cvInitSparseMatIterator.restype = CvSparseNode_p # CvSparseNode*
 #cvInitSparseMatIterator.argtypes = [
 #    c_void_p, # const CvSparseMat* mat
 #    c_void_p # CvSparseMatIterator* mat_iterator
@@ -1948,7 +2177,7 @@ def cvCloneSparseMat(*args):
 #
 # Initializes sparse array elements iterator
 #cvGetNextSparseNode = _cxDLL.cvGetNextSparseNode
-#cvGetNextSparseNode.restype = POINTER(CvSparseNode) # CvSparseNode*
+#cvGetNextSparseNode.restype = CvSparseNode_p # CvSparseNode*
 #cvGetNextSparseNode.argtypes = [
 #    c_void_p # CvSparseMatIterator* mat_iterator
 #    ]
@@ -2216,9 +2445,9 @@ Clears the particular array element
 """
 
 # Returns matrix header for arbitrary array
-cvGetMat = cfunc('cvGetMat', _cxDLL, POINTER(CvMat),
+cvGetMat = cfunc('cvGetMat', _cxDLL, CvMat_p,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('header', POINTER(CvMat), 1), # CvMat* header
+    ('header', CvMat_p, 1), # CvMat* header
     ('coi', c_int_p, 1, None), # int* coi
     ('allowND', c_int, 1, 0), # int allowND
 )
@@ -2228,9 +2457,9 @@ Returns matrix header for arbitrary array
 """
 
 # Returns image header for arbitrary array
-cvGetImage = cfunc('cvGetImage', _cxDLL, POINTER(IplImage),
+cvGetImage = cfunc('cvGetImage', _cxDLL, IplImage_p,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('image_header', POINTER(IplImage), 1), # IplImage* image_header 
+    ('image_header', IplImage_p, 1), # IplImage* image_header 
 )
 cvGetImage.__doc__ = """IplImage* cvGetImage(const CvArr* arr, IplImage* image_header)
 
@@ -2258,9 +2487,9 @@ Changes shape of multi-dimensional array w/o copying data
 """
 
 # Changes shape of matrix/image without copying data
-cvReshape = cfunc('cvReshape', _cxDLL, POINTER(CvMat),
+cvReshape = cfunc('cvReshape', _cxDLL, CvMat_p,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('header', POINTER(CvMat), 1), # CvMat* header
+    ('header', CvMat_p, 1), # CvMat* header
     ('new_cn', c_int, 1), # int new_cn
     ('new_rows', c_int, 1, 0), # int new_rows
 )
@@ -2319,7 +2548,7 @@ cvGetRawData = cfunc('cvGetRawData', _cxDLL, None,
     ('arr', CvArr_p, 1), # const CvArr* arr
     ('data', POINTER(POINTER(c_byte)), 1), # uchar** data
     ('step', c_int_p, 1, None), # int* step
-    ('roi_size', POINTER(CvSize), 1, None), # CvSize* roi_size
+    ('roi_size', CvSize_p, 1, None), # CvSize* roi_size
 )
 cvGetRawData.__doc__ = """void cvGetRawData(const CvArr* arr, uchar** data, int* step=NULL, CvSize* roi_size=NULL)
 
@@ -2909,7 +3138,7 @@ CV_RAND_NORMAL = 1
 
 # Fills array with random numbers and updates the RNG state
 cvRandArr = cfunc('cvRandArr', _cxDLL, None,
-    ('rng', POINTER(CvRNG), 1), # CvRNG* rng
+    ('rng', CvRNG_p, 1), # CvRNG* rng
     ('arr', CvArr_p, 1), # CvArr* arr
     ('dist_type', c_int, 1), # int dist_type
     ('param1', CvScalar, 1), # CvScalar param1
@@ -2923,7 +3152,7 @@ Fills array with random numbers and updates the RNG state
 # Shuffles the matrix by swapping randomly chosen pairs of the matrix elements on each iteration
 cvRandShuffle = cfunc('cvRandShuffle', _cxDLL, None,
     ('mat', CvArr_p, 1), # CvArr* arr
-    ('rng', POINTER(CvRNG), 1), # CvRNG* rng
+    ('rng', CvRNG_p, 1), # CvRNG* rng
     ('iter_factor', c_double, 1, 1.0), # double iter_factor=1
 )
 cvRandShuffle.__doc__ = """void cvRandShuffle( CvArr* mat, CvRNG* rng, double iter_factor=1. )
@@ -2997,8 +3226,8 @@ def cvMatMul(src1, src2, dst):
 cvTransform = cfunc('cvTransform', _cxDLL, None,
     ('src', CvArr_p, 1), # const CvArr* src
     ('dst', CvArr_p, 1), # CvArr* dst
-    ('transmat', POINTER(CvMat), 1), # const CvMat* transmat
-    ('shiftvec', POINTER(CvMat), 1, None), # const CvMat* shiftvec
+    ('transmat', CvMat_p, 1), # const CvMat* transmat
+    ('shiftvec', CvMat_p, 1, None), # const CvMat* shiftvec
 )
 cvTransform.__doc__ = """void cvTransform(const CvArr* src, CvArr* dst, const CvMat* transmat, const CvMat* shiftvec=NULL)
 
@@ -3011,7 +3240,7 @@ cvMatMulAddS = cvTransform
 cvPerspectiveTransform = cfunc('cvPerspectiveTransform', _cxDLL, None,
     ('src', CvArr_p, 1), # const CvArr* src
     ('dst', CvArr_p, 1), # CvArr* dst
-    ('mat', POINTER(CvMat), 1), # const CvMat* mat 
+    ('mat', CvMat_p, 1), # const CvMat* mat 
 )
 cvPerspectiveTransform.__doc__ = """void cvPerspectiveTransform(const CvArr* src, CvArr* dst, const CvMat* mat)
 
@@ -3175,7 +3404,7 @@ CV_COVAR_COLS = 16
 
 # Calculates covariation matrix of the set of vectors
 cvCalcCovarMatrix = cfunc('cvCalcCovarMatrix', _cxDLL, None,
-    ('vects', POINTER(c_void_p), 1), # const CvArr** vects
+    ('vects', c_void_p_p, 1), # const CvArr** vects
     ('count', c_int, 1), # int count
     ('cov_mat', CvArr_p, 1), # CvArr* cov_mat
     ('avg', CvArr_p, 1), # CvArr* avg
@@ -3277,8 +3506,8 @@ Calculates average (mean) of array elements
 # Calculates average (mean) of array elements
 cvAvgSdv = cfunc('cvAvgSdv', _cxDLL, None,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('mean', POINTER(CvScalar), 1), # CvScalar* mean
-    ('std_dev', POINTER(CvScalar), 1), # CvScalar* std_dev
+    ('mean', CvScalar_p, 1), # CvScalar* mean
+    ('std_dev', CvScalar_p, 1), # CvScalar* std_dev
     ('mask', CvArr_p, 1, None), # const CvArr* mask
 )
 cvAvgSdv.__doc__ = """void cvAvgSdv(const CvArr* arr, CvScalar* mean, CvScalar* std_dev, const CvArr* mask=NULL)
@@ -3299,12 +3528,12 @@ Calculates average (mean) of array elements
 ##     ]
 
 cvMinMaxLoc = cfunc('cvMinMaxLoc', _cxDLL, None,
-                    ('image', POINTER(IplImage), 1),
-                    ('min_val', POINTER(c_double), 2),
-                    ('max_val', POINTER(c_double), 2),
-                    ('min_loc', POINTER(CvPoint), 2),
-                    ('max_loc', POINTER(CvPoint), 2),
-                    ('mask', POINTER(IplImage), 1, None))
+                    ('image', IplImage_p, 1),
+                    ('min_val', c_double_p, 2),
+                    ('max_val', c_double_p, 2),
+                    ('min_loc', CvPoint_p, 1, None),
+                    ('max_loc', CvPoint_p, 1, None),
+                    ('mask', IplImage_p, 1, None))
 cvMinMaxLoc.__doc__ = """void cvMinMaxLoc(const CvArr* arr, double* min_val, double* max_val, CvPoint* min_loc=NULL, CvPoint* max_loc=NULL, const CvArr* mask=NULL)
 
 Finds global minimum and maximum in array or subarray
@@ -3434,7 +3663,7 @@ Performs forward or inverse Discrete Cosine transform of 1D or 2D floating-point
 
 
 _cvReleaseMemStorage = cfunc('cvReleaseMemStorage', _cxDLL, None,
-    ('storage', ByRefArg(POINTER(CvMemStorage)), 1), # CvMemStorage** storage 
+    ('storage', ByRefArg(CvMemStorage_p), 1), # CvMemStorage** storage 
 )
 
 def _my_cvReleaseMemStorage(storage, check_parent=True):
@@ -3449,7 +3678,7 @@ def _my_cvReleaseMemStorage(storage, check_parent=True):
         _my_cvReleaseMemStorage(z, check_parent=False)
     _cvReleaseMemStorage(storage)
 
-_cvCreateMemStorage = cfunc('cvCreateMemStorage', _cxDLL, POINTER(CvMemStorage),
+_cvCreateMemStorage = cfunc('cvCreateMemStorage', _cxDLL, CvMemStorage_p,
     ('block_size', c_int, 1, 0), # int block_size
 )
 
@@ -3464,8 +3693,8 @@ def cvCreateMemStorage(block_size=0):
     sdAdd_autoclean(z, _my_cvReleaseMemStorage)
     return z
 
-_cvCreateChildMemStorage = cfunc('cvCreateChildMemStorage', _cxDLL, POINTER(CvMemStorage),
-    ('parent', POINTER(CvMemStorage), 1), # CvMemStorage* parent 
+_cvCreateChildMemStorage = cfunc('cvCreateChildMemStorage', _cxDLL, CvMemStorage_p,
+    ('parent', CvMemStorage_p, 1), # CvMemStorage* parent 
 )
 
 # Creates child memory storage
@@ -3485,7 +3714,7 @@ cvReleaseMemStorage = cvFree
 
 # Clears memory storage
 cvClearMemStorage = cfunc('cvClearMemStorage', _cxDLL, None,
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
 )
 cvClearMemStorage.__doc__ = """void cvClearMemStorage(CvMemStorage* storage)
 
@@ -3494,8 +3723,8 @@ Clears memory storage
 
 # Saves memory storage position
 cvSaveMemStoragePos = cfunc('cvSaveMemStoragePos', _cxDLL, None,
-    ('storage', POINTER(CvMemStorage), 1), # const CvMemStorage* storage
-    ('pos', POINTER(CvMemStoragePos), 1), # CvMemStoragePos* pos 
+    ('storage', CvMemStorage_p, 1), # const CvMemStorage* storage
+    ('pos', CvMemStoragePos_p, 1), # CvMemStoragePos* pos 
 )
 cvSaveMemStoragePos.__doc__ = """void cvSaveMemStoragePos(const CvMemStorage* storage, CvMemStoragePos* pos)
 
@@ -3504,8 +3733,8 @@ Saves memory storage position
 
 # Restores memory storage position
 cvRestoreMemStoragePos = cfunc('cvRestoreMemStoragePos', _cxDLL, None,
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('pos', POINTER(CvMemStoragePos), 1), # CvMemStoragePos* pos 
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('pos', CvMemStoragePos_p, 1), # CvMemStoragePos* pos 
 )
 cvRestoreMemStoragePos.__doc__ = """void cvRestoreMemStoragePos(CvMemStorage* storage, CvMemStoragePos* pos)
 
@@ -3514,7 +3743,7 @@ Restores memory storage position
 
 # Allocates memory buffer in the storage
 cvMemStorageAlloc = cfunc('cvMemStorageAlloc', _cxDLL, c_void_p,
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
     ('size', c_ulong, 1), # size_t size 
 )
 cvMemStorageAlloc.__doc__ = """void* cvMemStorageAlloc(CvMemStorage* storage, size_t size)
@@ -3524,7 +3753,7 @@ Allocates memory buffer in the storage
 
 # Allocates text string in the storage
 cvMemStorageAllocString = cfunc('cvMemStorageAllocString', _cxDLL, CvString,
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
     ('ptr', c_char_p, 1), # const char* ptr
     ('len', c_int, 1), # int len
 )
@@ -3542,7 +3771,7 @@ Allocates text string in the storage
 # Calculates the sequence slice length
 cvSliceLength = cfunc('cvSliceLength', _cxDLL, c_int,
     ('slice', CvSlice, 1), # CvSlice slice
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+    ('seq', CvSeq_p, 1), # const CvSeq* seq
 )
 cvSliceLength.__doc__ = """int cvSliceLength( CvSlice slice, const CvSeq* seq )
 
@@ -3550,11 +3779,11 @@ Performs forward or inverse Discrete Cosine transform of 1D or 2D floating-point
 """
 
 # Creates sequence
-cvCreateSeq = cfunc('cvCreateSeq', _cxDLL, POINTER(CvSeq),
+cvCreateSeq = cfunc('cvCreateSeq', _cxDLL, CvSeq_p,
     ('seq_flags', c_int, 1), # int seq_flags
     ('header_size', c_int, 1), # int header_size
     ('elem_size', c_int, 1), # int elem_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
 )
 cvCreateSeq.__doc__ = """CvSeq* cvCreateSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage)
 
@@ -3563,7 +3792,7 @@ Creates sequence
 
 # Sets up sequence block size
 cvSetSeqBlockSize = cfunc('cvSetSeqBlockSize', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('delta_elems', c_int, 1), # int delta_elems 
 )
 cvSetSeqBlockSize.__doc__ = """void cvSetSeqBlockSize(CvSeq* seq, int delta_elems)
@@ -3573,7 +3802,7 @@ Sets up sequence block size
 
 # Adds element to sequence end
 cvSeqPush = cfunc('cvSeqPush', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('element', c_void_p, 1, None), # void* element
 )
 cvSeqPush.__doc__ = """char* cvSeqPush(CvSeq* seq, void* element=NULL)
@@ -3583,7 +3812,7 @@ Adds element to sequence end
 
 # Adds element to sequence beginning
 cvSeqPushFront = cfunc('cvSeqPushFront', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('element', c_void_p, 1, None), # void* element
 )
 cvSeqPushFront.__doc__ = """char* cvSeqPushFront(CvSeq* seq, void* element=NULL)
@@ -3593,7 +3822,7 @@ Adds element to sequence beginning
 
 # Removes element from sequence end
 cvSeqPop = cfunc('cvSeqPop', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('element', c_void_p, 1, None), # void* element
 )
 cvSeqPop.__doc__ = """void cvSeqPop(CvSeq* seq, void* element=NULL)
@@ -3603,7 +3832,7 @@ Removes element from sequence end
 
 # Removes element from sequence beginning
 cvSeqPopFront = cfunc('cvSeqPopFront', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('element', c_void_p, 1, None), # void* element
 )
 cvSeqPopFront.__doc__ = """void cvSeqPopFront(CvSeq* seq, void* element=NULL)
@@ -3616,7 +3845,7 @@ CV_BACK = 0
 
 # Pushes several elements to the either end of sequence
 cvSeqPushMulti = cfunc('cvSeqPushMulti', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('elements', c_void_p, 1), # void* elements
     ('count', c_int, 1), # int count
     ('in_front', c_int, 1, 0), # int in_front
@@ -3628,7 +3857,7 @@ Pushes several elements to the either end of sequence
 
 # Removes several elements from the either end of sequence
 cvSeqPopMulti = cfunc('cvSeqPopMulti', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('elements', c_void_p, 1), # void* elements
     ('count', c_int, 1), # int count
     ('in_front', c_int, 1, 0), # int in_front
@@ -3640,7 +3869,7 @@ Removes several elements from the either end of sequence
 
 # Inserts element in sequence middle
 cvSeqInsert = cfunc('cvSeqInsert', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('before_index', c_int, 1), # int before_index
     ('element', c_void_p, 1, None), # void* element
 )
@@ -3651,7 +3880,7 @@ Inserts element in sequence middle
 
 # Removes element from sequence middle
 cvSeqRemove = cfunc('cvSeqRemove', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('index', c_int, 1), # int index 
 )
 cvSeqRemove.__doc__ = """void cvSeqRemove(CvSeq* seq, int index)
@@ -3661,7 +3890,7 @@ Removes element from sequence middle
 
 # Clears sequence
 cvClearSeq = cfunc('cvClearSeq', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq 
+    ('seq', CvSeq_p, 1), # CvSeq* seq 
 )
 cvClearSeq.__doc__ = """void cvClearSeq(CvSeq* seq)
 
@@ -3670,7 +3899,7 @@ Clears sequence
 
 # Returns POINTER to sequence element by its index
 cvGetSeqElem = cfunc('cvGetSeqElem', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+    ('seq', CvSeq_p, 1), # const CvSeq* seq
     ('index', c_int, 1), # int index 
 )
 cvGetSeqElem.__doc__ = """char* cvGetSeqElem(const CvSeq* seq, int index)
@@ -3684,9 +3913,9 @@ def CV_GET_SEQ_ELEM(TYPE, seq, index):
 
 # Returns index of concrete sequence element
 cvSeqElemIdx = cfunc('cvSeqElemIdx', _cxDLL, c_int,
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+    ('seq', CvSeq_p, 1), # const CvSeq* seq
     ('element', c_void_p, 1), # const void* element
-    ('block', POINTER(POINTER(CvSeqBlock)), 1, None), # CvSeqBlock** block
+    ('block', POINTER(CvSeqBlock_p), 1, None), # CvSeqBlock** block
 )
 cvSeqElemIdx.__doc__ = """int cvSeqElemIdx(const CvSeq* seq, const void* element, CvSeqBlock** block=NULL)
 
@@ -3695,8 +3924,8 @@ Returns index of concrete sequence element
 
 # Initializes process of writing data to sequence
 cvStartAppendToSeq = cfunc('cvStartAppendToSeq', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
+    ('seq', CvSeq_p, 1), # CvSeq* seq
+    ('writer', CvSeqWriter_p, 1), # CvSeqWriter* writer 
 )
 cvStartAppendToSeq.__doc__ = """void cvStartAppendToSeq(CvSeq* seq, CvSeqWriter* writer)
 
@@ -3708,8 +3937,8 @@ cvStartWriteSeq = cfunc('cvStartWriteSeq', _cxDLL, None,
     ('seq_flags', c_int, 1), # int seq_flags
     ('header_size', c_int, 1), # int header_size
     ('elem_size', c_int, 1), # int elem_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('writer', CvSeqWriter_p, 1), # CvSeqWriter* writer 
 )
 cvStartWriteSeq.__doc__ = """void cvStartWriteSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage, CvSeqWriter* writer)
 
@@ -3717,8 +3946,8 @@ Creates new sequence and initializes writer for it
 """
 
 # Finishes process of writing sequence
-cvEndWriteSeq = cfunc('cvEndWriteSeq', _cxDLL, POINTER(CvSeq),
-    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
+cvEndWriteSeq = cfunc('cvEndWriteSeq', _cxDLL, CvSeq_p,
+    ('writer', CvSeqWriter_p, 1), # CvSeqWriter* writer 
 )
 cvEndWriteSeq.__doc__ = """CvSeq* cvEndWriteSeq(CvSeqWriter* writer)
 
@@ -3727,7 +3956,7 @@ Finishes process of writing sequence
 
 # Updates sequence headers from the writer state
 cvFlushSeqWriter = cfunc('cvFlushSeqWriter', _cxDLL, None,
-    ('writer', POINTER(CvSeqWriter), 1), # CvSeqWriter* writer 
+    ('writer', CvSeqWriter_p, 1), # CvSeqWriter* writer 
 )
 cvFlushSeqWriter.__doc__ = """void cvFlushSeqWriter(CvSeqWriter* writer)
 
@@ -3736,8 +3965,8 @@ Updates sequence headers from the writer state
 
 # Initializes process of sequential reading from sequence
 cvStartReadSeq = cfunc('cvStartReadSeq', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
-    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader
+    ('seq', CvSeq_p, 1), # const CvSeq* seq
+    ('reader', CvSeqReader_p, 1), # CvSeqReader* reader
     ('reverse', c_int, 1, 0), # int reverse
 )
 cvStartReadSeq.__doc__ = """void cvStartReadSeq(const CvSeq* seq, CvSeqReader* reader, int reverse=0)
@@ -3747,7 +3976,7 @@ Initializes process of sequential reading from sequence
 
 # Returns the current reader position
 cvGetSeqReaderPos = cfunc('cvGetSeqReaderPos', _cxDLL, c_int,
-    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader 
+    ('reader', CvSeqReader_p, 1), # CvSeqReader* reader 
 )
 cvGetSeqReaderPos.__doc__ = """int cvGetSeqReaderPos(CvSeqReader* reader)
 
@@ -3756,7 +3985,7 @@ Returns the current reader position
 
 # Moves the reader to specified position
 cvSetSeqReaderPos = cfunc('cvSetSeqReaderPos', _cxDLL, None,
-    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader
+    ('reader', CvSeqReader_p, 1), # CvSeqReader* reader
     ('index', c_int, 1), # int index
     ('is_relative', c_int, 1, 0), # int is_relative
 )
@@ -3767,9 +3996,9 @@ Moves the reader to specified position
 
 # Copies sequence to one continuous block of memory
 cvCvtSeqToArray = cfunc('cvCvtSeqToArray', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+    ('seq', CvSeq_p, 1), # const CvSeq* seq
     ('elements', c_void_p, 1), # void* elements
-    ('slice', CvSlice, 1), # CvSlice slice
+    ('slice', CvSlice, 1, CV_WHOLE_SEQ), # CvSlice slice
 )
 cvCvtSeqToArray.__doc__ = """void* cvCvtSeqToArray(const CvSeq* seq, void* elements, CvSlice slice=CV_WHOLE_SEQ)
 
@@ -3777,14 +4006,14 @@ Copies sequence to one continuous block of memory
 """
 
 # Constructs sequence from array
-cvMakeSeqHeaderForArray = cfunc('cvMakeSeqHeaderForArray', _cxDLL, POINTER(CvSeq),
+cvMakeSeqHeaderForArray = cfunc('cvMakeSeqHeaderForArray', _cxDLL, CvSeq_p,
     ('seq_type', c_int, 1), # int seq_type
     ('header_size', c_int, 1), # int header_size
     ('elem_size', c_int, 1), # int elem_size
     ('elements', c_void_p, 1), # void* elements
     ('total', c_int, 1), # int total
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
-    ('block', POINTER(CvSeqBlock), 1), # CvSeqBlock* block 
+    ('seq', CvSeq_p, 1), # CvSeq* seq
+    ('block', CvSeqBlock_p, 1), # CvSeqBlock* block 
 )
 cvMakeSeqHeaderForArray.__doc__ = """CvSeq* cvMakeSeqHeaderForArray(int seq_type, int header_size, int elem_size,                                void* elements, int total,                                CvSeq* seq, CvSeqBlock* block)
 
@@ -3792,10 +4021,10 @@ Constructs sequence from array
 """
 
 # Makes separate header for the sequence slice
-cvSeqSlice = cfunc('cvSeqSlice', _cxDLL, POINTER(CvSeq),
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
+cvSeqSlice = cfunc('cvSeqSlice', _cxDLL, CvSeq_p,
+    ('seq', CvSeq_p, 1), # const CvSeq* seq
     ('slice', CvSlice, 1), # CvSlice slice
-    ('storage', POINTER(CvMemStorage), 1, None), # CvMemStorage* storage
+    ('storage', CvMemStorage_p, 1, None), # CvMemStorage* storage
     ('copy_data', c_int, 1, 0), # int copy_data
 )
 cvSeqSlice.__doc__ = """CvSeq* cvSeqSlice(const CvSeq* seq, CvSlice slice,                   CvMemStorage* storage=NULL, int copy_data=0)
@@ -3813,7 +4042,7 @@ def cvCloneSeq(seq, storage=None):
 
 # Removes sequence slice
 cvSeqRemoveSlice = cfunc('cvSeqRemoveSlice', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('slice', CvSlice, 1), # CvSlice slice 
 )
 cvSeqRemoveSlice.__doc__ = """void cvSeqRemoveSlice(CvSeq* seq, CvSlice slice)
@@ -3823,7 +4052,7 @@ Removes sequence slice
 
 # Inserts array in the middle of sequence
 cvSeqInsertSlice = cfunc('cvSeqInsertSlice', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('before_index', c_int, 1), # int before_index
     ('from_arr', CvArr_p, 1), # const CvArr* from_arr 
 )
@@ -3840,7 +4069,7 @@ CvCmpFunc = CFUNCTYPE(c_int, # int
 
 # Sorts sequence element using the specified comparison function
 cvSeqSort = cfunc('cvSeqSort', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('func', CvCmpFunc, 1), # CvCmpFunc func
     ('userdata', c_void_p, 1, None), # void* userdata
 )
@@ -3851,7 +4080,7 @@ Sorts sequence element using the specified comparison function
 
 # Searches element in sequence
 cvSeqSearch = cfunc('cvSeqSearch', _cxDLL, c_void_p,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq
+    ('seq', CvSeq_p, 1), # CvSeq* seq
     ('elem', c_void_p, 1), # const void* elem
     ('func', CvCmpFunc, 1), # CvCmpFunc func
     ('is_sorted', c_int, 1), # int is_sorted
@@ -3865,7 +4094,7 @@ Searches element in sequence
 
 # Reverses the order of sequence elements
 cvSeqInvert = cfunc('cvSeqInvert', _cxDLL, None,
-    ('seq', POINTER(CvSeq), 1), # CvSeq* seq 
+    ('seq', CvSeq_p, 1), # CvSeq* seq 
 )
 cvSeqInvert.__doc__ = """void cvSeqInvert(CvSeq* seq)
 
@@ -3874,9 +4103,9 @@ Reverses the order of sequence elements
 
 # Splits sequence into equivalency classes
 cvSeqPartition = cfunc('cvSeqPartition', _cxDLL, c_int,
-    ('seq', POINTER(CvSeq), 1), # const CvSeq* seq
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage
-    ('labels', POINTER(POINTER(CvSeq)), 1), # CvSeq** labels
+    ('seq', CvSeq_p, 1), # const CvSeq* seq
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('labels', POINTER(CvSeq_p), 1), # CvSeq** labels
     ('is_equal', CvCmpFunc, 1), # CvCmpFunc is_equal
     ('userdata', c_void_p, 1), # void* userdata 
 )
@@ -3892,11 +4121,11 @@ Splits sequence into equivalency classes
 
 
 # Creates empty set
-cvCreateSet = cfunc('cvCreateSet', _cxDLL, POINTER(CvSet),
+cvCreateSet = cfunc('cvCreateSet', _cxDLL, CvSet_p,
     ('set_flags', c_int, 1), # int set_flags
     ('header_size', c_int, 1), # int header_size
     ('elem_size', c_int, 1), # int elem_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
 )
 cvCreateSet.__doc__ = """CvSet* cvCreateSet(int set_flags, int header_size, int elem_size, CvMemStorage* storage)
 
@@ -3905,9 +4134,9 @@ Creates empty set
 
 # Occupies a node in the set
 cvSetAdd = cfunc('cvSetAdd', _cxDLL, c_int,
-    ('set_header', POINTER(CvSet), 1), # CvSet* set_header
-    ('elem', POINTER(CvSetElem), 1, None), # CvSetElem* elem
-    ('inserted_elem', POINTER(POINTER(CvSetElem)), 1, None), # CvSetElem** inserted_elem
+    ('set_header', CvSet_p, 1), # CvSet* set_header
+    ('elem', CvSetElem_p, 1, None), # CvSetElem* elem
+    ('inserted_elem', POINTER(CvSetElem_p), 1, None), # CvSetElem** inserted_elem
 )
 cvSetAdd.__doc__ = """int cvSetAdd(CvSet* set_header, CvSetElem* elem=NULL, CvSetElem** inserted_elem=NULL)
 
@@ -3949,7 +4178,7 @@ def cvSetRemoveByPtr(set_header, elem):
     
 # Removes element from set
 cvSetRemove = cfunc('cvSetRemove', _cxDLL, None,
-    ('set_header', POINTER(CvSet), 1), # CvSet* set_header
+    ('set_header', CvSet_p, 1), # CvSet* set_header
     ('index', c_int, 1), # int index 
 )
 cvSetRemove.__doc__ = """void cvSetRemove(CvSet* set_header, int index)
@@ -3970,7 +4199,7 @@ def cvGetSetElem(set_header, index):
     
 # Clears set
 cvClearSet = cfunc('cvClearSet', _cxDLL, None,
-    ('set_header', POINTER(CvSet), 1), # CvSet* set_header 
+    ('set_header', CvSet_p, 1), # CvSet* set_header 
 )
 cvClearSet.__doc__ = """void cvClearSet(CvSet* set_header)
 
@@ -3984,12 +4213,12 @@ Clears set
 
 
 # Creates empty graph
-cvCreateGraph = cfunc('cvCreateGraph', _cxDLL, POINTER(CvGraph),
+cvCreateGraph = cfunc('cvCreateGraph', _cxDLL, CvGraph_p,
     ('graph_flags', c_int, 1), # int graph_flags
     ('header_size', c_int, 1), # int header_size
     ('vtx_size', c_int, 1), # int vtx_size
     ('edge_size', c_int, 1), # int edge_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
 )
 cvCreateGraph.__doc__ = """CvGraph* cvCreateGraph(int graph_flags, int header_size, int vtx_size, int edge_size, CvMemStorage* storage)
 
@@ -3998,9 +4227,9 @@ Creates empty graph
 
 # Adds vertex to graph
 cvGraphAddVtx = cfunc('cvGraphAddVtx', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('vtx', POINTER(CvGraphVtx), 1, None), # const CvGraphVtx* vtx
-    ('inserted_vtx', POINTER(POINTER(CvGraphVtx)), 1, None), # CvGraphVtx** inserted_vtx
+    ('graph', CvGraph_p, 1), # CvGraph* graph
+    ('vtx', CvGraphVtx_p, 1, None), # const CvGraphVtx* vtx
+    ('inserted_vtx', POINTER(CvGraphVtx_p), 1, None), # CvGraphVtx** inserted_vtx
 )
 cvGraphAddVtx.__doc__ = """int cvGraphAddVtx(CvGraph* graph, const CvGraphVtx* vtx=NULL, CvGraphVtx** inserted_vtx=NULL)
 
@@ -4009,7 +4238,7 @@ Adds vertex to graph
 
 # Removes vertex from graph
 cvGraphRemoveVtx = cfunc('cvGraphRemoveVtx', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('graph', CvGraph_p, 1), # CvGraph* graph
     ('index', c_int, 1), # int index 
 )
 cvGraphRemoveVtx.__doc__ = """int cvGraphRemoveVtx(CvGraph* graph, int index)
@@ -4019,8 +4248,8 @@ Removes vertex from graph
 
 # Removes vertex from graph
 cvGraphRemoveVtxByPtr = cfunc('cvGraphRemoveVtxByPtr', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* vtx 
+    ('graph', CvGraph_p, 1), # CvGraph* graph
+    ('vtx', CvGraphVtx_p, 1), # CvGraphVtx* vtx 
 )
 cvGraphRemoveVtxByPtr.__doc__ = """int cvGraphRemoveVtxByPtr(CvGraph* graph, CvGraphVtx* vtx)
 
@@ -4029,11 +4258,11 @@ Removes vertex from graph
 
 # Adds edge to graph
 cvGraphAddEdge = cfunc('cvGraphAddEdge', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('graph', CvGraph_p, 1), # CvGraph* graph
     ('start_idx', c_int, 1), # int start_idx
     ('end_idx', c_int, 1), # int end_idx
-    ('edge', POINTER(CvGraphEdge), 1, None), # const CvGraphEdge* edge
-    ('inserted_edge', POINTER(POINTER(CvGraphEdge)), 1, None), # CvGraphEdge** inserted_edge
+    ('edge', CvGraphEdge_p, 1, None), # const CvGraphEdge* edge
+    ('inserted_edge', POINTER(CvGraphEdge_p), 1, None), # CvGraphEdge** inserted_edge
 )
 cvGraphAddEdge.__doc__ = """int cvGraphAddEdge(CvGraph* graph, int start_idx, int end_idx, const CvGraphEdge* edge=NULL, CvGraphEdge** inserted_edge=NULL)
 
@@ -4042,11 +4271,11 @@ Adds edge to graph
 
 # Adds edge to graph
 cvGraphAddEdgeByPtr = cfunc('cvGraphAddEdgeByPtr', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('start_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* start_vtx
-    ('end_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* end_vtx
-    ('edge', POINTER(CvGraphEdge), 1, None), # const CvGraphEdge* edge
-    ('inserted_edge', POINTER(POINTER(CvGraphEdge)), 1, None), # CvGraphEdge** inserted_edge
+    ('graph', CvGraph_p, 1), # CvGraph* graph
+    ('start_vtx', CvGraphVtx_p, 1), # CvGraphVtx* start_vtx
+    ('end_vtx', CvGraphVtx_p, 1), # CvGraphVtx* end_vtx
+    ('edge', CvGraphEdge_p, 1, None), # const CvGraphEdge* edge
+    ('inserted_edge', POINTER(CvGraphEdge_p), 1, None), # CvGraphEdge** inserted_edge
 )
 cvGraphAddEdgeByPtr.__doc__ = """int cvGraphAddEdgeByPtr(CvGraph* graph, CvGraphVtx* start_vtx, CvGraphVtx* end_vtx, const CvGraphEdge* edge=NULL, CvGraphEdge** inserted_edge=NULL)
 
@@ -4055,7 +4284,7 @@ Adds edge to graph
 
 # Removes edge from graph
 cvGraphRemoveEdge = cfunc('cvGraphRemoveEdge', _cxDLL, None,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
+    ('graph', CvGraph_p, 1), # CvGraph* graph
     ('start_idx', c_int, 1), # int start_idx
     ('end_idx', c_int, 1), # int end_idx 
 )
@@ -4066,9 +4295,9 @@ Removes edge from graph
 
 # Removes edge from graph
 cvGraphRemoveEdgeByPtr = cfunc('cvGraphRemoveEdgeByPtr', _cxDLL, None,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('start_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* start_vtx
-    ('end_vtx', POINTER(CvGraphVtx), 1), # CvGraphVtx* end_vtx 
+    ('graph', CvGraph_p, 1), # CvGraph* graph
+    ('start_vtx', CvGraphVtx_p, 1), # CvGraphVtx* start_vtx
+    ('end_vtx', CvGraphVtx_p, 1), # CvGraphVtx* end_vtx 
 )
 cvGraphRemoveEdgeByPtr.__doc__ = """void cvGraphRemoveEdgeByPtr(CvGraph* graph, CvGraphVtx* start_vtx, CvGraphVtx* end_vtx)
 
@@ -4076,8 +4305,8 @@ Removes edge from graph
 """
 
 # Finds edge in graph
-cvFindGraphEdge = cfunc('cvFindGraphEdge', _cxDLL, POINTER(CvGraphEdge),
-    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
+cvFindGraphEdge = cfunc('cvFindGraphEdge', _cxDLL, CvGraphEdge_p,
+    ('graph', CvGraph_p, 1), # const CvGraph* graph
     ('start_idx', c_int, 1), # int start_idx
     ('end_idx', c_int, 1), # int end_idx 
 )
@@ -4089,10 +4318,10 @@ Finds edge in graph
 cvGraphFindEdge = cvFindGraphEdge
 
 # Finds edge in graph
-cvFindGraphEdgeByPtr = cfunc('cvFindGraphEdgeByPtr', _cxDLL, POINTER(CvGraphEdge),
-    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
-    ('start_vtx', POINTER(CvGraphVtx), 1), # const CvGraphVtx* start_vtx
-    ('end_vtx', POINTER(CvGraphVtx), 1), # const CvGraphVtx* end_vtx 
+cvFindGraphEdgeByPtr = cfunc('cvFindGraphEdgeByPtr', _cxDLL, CvGraphEdge_p,
+    ('graph', CvGraph_p, 1), # const CvGraph* graph
+    ('start_vtx', CvGraphVtx_p, 1), # const CvGraphVtx* start_vtx
+    ('end_vtx', CvGraphVtx_p, 1), # const CvGraphVtx* end_vtx 
 )
 cvFindGraphEdgeByPtr.__doc__ = """CvGraphEdge* cvFindGraphEdgeByPtr(const CvGraph* graph, const CvGraphVtx* start_vtx, const CvGraphVtx* end_vtx)
 
@@ -4103,7 +4332,7 @@ cvGraphFindEdgeByPtr = cvFindGraphEdgeByPtr
 
 # Counts edges indicent to the vertex
 cvGraphVtxDegree = cfunc('cvGraphVtxDegree', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
+    ('graph', CvGraph_p, 1), # const CvGraph* graph
     ('vtx_idx', c_int, 1), # int vtx_idx 
 )
 cvGraphVtxDegree.__doc__ = """int cvGraphVtxDegree(const CvGraph* graph, int vtx_idx)
@@ -4113,8 +4342,8 @@ Counts edges indicent to the vertex
 
 # Finds edge in graph
 cvGraphVtxDegreeByPtr = cfunc('cvGraphVtxDegreeByPtr', _cxDLL, c_int,
-    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
-    ('vtx', POINTER(CvGraphVtx), 1), # const CvGraphVtx* vtx 
+    ('graph', CvGraph_p, 1), # const CvGraph* graph
+    ('vtx', CvGraphVtx_p, 1), # const CvGraphVtx* vtx 
 )
 cvGraphVtxDegreeByPtr.__doc__ = """int cvGraphVtxDegreeByPtr(const CvGraph* graph, const CvGraphVtx* vtx)
 
@@ -4190,7 +4419,7 @@ CV_GRAPH_FORWARD_EDGE_FLAG = 1 << 28
     
 # Clears graph
 cvClearGraph = cfunc('cvClearGraph', _cxDLL, None,
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph 
+    ('graph', CvGraph_p, 1), # CvGraph* graph 
 )
 cvClearGraph.__doc__ = """void cvClearGraph(CvGraph* graph)
 
@@ -4198,9 +4427,9 @@ Clears graph
 """
 
 # Clone graph
-cvCloneGraph = cfunc('cvCloneGraph', _cxDLL, POINTER(CvGraph),
-    ('graph', POINTER(CvGraph), 1), # const CvGraph* graph
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+cvCloneGraph = cfunc('cvCloneGraph', _cxDLL, CvGraph_p,
+    ('graph', CvGraph_p, 1), # const CvGraph* graph
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
 )
 cvCloneGraph.__doc__ = """CvGraph* cvCloneGraph(const CvGraph* graph, CvMemStorage* storage)
 
@@ -4211,12 +4440,12 @@ Clone graph
 
 
 _cvReleaseGraphScanner = cfunc('cvReleaseGraphScanner', _cxDLL, None,
-    ('scanner', ByRefArg(POINTER(CvGraphScanner)), 1), # CvGraphScanner** scanner 
+    ('scanner', ByRefArg(CvGraphScanner_p), 1), # CvGraphScanner** scanner 
 )
 
-_cvCreateGraphScanner = cfunc('cvCreateGraphScanner', _cxDLL, POINTER(CvGraphScanner),
-    ('graph', POINTER(CvGraph), 1), # CvGraph* graph
-    ('vtx', POINTER(CvGraphVtx), 1, None), # CvGraphVtx* vtx
+_cvCreateGraphScanner = cfunc('cvCreateGraphScanner', _cxDLL, CvGraphScanner_p,
+    ('graph', CvGraph_p, 1), # CvGraph* graph
+    ('vtx', CvGraphVtx_p, 1, None), # CvGraphVtx* vtx
     ('mask', c_int, 1), # int mask
 )
 
@@ -4235,7 +4464,7 @@ cvReleaseGraphScanner = cvFree
 
 # Makes one or more steps of the graph traversal procedure
 cvNextGraphItem = cfunc('cvNextGraphItem', _cxDLL, c_int,
-    ('scanner', POINTER(CvGraphScanner), 1), # CvGraphScanner* scanner 
+    ('scanner', CvGraphScanner_p, 1), # CvGraphScanner* scanner 
 )
 cvNextGraphItem.__doc__ = """int cvNextGraphItem(CvGraphScanner* scanner)
 
@@ -4285,10 +4514,10 @@ Returns the currently observed node and moves iterator toward the previous node
 """
 
 # Gathers all node pointers to the single sequence
-cvTreeToNodeSeq = cfunc('cvTreeToNodeSeq', _cxDLL, POINTER(CvSeq),
+cvTreeToNodeSeq = cfunc('cvTreeToNodeSeq', _cxDLL, CvSeq_p,
     ('first', c_void_p, 1), # const void* first
     ('header_size', c_int, 1), # int header_size
-    ('storage', POINTER(CvMemStorage), 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
 )
 cvTreeToNodeSeq.__doc__ = """CvSeq* cvTreeToNodeSeq(const void* first, int header_size, CvMemStorage* storage)
 
@@ -4403,39 +4632,49 @@ def cvEllipseBox(img, box, color, thickness=1, line_type=8, shift=0):
 
 
 # Fills polygons interior
-cvFillPoly = cfunc('cvFillPoly', _cxDLL, None,
+_cvFillPoly = cfunc('cvFillPoly', _cxDLL, None,
     ('img', CvArr_p, 1), # CvArr* img
-    ('pts', POINTER(POINTER(CvPoint)), 1), # CvPoint** pts
-    ('npts', c_int_p, 1), # int* npts
+    ('pts', ListPOINTER2(CvPoint), 1), # CvPoint** pts
+    ('npts', ListPOINTER(c_int), 1), # int* npts
     ('contours', c_int, 1), # int contours
     ('color', CvScalar, 1), # CvScalar color
     ('line_type', c_int, 1, 8), # int line_type
     ('shift', c_int, 1, 0), # int shift
 )
-cvFillPoly.__doc__ = """void cvFillPoly(CvArr* img, CvPoint** pts, int* npts, int contours, CvScalar color, int line_type=8, int shift=0)
 
-Fills polygons interior
-"""
+def cvFillPoly(img, pts, color, line_type=8, shift=0):
+    """void cvFillPoly(CvArr* img, list_of_list_of_CvPoint pts, CvScalar color, int line_type=8, int shift=0)
+
+    Fills polygons interior
+    """
+    _cvFillPoly(img, pts, [len(x) for x in pts], len(pts), color, line_type, shift)
 
 # Fills convex polygon
-cvFillConvexPoly = cfunc('cvFillConvexPoly', _cxDLL, None,
+_cvFillConvexPoly = cfunc('cvFillConvexPoly', _cxDLL, None,
     ('img', CvArr_p, 1), # CvArr* img
-    ('pts', POINTER(CvPoint), 1), # CvPoint* pts
+    ('pts', CvPoint_p, 1), # CvPoint* pts
     ('npts', c_int, 1), # int npts
     ('color', CvScalar, 1), # CvScalar color
     ('line_type', c_int, 1, 8), # int line_type
     ('shift', c_int, 1, 0), # int shift
 )
-cvFillConvexPoly.__doc__ = """void cvFillConvexPoly(CvArr* img, CvPoint* pts, int npts, CvScalar color, int line_type=8, int shift=0)
 
-Fills convex polygon
-"""
+def cvFillConvexPoly(img, pts, color, line_type=8, shift=0):
+    """void cvFillConvexPoly(CvArr* img, list_or_tuple_of_CvPoint pts, CvScalar color, int line_type=8, int shift=0)
+
+    Fills convex polygon
+    """
+    npts = len(pts)
+    pts2 = (CvPoint*npts)()
+    for i in xrange(npts):
+        pts2[i] = pts[i]
+    _cvFillConvexPoly(img, pts2, npts, color, line_type, shift)
 
 # Draws simple or thick polygons
-cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,
+_cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,
     ('img', CvArr_p, 1), # CvArr* img
-    ('pts', POINTER(POINTER(CvPoint)), 1), # CvPoint** pts
-    ('npts', c_int_p, 1), # int* npts
+    ('pts', ListPOINTER2(CvPoint), 1), # CvPoint** pts
+    ('npts', ListPOINTER(c_int), 1), # int* npts
     ('contours', c_int, 1), # int contours
     ('is_closed', c_int, 1), # int is_closed
     ('color', CvScalar, 1), # CvScalar color
@@ -4443,10 +4682,13 @@ cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,
     ('line_type', c_int, 1, 8), # int line_type
     ('shift', c_int, 1, 0), # int shift
 )
-cvPolyLine.__doc__ = """void cvPolyLine(CvArr* img, CvPoint** pts, int* npts, int contours, int is_closed, CvScalar color, int thickness=1, int line_type=8, int shift=0)
 
-Draws simple or thick polygons
-"""
+def cvPolyLine(img, pts, is_closed, color, thickness=1, line_type=8, shift=0):
+    """void cvPolyLine(CvArr* img, list_of_list_of_CvPoint pts, int is_closed, CvScalar color, int thickness=1, int line_type=8, int shift=0)
+
+    Draws simple or thick polygons
+    """
+    _cvPolyLine(img, pts, [len(x) for x in pts], len(pts), is_closed, color, thickness, line_type, shift)
 
 cvDrawRect = cvRectangle
 cvDrawLine = cvLine
@@ -4483,10 +4725,11 @@ class CvFont(_Structure):
                 ("thickness", c_int),
                 ("dx", c_float),
                 ("line_type", c_int)]
-
+CvFont_p = POINTER(CvFont)
+                
 # Initializes font structure
-cvInitFont = cfunc('cvInitFont', _cxDLL, None,
-    ('font', POINTER(CvFont), 1), # CvFont* font
+_cvInitFont = cfunc('cvInitFont', _cxDLL, None,
+    ('font', ByRefArg(CvFont), 1), # CvFont* font
     ('font_face', c_int, 1), # int font_face
     ('hscale', c_double, 1), # double hscale
     ('vscale', c_double, 1), # double vscale
@@ -4494,26 +4737,29 @@ cvInitFont = cfunc('cvInitFont', _cxDLL, None,
     ('thickness', c_int, 1, 1), # int thickness
     ('line_type', c_int, 1, 8), # int line_type
 )
-cvInitFont.__doc__ = """void cvInitFont(CvFont* font, int font_face, double hscale, double vscale, double shear=0, int thickness=1, int line_type=8)
 
-Initializes font structure
-"""
+def cvInitFont(font_face, hscale, vscale, shear=0, thickness=1, line_type=8):
+    """CvFont cvInitFont(int font_face, double hscale, double vscale, double shear=0, int thickness=1, int line_type=8)
+
+    Initializes font structure
+    """
+    font = CvFont()
+    _cvInitFont(font, font_face, hscale, vscale, shear, thickness, line_type)
+    return font
 
 def cvFont(scale, thickness=1):
     """CvFont cvFont( double scale, int thickness=1)
     
     Returns a CV_FONT_HERSHEY_PLAIN font with given scale and thickness
     """
-    font = CvFont()
-    cvInitFont( byref(font), CV_FONT_HERSHEY_PLAIN, scale, scale, 0, thickness, CV_AA )
-    return font
+    return cvInitFont(CV_FONT_HERSHEY_PLAIN, scale, scale, 0, thickness, CV_AA)
                 
 # Draws text string
 cvPutText = cfunc('cvPutText', _cxDLL, None,
     ('img', CvArr_p, 1), # CvArr* img
     ('text', c_char_p, 1), # const char* text
     ('org', CvPoint, 1), # CvPoint org
-    ('font', POINTER(CvFont), 1), # const CvFont* font
+    ('font', CvFont_p, 1), # const CvFont* font
     ('color', CvScalar, 1), # CvScalar color 
 )
 cvPutText.__doc__ = """void cvPutText(CvArr* img, const char* text, CvPoint org, const CvFont* font, CvScalar color)
@@ -4524,9 +4770,9 @@ Draws text string
 # Retrieves width and height of text string
 cvGetTextSize = cfunc('cvGetTextSize', _cxDLL, None,
     ('text_string', c_char_p, 1), # const char* text_string
-    ('font', POINTER(CvFont), 1), # const CvFont* font
-    ('text_size', POINTER(CvSize), 1), # CvSize* text_size
-    ('baseline', c_int_p, 1), # int* baseline 
+    ('font', ByRefArg(CvFont), 1), # const CvFont* font
+    ('text_size', CvSize_p, 2), # CvSize* text_size
+    ('baseline', POINTER(c_int), 2), # int* baseline 
 )
 cvGetTextSize.__doc__ = """void cvGetTextSize(const char* text_string, const CvFont* font, CvSize* text_size, int* baseline)
 
@@ -4542,7 +4788,7 @@ Retrieves width and height of text string
 # Draws contour outlines or interiors in the image
 cvDrawContours = cfunc('cvDrawContours', _cxDLL, None,
     ('img', CvArr_p, 1), # CvArr* img
-    ('contour', c_void_p, 1), # CvSeq* contour
+    ('contour', CvSeq_p, 1), # CvSeq* contour
     ('external_color', CvScalar, 1), # CvScalar external_color
     ('hole_color', CvScalar, 1), # CvScalar hole_color
     ('max_level', c_int, 1), # int max_level
@@ -4560,7 +4806,7 @@ cvInitLineIterator = cfunc('cvInitLineIterator', _cxDLL, c_int,
     ('image', CvArr_p, 1), # const CvArr* image
     ('pt1', CvPoint, 1), # CvPoint pt1
     ('pt2', CvPoint, 1), # CvPoint pt2
-    ('line_iterator', POINTER(CvLineIterator), 1), # CvLineIterator* line_iterator
+    ('line_iterator', CvLineIterator_p, 1), # CvLineIterator* line_iterator
     ('connectivity', c_int, 1, 8), # int connectivity
     ('left_to_right', c_int, 1, 0), # int left_to_right
 )
@@ -4587,8 +4833,8 @@ def CV_NEXT_LINE_POINT(line_iterator):
 # Clips the line against the image rectangle
 cvClipLine = cfunc('cvClipLine', _cxDLL, c_int,
     ('img_size', CvSize, 1), # CvSize img_size
-    ('pt1', POINTER(CvPoint), 1), # CvPoint* pt1
-    ('pt2', POINTER(CvPoint), 1), # CvPoint* pt2 
+    ('pt1', CvPoint_p, 1), # CvPoint* pt1
+    ('pt2', CvPoint_p, 1), # CvPoint* pt2 
 )
 cvClipLine.__doc__ = """int cvClipLine(CvSize img_size, CvPoint* pt1, CvPoint* pt2)
 
@@ -4602,7 +4848,7 @@ cvEllipse2Poly = cfunc('cvEllipse2Poly', _cxDLL, c_int,
     ('angle', c_int, 1), # int angle
     ('arc_start', c_int, 1), # int arc_start
     ('arc_end', c_int, 1), # int arc_end
-    ('pts', POINTER(CvPoint), 1), # CvPoint* pts
+    ('pts', CvPoint_p, 1), # CvPoint* pts
     ('delta', c_int, 1), # int delta 
 )
 cvEllipse2Poly.__doc__ = """int cvEllipse2Poly(CvPoint center, CvSize axes, int angle, int arc_start, int arc_end, CvPoint* pts, int delta)
@@ -4617,9 +4863,9 @@ Approximates elliptic arc with polyline
 
 
 # Opens file storage for reading or writing data
-cvOpenFileStorage = cfunc('cvOpenFileStorage', _cxDLL, POINTER(CvFileStorage),
+cvOpenFileStorage = cfunc('cvOpenFileStorage', _cxDLL, CvFileStorage_p,
     ('filename', c_char_p, 1), # const char* filename
-    ('memstorage', POINTER(CvMemStorage), 1), # CvMemStorage* memstorage
+    ('memstorage', CvMemStorage_p, 1), # CvMemStorage* memstorage
     ('flags', c_int, 1), # int flags 
 )
 cvOpenFileStorage.__doc__ = """CvFileStorage* cvOpenFileStorage(const char* filename, CvMemStorage* memstorage, int flags)
@@ -4629,7 +4875,7 @@ Opens file storage for reading or writing data
 
 # Releases file storage
 cvReleaseFileStorage = cfunc('cvReleaseFileStorage', _cxDLL, None,
-    ('fs', POINTER(POINTER(CvFileStorage)), 1), # CvFileStorage** fs 
+    ('fs', ByRefArg(CvFileStorage_p), 1), # CvFileStorage** fs 
 )
 cvReleaseFileStorage.__doc__ = """void cvReleaseFileStorage(CvFileStorage** fs)
 
@@ -4637,7 +4883,7 @@ Releases file storage
 """
 
 cvAttrValue = cfunc('cvAttrValue', _cxDLL, c_char_p,
-    ('attr', POINTER(CvAttrList), 1), # const CvAttrList* attr
+    ('attr', CvAttrList_p, 1), # const CvAttrList* attr
     ('attr_name', c_char_p, 1), # const char* attr_name
 )
 cvAttrValue.__doc__ = """const char* cvAttrValue( const CvAttrList* attr, const char* attr_name )
@@ -4653,7 +4899,7 @@ Returns attribute value or 0 (NULL) if there is no such attribute
 
 # Starts writing a new structure
 cvStartWriteStruct = cfunc('cvStartWriteStruct', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('struct_flags', c_int, 1), # int struct_flags
     ('type_name', c_char_p, 1, None), # const char* type_name
@@ -4666,7 +4912,7 @@ Starts writing a new structure
 
 # Ends writing a structure
 cvEndWriteStruct = cfunc('cvEndWriteStruct', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs 
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs 
 )
 cvEndWriteStruct.__doc__ = """void cvEndWriteStruct(CvFileStorage* fs)
 
@@ -4675,7 +4921,7 @@ Ends writing a structure
 
 # Writes an integer value
 cvWriteInt = cfunc('cvWriteInt', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('value', c_int, 1), # int value 
 )
@@ -4686,7 +4932,7 @@ Writes an integer value
 
 # Writes a floating-point value
 cvWriteReal = cfunc('cvWriteReal', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('value', c_double, 1), # double value 
 )
@@ -4697,7 +4943,7 @@ Writes a floating-point value
 
 # Writes a text string
 cvWriteString = cfunc('cvWriteString', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('str', c_char_p, 1), # const char* str
     ('quote', c_int, 1, 0), # int quote
@@ -4709,7 +4955,7 @@ Writes a text string
 
 # Writes comment
 cvWriteComment = cfunc('cvWriteComment', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('comment', c_char_p, 1), # const char* comment
     ('eol_comment', c_int, 1), # int eol_comment 
 )
@@ -4720,7 +4966,7 @@ Writes comment
 
 # Starts the next stream
 cvStartNextStream = cfunc('cvStartNextStream', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs 
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs 
 )
 cvStartNextStream.__doc__ = """void cvStartNextStream(CvFileStorage* fs)
 
@@ -4729,7 +4975,7 @@ Starts the next stream
 
 # Writes user object
 cvWrite = cfunc('cvWrite', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('ptr', c_void_p, 1), # const void* ptr
     ('attributes', CvAttrList, 1), # CvAttrList attributes
@@ -4741,7 +4987,7 @@ Writes user object
 
 # Writes multiple numbers
 cvWriteRawData = cfunc('cvWriteRawData', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('src', c_void_p, 1), # const void* src
     ('len', c_int, 1), # int len
     ('dt', c_char_p, 1), # const char* dt 
@@ -4753,9 +4999,9 @@ Writes multiple numbers
 
 # Writes file node to another file storage
 cvWriteFileNode = cfunc('cvWriteFileNode', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('new_node_name', c_char_p, 1), # const char* new_node_name
-    ('node', POINTER(CvFileNode), 1), # const CvFileNode* node
+    ('node', CvFileNode_p, 1), # const CvFileNode* node
     ('embed', c_int, 1), # int embed 
 )
 cvWriteFileNode.__doc__ = """void cvWriteFileNode(CvFileStorage* fs, const char* new_node_name, const CvFileNode* node, int embed)
@@ -4770,8 +5016,8 @@ Writes file node to another file storage
 
 
 # Retrieves one of top-level nodes of the file storage
-cvGetRootFileNode = cfunc('cvGetRootFileNode', _cxDLL, POINTER(CvFileNode),
-    ('fs', POINTER(CvFileStorage), 1), # const CvFileStorage* fs
+cvGetRootFileNode = cfunc('cvGetRootFileNode', _cxDLL, CvFileNode_p,
+    ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
     ('stream_index', c_int, 1, 0), # int stream_index
 )
 cvGetRootFileNode.__doc__ = """CvFileNode* cvGetRootFileNode(const CvFileStorage* fs, int stream_index=0)
@@ -4780,9 +5026,9 @@ Retrieves one of top-level nodes of the file storage
 """
 
 # Finds node in the map or file storage
-cvGetFileNodeByName = cfunc('cvGetFileNodeByName', _cxDLL, POINTER(CvFileNode),
-    ('fs', POINTER(CvFileStorage), 1), # const CvFileStorage* fs
-    ('map', POINTER(CvFileNode), 1), # const CvFileNode* map
+cvGetFileNodeByName = cfunc('cvGetFileNodeByName', _cxDLL, CvFileNode_p,
+    ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
+    ('map', CvFileNode_p, 1), # const CvFileNode* map
     ('name', c_char_p, 1), # const char* name 
 )
 cvGetFileNodeByName.__doc__ = """CvFileNode* cvGetFileNodeByName(const CvFileStorage* fs, const CvFileNode* map, const char* name)
@@ -4791,8 +5037,8 @@ Finds node in the map or file storage
 """
 
 # Returns a unique POINTER for given name
-cvGetHashedKey = cfunc('cvGetHashedKey', _cxDLL, POINTER(CvStringHashNode),
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
+cvGetHashedKey = cfunc('cvGetHashedKey', _cxDLL, CvStringHashNode_p,
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('len', c_int, 1), # int len
     ('create_missing', c_int, 1, 0), # int create_missing
@@ -4803,10 +5049,10 @@ Returns a unique POINTER for given name
 """
 
 # Finds node in the map or file storage
-cvGetFileNode = cfunc('cvGetFileNode', _cxDLL, POINTER(CvFileNode),
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
-    ('map', POINTER(CvFileNode), 1), # CvFileNode* map
-    ('key', POINTER(CvStringHashNode), 1), # const CvStringHashNode* key
+cvGetFileNode = cfunc('cvGetFileNode', _cxDLL, CvFileNode_p,
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('map', CvFileNode_p, 1), # CvFileNode* map
+    ('key', CvStringHashNode_p, 1), # const CvStringHashNode* key
     ('create_missing', c_int, 1, 0), # int create_missing
 )
 cvGetFileNode.__doc__ = """CvFileNode* cvGetFileNode(CvFileStorage* fs, CvFileNode* map, const CvStringHashNode* key, int create_missing=0)
@@ -4816,7 +5062,7 @@ Finds node in the map or file storage
 
 # Returns name of file node
 cvGetFileNodeName = cfunc('cvGetFileNodeName', _cxDLL, c_char_p,
-    ('node', POINTER(CvFileNode), 1), # const CvFileNode* node 
+    ('node', CvFileNode_p, 1), # const CvFileNode* node 
 )
 cvGetFileNodeName.__doc__ = """const char* cvGetFileNodeName(const CvFileNode* node)
 
@@ -4887,9 +5133,9 @@ def cvReadStringByName(fs, map, name, default_value=None):
 
 # Decodes object and returns POINTER to it
 cvRead = cfunc('cvRead', _cxDLL, c_void_p,
-    ('fs', POINTER(CvFileStorage), 1), # CvFileStorage* fs
-    ('node', POINTER(CvFileNode), 1), # CvFileNode* node
-    ('attributes', POINTER(CvAttrList), 1, None), # CvAttrList* attributes
+    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('node', CvFileNode_p, 1), # CvFileNode* node
+    ('attributes', CvAttrList_p, 1, None), # CvAttrList* attributes
 )
 cvRead.__doc__ = """void* cvRead(CvFileStorage* fs, CvFileNode* node, CvAttrList* attributes=NULL)
 
@@ -4898,8 +5144,8 @@ Decodes object and returns POINTER to it
 
 # Reads multiple numbers
 cvReadRawData = cfunc('cvReadRawData', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # const CvFileStorage* fs
-    ('src', POINTER(CvFileNode), 1), # const CvFileNode* src
+    ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
+    ('src', CvFileNode_p, 1), # const CvFileNode* src
     ('dst', c_void_p, 1), # void* dst
     ('dt', c_char_p, 1), # const char* dt 
 )
@@ -4910,9 +5156,9 @@ Reads multiple numbers
 
 # Initializes file node sequence reader
 cvStartReadRawData = cfunc('cvStartReadRawData', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # const CvFileStorage* fs
-    ('src', POINTER(CvFileNode), 1), # const CvFileNode* src
-    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader 
+    ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
+    ('src', CvFileNode_p, 1), # const CvFileNode* src
+    ('reader', CvSeqReader_p, 1), # CvSeqReader* reader 
 )
 cvStartReadRawData.__doc__ = """void cvStartReadRawData(const CvFileStorage* fs, const CvFileNode* src, CvSeqReader* reader)
 
@@ -4921,8 +5167,8 @@ Initializes file node sequence reader
 
 # Initializes file node sequence reader
 cvReadRawDataSlice = cfunc('cvReadRawDataSlice', _cxDLL, None,
-    ('fs', POINTER(CvFileStorage), 1), # const CvFileStorage* fs
-    ('reader', POINTER(CvSeqReader), 1), # CvSeqReader* reader
+    ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
+    ('reader', CvSeqReader_p, 1), # CvSeqReader* reader
     ('count', c_int, 1), # int count
     ('dst', c_void_p, 1), # void* dst
     ('dt', c_char_p, 1), # const char* dt 
@@ -4940,7 +5186,7 @@ Initializes file node sequence reader
 
 # Registers new type
 cvRegisterType = cfunc('cvRegisterType', _cxDLL, None,
-    ('info', POINTER(CvTypeInfo), 1), # const CvTypeInfo* info 
+    ('info', CvTypeInfo_p, 1), # const CvTypeInfo* info 
 )
 cvRegisterType.__doc__ = """void cvRegisterType(const CvTypeInfo* info)
 
@@ -4957,7 +5203,7 @@ Unregisters the type
 """
 
 # Returns the beginning of type list
-cvFirstType = cfunc('cvFirstType', _cxDLL, POINTER(CvTypeInfo),
+cvFirstType = cfunc('cvFirstType', _cxDLL, CvTypeInfo_p,
 )
 cvFirstType.__doc__ = """CvTypeInfo* cvFirstType(voi)
 
@@ -4965,7 +5211,7 @@ Returns the beginning of type list
 """
 
 # Finds type by its name
-cvFindType = cfunc('cvFindType', _cxDLL, POINTER(CvTypeInfo),
+cvFindType = cfunc('cvFindType', _cxDLL, CvTypeInfo_p,
     ('type_name', c_char_p, 1), # const char* type_name 
 )
 cvFindType.__doc__ = """CvTypeInfo* cvFindType(const char* type_name)
@@ -4974,7 +5220,7 @@ Finds type by its name
 """
 
 # Returns type of the object
-cvTypeOf = cfunc('cvTypeOf', _cxDLL, POINTER(CvTypeInfo),
+cvTypeOf = cfunc('cvTypeOf', _cxDLL, CvTypeInfo_p,
     ('struct_ptr', c_void_p, 1), # const void* struct_ptr 
 )
 cvTypeOf.__doc__ = """CvTypeInfo* cvTypeOf(const void* struct_ptr)
@@ -4984,7 +5230,7 @@ Returns type of the object
 
 # Releases the object
 cvRelease = cfunc('cvRelease', _cxDLL, None,
-    ('struct_ptr', POINTER(c_void_p), 1), # void** struct_ptr 
+    ('struct_ptr', c_void_p_p, 1), # void** struct_ptr 
 )
 cvRelease.__doc__ = """void cvRelease(void** struct_ptr)
 
@@ -5016,7 +5262,7 @@ Saves object to file
 # Loads object from file
 cvLoad = cfunc('cvLoad', _cxDLL, c_void_p,
     ('filename', c_char_p, 1), # const char* filename
-    ('memstorage', POINTER(CvMemStorage), 1, None), # CvMemStorage* memstorage
+    ('memstorage', CvMemStorage_p, 1, None), # CvMemStorage* memstorage
     ('name', c_char_p, 1, None), # const char* name
     ('real_name', POINTER(c_char_p), 1, None), # const char** real_name
 )
@@ -5127,7 +5373,7 @@ CvErrorCallback = CFUNCTYPE(c_int, # int
 cvRedirectError = cfunc('cvRedirectError', _cxDLL, CvErrorCallback,
     ('error_handler', CvErrorCallback, 1), # CvErrorCallback error_handler
     ('userdata', c_void_p, 1, None), # void* userdata
-    ('prev_userdata', POINTER(c_void_p), 1, None), # void** prev_userdata
+    ('prev_userdata', c_void_p_p, 1, None), # void** prev_userdata
 )
 cvRedirectError.__doc__ = """CvErrorCallback cvRedirectError( CvErrorCallback error_handler, void* userdata=NULL, void** prev_userdata=NULL )
 
@@ -5200,7 +5446,7 @@ Returns number of tics per microsecond
 
 # Registers another module
 cvRegisterModule = cfunc('cvRegisterModule', _cxDLL, c_int,
-    ('module_info', POINTER(CvModuleInfo), 1), # const CvModuleInfo* module_info 
+    ('module_info', CvModuleInfo_p, 1), # const CvModuleInfo* module_info 
 )
 cvRegisterModule.__doc__ = """int cvRegisterModule(const CvModuleInfo* module_info)
 
@@ -5336,15 +5582,19 @@ __all__ = [x for x in locals().keys() \
         x.startswith('Cv') or \
         x.startswith('IPL') or \
         x.startswith('Ipl') or \
-        x.startswith('ipl')]
+        x.startswith('ipl') or \
+        x.startswith('sizeof_')]
         
 __all__ += [
-    'c_int_p', 'c_float_p', 'c_double_p', 'size_t', 
+    'c_int_p', 'c_int8_p', 'c_ubyte_p', 'c_float_p', 'c_double_p', 
+    'c_void_p_p', 'c_short_p',
     '_cxDLL', '_cvDLL', '_hgDLL',
     'cfunc',
-    '_Structure', 'ListPOINTER', 'ListPOINTER2', 'AdjustableListPOINTER',
+    '_Structure', 'ListPOINTER', 'ListPOINTER2', 'FlexibleListPOINTER',
     'ByRefArg', 'CallableToFunc',
-    'sdHack_iplimage', 'sdHack_cvmat', 'sdHack_contents_getattr', 'sdHack_del',
+    'sdHack_iplimage', 'sdHack_cvmat', 'sdHack_cvmat2', 
+    'sdHack_cvseq',
+    'sdHack_contents_getattr', 'sdHack_del',
     'sdAdd_autoclean',
 ]
         
