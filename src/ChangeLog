@@ -5,6 +5,88 @@ ctypes-opencv - A Python wrapper for OpenCV using ctypes
 Change Log
 ==========
 
+
+ctypes-opencv-0.3.0 development release
+---------------------------------------
+
+- Added a lot of demos
+- Restructured ctypes-opencv so that it could be distributed/installed using distutils
+- Added row iteration and column ieration for POINTER(CvMat)
+
+ctypes-opencv-0.2.2 bugfix release
+----------------------------------
+
+- Added cvInpaint() functions
+- Rearranged more functions
+- Rearranged planar subdivisions and added more missing functions
+- Rearranged functions in cv.h right before CvHistogram
+- added functions:
+   + cvPyrMeanShiftFiltering()
+   + cvWatershed()
+- Rearranged cv/cvtypes.h
+- Added structures
+   + CvPluginFuncInfo
+   + CvModuleInfo:
+   + CvChainPtReader
+- Added functions:
+   + cvGetNumThreads()
+   + SetNumThreads()
+   + GetThreadNum()
+- Rearranged Data Persistence and RTTI: Reading Data
+- Rearranged Miscellaneous functions
+- Added CV_NEXT_LINE_POINT()
+- Added cvAttrValue()
+- Expanded typeinfo structure:
+- Added functions related to CV_NODE:
+   + CV_NODE_TYPE()
+   + CV_NODE_IS_INT(flags)
+   + CV_NODE_IS_REAL(flags)
+   + CV_NODE_IS_STRING(flags)
+   + CV_NODE_IS_SEQ(flags)
+   + CV_NODE_IS_MAP(flags)
+   + CV_NODE_IS_COLLECTION(flags)
+   + CV_NODE_IS_FLOW(flags)
+   + CV_NODE_IS_EMPTY(flags)
+   + CV_NODE_IS_USER(flags)
+   + CV_NODE_HAS_NAME(flags)
+   + CV_NODE_SEQ_SIMPLE
+   + CV_NODE_SEQ_IS_SIMPLE(seq)
+- Added functions related to Reading Data from File Storage
+   + cvReadInt()
+   + cvReadIntByName()
+   + cvReadReal()
+   + cvReadRealByName()
+   + cvReadString()
+   + cvReadStringByName()
+- Rearranged trees and drawing functions
+- Added CvTreeNodeIterator structure
+- Added cvFont() function
+- Rearranged functions related to graph
+- Added CvGraphScanner structure
+- Added functions:
+   + cvSetRemoveByPtr()
+   + cvGetSetElem()
+   + cvGetGraphVtx()
+   + GraphVtxIdx()
+   + GraphEdgeIdx()
+   + cvGraphGetVtxCount()
+   + cvGraphGetEdgeCount()
+   + CV_IS_GRAPH_VERTEX_VISITED()
+   + CV_IS_GRAPH_EDGE_VISITED()
+- Rearranged cvseq and cvset functions
+- Added cvSliceLength(), cvSetNew() functions
+- Rearranged more cvseq functions
+- Added auto-clean feature to CvMemStorage
+- Added cvReduce(), cvNormalize()
+- Rearranged more functions
+- Added: cvCalcPCA(), cvProjectPCA(), cvBackProjectPCA()
+- Rearranged a lot more function
+- Added a few missing functions, like: cvCheckTermCriteria(), cvRange()
+- Added more features to ctypes-openc:
+   + indexing for POINTER(IplImage)
+   + indexing and slicing for POINTER(CvMat)
+   + many other things
+
 ctypes-opencv-0.2.1 stable release
 ----------------------------------
 
