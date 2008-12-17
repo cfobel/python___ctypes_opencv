@@ -1416,12 +1416,14 @@ class CvGraphScanner(_Structure):
         ('stack', CvSeq_p), # the graph vertex stack
         ('index', c_int), # the lower bound of certainly visited vertices
         ('mask', c_int), # event mask
-    ]    
-CvGraphScanner_p = POINTER(CvGraphScanner)
+    ]
     
-# Minh-Tri's hacks
-sdHack_del(CvGraphScanner_p)
-
+    def __del__(self):
+        _cvReleaseGraphScanner(pointer(self))
+        
+CvGraphScanner_p = POINTER(CvGraphScanner)
+CvGraphScanner_r = ByRefArg(CvGraphScanner)
+    
     
 #-----------------------------------------------------------------------------
 # Chain/Countour
@@ -4489,6 +4491,7 @@ Clone graph
 # -------- Functions dealing with CvGraphScanner --------
 
 
+# Finishes graph traversal procedure
 _cvReleaseGraphScanner = cfunc('cvReleaseGraphScanner', _cxDLL, None,
     ('scanner', ByRefArg(CvGraphScanner_p), 1), # CvGraphScanner** scanner 
 )
@@ -4500,23 +4503,20 @@ _cvCreateGraphScanner = cfunc('cvCreateGraphScanner', _cxDLL, CvGraphScanner_p,
 )
 
 # Creates structure for depth-first graph traversal
-def cvCreateGraphScanner(*args):
-    """CvGraphScanner* cvCreateGraphScanner(CvGraph* graph, CvGraphVtx* vtx=NULL, int mask=CV_GRAPH_ALL_ITEMS)
+def cvCreateGraphScanner(graph, vtx=None, mask=CV_GRAPH_ALL_ITEMS):
+    """CvGraphScanner cvCreateGraphScanner(CvGraph* graph, CvGraphVtx* vtx=NULL, int mask=CV_GRAPH_ALL_ITEMS)
 
     Creates structure for depth-first graph traversal
     """
-    z = _cvCreateGraphScanner(*args)
-    sdAdd_autoclean(z, _cvReleaseGraphScanner)
-    return z
-
-# Finishes graph traversal procedure
-cvReleaseGraphScanner = cvFree
+    z = _cvCreateGraphScanner(graph, vtx, mask)
+    z._depends = (graph,) # to make sure graph is always deleted after z is deleted
+    return z.contents if bool(z) else None
 
 # Makes one or more steps of the graph traversal procedure
 cvNextGraphItem = cfunc('cvNextGraphItem', _cxDLL, c_int,
-    ('scanner', CvGraphScanner_p, 1), # CvGraphScanner* scanner 
+    ('scanner', CvGraphScanner_r, 1), # CvGraphScanner* scanner 
 )
-cvNextGraphItem.__doc__ = """int cvNextGraphItem(CvGraphScanner* scanner)
+cvNextGraphItem.__doc__ = """int cvNextGraphItem(CvGraphScanner scanner)
 
 Makes one or more steps of the graph traversal procedure
 """

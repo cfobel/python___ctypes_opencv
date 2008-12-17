@@ -1056,7 +1056,7 @@ def cvFindContours(image, storage, header_size=sizeof(CvContour), mode=CV_RETR_L
     return nc, first
 
 # Initializes contour scanning process
-cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
+_cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
     ('image', CvArr_p, 1), # CvArr* image
     ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
     ('header_size', c_int, 1, sizeof(CvContour)), # int header_size
@@ -1064,10 +1064,15 @@ cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
     ('method', c_int, 1, CV_CHAIN_APPROX_SIMPLE), # int method
     ('offset', CvPoint, 1, cvPoint(0,0)), # CvPoint offset
 )
-cvStartFindContours.__doc__ = """CvContourScanner cvStartFindContours(CvArr* image, CvMemStorage* storage, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
 
-Initializes contour scanning process
-"""
+def cvStartFindContours(image, storage, header_size=sizeof(CvContour), mode=CV_RETR_LIST, method=CV_CHAIN_APPROX_SIMPLE, offset=CvPoint(0,0)):
+    """CvContourScanner cvStartFindContours(CvArr* image, CvMemStorage* storage, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
+
+    Initializes contour scanning process
+    """
+    z = _cvStartFindContours(image, storage, header_size, mode, method, offset)
+    z._depends = (storage,) # to make sure storage is always deleted after z is deleted
+    return z
 
 # Finds next contour in the image
 cvFindNextContour = cfunc('cvFindNextContour', _cvDLL, CvSeq_p,
@@ -1586,14 +1591,21 @@ Approximates Freeman chain(s) with polygonal curve
 """
 
 # Initializes chain reader
-cvStartReadChainPoints = cfunc('cvStartReadChainPoints', _cvDLL, None,
+_cvStartReadChainPoints = cfunc('cvStartReadChainPoints', _cvDLL, None,
     ('chain', CvChain_p, 1), # CvChain* chain
     ('reader', CvChainPtReader_r, 1), # CvChainPtReader* reader 
 )
-cvStartReadChainPoints.__doc__ = """void cvStartReadChainPoints(CvChain* chain, CvChainPtReader reader)
 
-Initializes chain reader
-"""
+def cvStartReadChainPoints(chain):
+    """CvChainPtReader cvStartReadChainPoints(CvChain* chain)
+
+    Initializes chain reader
+    [ctypes-opencv] *creates* a chain reader before initializing it
+    """
+    z = CvChainPtReader()
+    _cvStartReadChainPoints(chain, z)
+    z._depends = (chain,) # to make sure chain is always deleted after z is deleted
+    return z.contents if bool(z) else None
 
 # Gets next chain point
 cvReadChainPoint = cfunc('cvReadChainPoint', _cvDLL, CvPoint,
