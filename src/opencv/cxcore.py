@@ -1046,6 +1046,7 @@ CvMemStoragePos_p = POINTER(CvMemStoragePos)
 class CvSeqBlock(_Structure): # forward declaration
     pass
 CvSeqBlock_p = POINTER(CvSeqBlock)
+CvSeqBlock_r = ByRefArg(CvSeqBlock)
 CvSeqBlock._fields_ = [
     ('prev', CvSeqBlock_p), # previous sequence block
     ('next', CvSeqBlock_p), # next sequence block
@@ -3991,9 +3992,9 @@ def CV_GET_SEQ_ELEM(TYPE, seq, index):
 cvSeqElemIdx = cfunc('cvSeqElemIdx', _cxDLL, c_int,
     ('seq', CvSeq_p, 1), # const CvSeq* seq
     ('element', c_void_p, 1), # const void* element
-    ('block', POINTER(CvSeqBlock_p), 1, None), # CvSeqBlock** block
+    ('block', ByRefArg(CvSeqBlock_p), 1, None), # CvSeqBlock** block
 )
-cvSeqElemIdx.__doc__ = """int cvSeqElemIdx(const CvSeq* seq, const void* element, CvSeqBlock** block=NULL)
+cvSeqElemIdx.__doc__ = """int cvSeqElemIdx(const CvSeq* seq, const void* element, CvSeqBlock* block=NULL)
 
 Returns index of concrete sequence element
 """
@@ -4109,9 +4110,9 @@ cvMakeSeqHeaderForArray = cfunc('cvMakeSeqHeaderForArray', _cxDLL, CvSeq_p,
     ('elements', c_void_p, 1), # void* elements
     ('total', c_int, 1), # int total
     ('seq', CvSeq_p, 1), # CvSeq* seq
-    ('block', CvSeqBlock_p, 1), # CvSeqBlock* block 
+    ('block', CvSeqBlock_r, 1), # CvSeqBlock* block 
 )
-cvMakeSeqHeaderForArray.__doc__ = """CvSeq* cvMakeSeqHeaderForArray(int seq_type, int header_size, int elem_size,                                void* elements, int total,                                CvSeq* seq, CvSeqBlock* block)
+cvMakeSeqHeaderForArray.__doc__ = """CvSeq* cvMakeSeqHeaderForArray(int seq_type, int header_size, int elem_size, void* elements, int total, CvSeq* seq, CvSeqBlock block)
 
 Constructs sequence from array
 """

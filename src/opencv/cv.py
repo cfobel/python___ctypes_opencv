@@ -1763,9 +1763,9 @@ cvPointSeqFromMat = cfunc('cvPointSeqFromMat', _cvDLL, CvSeq_p,
     ('seq_kind', c_int, 1), # int seq_kind
     ('mat', CvArr_p, 1), # const CvArr* mat
     ('contour_header', CvContour_p, 1), # CvContour* contour_header
-    ('block', CvSeqBlock_p, 1), # CvSeqBlock* block 
+    ('block', CvSeqBlock_r, 1), # CvSeqBlock* block 
 )
-cvPointSeqFromMat.__doc__ = """CvSeq* cvPointSeqFromMat(int seq_kind, const CvArr* mat, CvContour* contour_header, CvSeqBlock* block)
+cvPointSeqFromMat.__doc__ = """CvSeq* cvPointSeqFromMat(int seq_kind, const CvArr* mat, CvContour* contour_header, CvSeqBlock block)
 
 Initializes point sequence header from a point vector
 """
