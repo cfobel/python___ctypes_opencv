@@ -277,23 +277,16 @@ class CvCapture(_Structure):
 CvCapture_p = POINTER(CvCapture)
 CvCapture_r = ByRefArg(CvCapture)
     
-# CvCapture
-class CvVideoWriter(_Structure):
-    _fields_ = [] # seriously, no field at all
-CvVideoWriter_p = POINTER(CvVideoWriter)
-    
-# Minh-Tri's hacks
-sdHack_del(CvVideoWriter_p)
-
+# Releases the CvCapture structure
 _cvReleaseCapture = cfunc('cvReleaseCapture', _hgDLL, None,
     ('capture', ByRefArg(CvCapture_p), 1), # CvCapture** capture 
 )
 
+# Initializes capturing video from file
 _cvCreateFileCapture = cfunc('cvCreateFileCapture', _hgDLL, CvCapture_p,
     ('filename', c_char_p, 1), # const char* filename 
 )
 
-# Initializes capturing video from file
 def cvCreateFileCapture(filename):
     """CvCapture cvCreateFileCapture(const char* filename)
 
@@ -301,18 +294,16 @@ def cvCreateFileCapture(filename):
     [ctypes-opencv] returns None if no capture is created
     """
     z = _cvCreateFileCapture(filename)
-    # sdAdd_autoclean(z, _cvReleaseCapture)
-    # return z
     return z.content if bool(z) else None
 
 cvCaptureFromFile = cvCreateFileCapture
 cvCaptureFromAVI = cvCaptureFromFile
 
+# Initializes capturing video from camera
 _cvCreateCameraCapture = cfunc('cvCreateCameraCapture', _hgDLL, CvCapture_p,
     ('index', c_int, 1), # int index 
 )
 
-# Initializes capturing video from camera
 def cvCreateCameraCapture(index):
     """CvCapture cvCreateCameraCapture(int index)
 
@@ -320,14 +311,9 @@ def cvCreateCameraCapture(index):
     [ctypes-opencv] returns None if no capture is created
     """
     z = _cvCreateCameraCapture(index)
-    # sdAdd_autoclean(z, _cvReleaseCapture)
-    # return z
     return z.contents if bool(z) else None
     
 cvCaptureFromCAM = cvCreateCameraCapture
-
-# Releases the CvCapture structure
-cvReleaseCapture = cvFree
 
 # Grabs frame from camera or file
 cvGrabFrame = cfunc('cvGrabFrame', _hgDLL, c_int,
@@ -402,10 +388,22 @@ cvSetCaptureProperty.__doc__ = """int cvSetCaptureProperty(CvCapture capture, in
 Sets video capturing properties
 """
 
+# CvVideoWriter, supposed to be a black box
+class CvVideoWriter(_Structure):
+    _fields_ = []
+    
+    def __del__(self):
+        _cvReleaseVideoWriter(pointer(self))
+        
+CvVideoWriter_p = POINTER(CvVideoWriter)
+CvVideoWriter_r = ByRefArg(CvVideoWriter)
+    
+# Releases AVI writer
 _cvReleaseVideoWriter = cfunc('cvReleaseVideoWriter', _hgDLL, None,
     ('writer', ByRefArg(CvVideoWriter_p), 1), # CvVideoWriter** writer 
 )
 
+# Creates video file writer
 _cvCreateVideoWriter = cfunc('cvCreateVideoWriter', _hgDLL, CvVideoWriter_p,
     ('filename', c_char_p, 1), # const char* filename
     ('fourcc', c_int, 1), # int fourcc
@@ -414,27 +412,23 @@ _cvCreateVideoWriter = cfunc('cvCreateVideoWriter', _hgDLL, CvVideoWriter_p,
     ('is_color', c_int, 1, 1), # int is_color
 )
 
-# Creates video file writer
 def cvCreateVideoWriter(filename, fourcc, fps, frame_size, is_color=1):
-    """CvVideoWriter* cvCreateVideoWriter(const char* filename, int fourcc, double fps, CvSize frame_size, int is_color=1)
+    """CvVideoWriter cvCreateVideoWriter(const char* filename, int fourcc, double fps, CvSize frame_size, int is_color=1)
 
     Creates video file writer
+    [ctypes-opencv] returns None if no writer is created
     """
     z = _cvCreateVideoWriter(filename, fourcc, fps, frame_size, is_color)
-    sdAdd_autoclean(z, _cvReleaseVideoWriter)
-    return z
+    return z.contents if bool(z) else None
 
 cvCreateAVIWriter = cvCreateVideoWriter
 
-# Releases AVI writer
-cvReleaseVideoWriter = cvFree
-
 # Writes a frame to video file
 cvWriteFrame = cfunc('cvWriteFrame', _hgDLL, c_int,
-    ('writer', CvVideoWriter_p, 1), # CvVideoWriter* writer
+    ('writer', CvVideoWriter_r, 1), # CvVideoWriter* writer
     ('image', IplImage_p, 1), # const IplImage* image 
 )
-cvWriteFrame.__doc__ = """int cvWriteFrame(CvVideoWriter* writer, const IplImage* image)
+cvWriteFrame.__doc__ = """int cvWriteFrame(CvVideoWriter writer, const IplImage* image)
 
 Writes a frame to video file
 """
