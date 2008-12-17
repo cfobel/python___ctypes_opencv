@@ -4232,9 +4232,9 @@ Creates empty set
 cvSetAdd = cfunc('cvSetAdd', _cxDLL, c_int,
     ('set_header', CvSet_p, 1), # CvSet* set_header
     ('elem', CvSetElem_r, 1, None), # CvSetElem* elem
-    ('inserted_elem', POINTER(CvSetElem_p), 1, None), # CvSetElem** inserted_elem
+    ('inserted_elem', ByRefArg(CvSetElem_p), 1, None), # CvSetElem** inserted_elem
 )
-cvSetAdd.__doc__ = """int cvSetAdd(CvSet* set_header, CvSetElem elem=NULL, CvSetElem** inserted_elem=NULL)
+cvSetAdd.__doc__ = """int cvSetAdd(CvSet* set_header, CvSetElem elem=None, CvSetElem* inserted_elem=None)
 
 Occupies a node in the set
 """
@@ -4324,9 +4324,9 @@ Creates empty graph
 cvGraphAddVtx = cfunc('cvGraphAddVtx', _cxDLL, c_int,
     ('graph', CvGraph_p, 1), # CvGraph* graph
     ('vtx', CvGraphVtx_r, 1, None), # const CvGraphVtx* vtx
-    ('inserted_vtx', POINTER(CvGraphVtx_p), 1, None), # CvGraphVtx** inserted_vtx
+    ('inserted_vtx', ByRefArg(CvGraphVtx_p), 1, None), # CvGraphVtx** inserted_vtx
 )
-cvGraphAddVtx.__doc__ = """int cvGraphAddVtx(CvGraph* graph, const CvGraphVtx vtx=NULL, CvGraphVtx** inserted_vtx=NULL)
+cvGraphAddVtx.__doc__ = """int cvGraphAddVtx(CvGraph* graph, const CvGraphVtx vtx=None, CvGraphVtx* inserted_vtx=None)
 
 Adds vertex to graph
 """
@@ -4357,9 +4357,9 @@ cvGraphAddEdge = cfunc('cvGraphAddEdge', _cxDLL, c_int,
     ('start_idx', c_int, 1), # int start_idx
     ('end_idx', c_int, 1), # int end_idx
     ('edge', CvGraphEdge_r, 1, None), # const CvGraphEdge* edge
-    ('inserted_edge', POINTER(CvGraphEdge_p), 1, None), # CvGraphEdge** inserted_edge
+    ('inserted_edge', ByRefArg(CvGraphEdge_p), 1, None), # CvGraphEdge** inserted_edge
 )
-cvGraphAddEdge.__doc__ = """int cvGraphAddEdge(CvGraph* graph, int start_idx, int end_idx, const CvGraphEdge edge=NULL, CvGraphEdge** inserted_edge=NULL)
+cvGraphAddEdge.__doc__ = """int cvGraphAddEdge(CvGraph* graph, int start_idx, int end_idx, const CvGraphEdge edge=None, CvGraphEdge* inserted_edge=None)
 
 Adds edge to graph
 """
@@ -4370,9 +4370,9 @@ cvGraphAddEdgeByPtr = cfunc('cvGraphAddEdgeByPtr', _cxDLL, c_int,
     ('start_vtx', CvGraphVtx_r, 1), # CvGraphVtx* start_vtx
     ('end_vtx', CvGraphVtx_r, 1), # CvGraphVtx* end_vtx
     ('edge', CvGraphEdge_r, 1, None), # const CvGraphEdge* edge
-    ('inserted_edge', POINTER(CvGraphEdge_p), 1, None), # CvGraphEdge** inserted_edge
+    ('inserted_edge', ByRefArg(CvGraphEdge_p), 1, None), # CvGraphEdge** inserted_edge
 )
-cvGraphAddEdgeByPtr.__doc__ = """int cvGraphAddEdgeByPtr(CvGraph* graph, CvGraphVtx start_vtx, CvGraphVtx end_vtx, const CvGraphEdge edge=NULL, CvGraphEdge** inserted_edge=NULL)
+cvGraphAddEdgeByPtr.__doc__ = """int cvGraphAddEdgeByPtr(CvGraph* graph, CvGraphVtx start_vtx, CvGraphVtx end_vtx, const CvGraphEdge edge=None, CvGraphEdge* inserted_edge=None)
 
 Adds edge to graph
 """
