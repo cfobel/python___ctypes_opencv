@@ -1296,6 +1296,21 @@ Inpaints the selected region in the image
 #-----------------------------------------------------------------------------
 
 
+class CvHistogram(_Structure):
+    _fields_ = [('type', c_int),
+                ('bins', CvArr_p),
+                ('thresh', (c_float*2)*CV_MAX_DIM), # for uniform histograms
+                ('thresh2', POINTER(c_float_p)), # for non-uniform histograms
+                ('mat', CvMatND)] # embedded matrix header for array histograms
+                
+    def __del__(self):
+        if self._owner is True:
+            _cvReleaseHist(pointer(self))
+        
+CvHistogram_p = POINTER(CvHistogram)
+CvHistogram_r = ByRefArg(CvHistogram)
+                
+
 # Releases histogram
 _cvReleaseHist = cfunc('cvReleaseHist', _cvDLL, None,
     ('hist', ByRefArg(CvHistogram_p), 1), # CvHistogram** hist 

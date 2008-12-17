@@ -1141,22 +1141,31 @@ class CvSparseMat(_Structure):
                 ('valoffset', c_int),
                 ('idxoffset', c_int),
                 ('size', c_int * CV_MAX_DIM)]
+                
+    def __del__(self):
+        _cvReleaseSparseMat(pointer(self))
+        
 CvSparseMat_p = POINTER(CvSparseMat)
+CvSparseMat_r = ByRefArg(CvSparseMat)
                 
 class CvSparseNode(_Structure):
     pass
 CvSparseNode_p = POINTER(CvSparseNode)
+CvSparseNode_r = ByRefArg(CvSparseNode)
 CvSparseNode._fields_ = [
         ('hashval', c_uint),
-        ('next', CvSparseNode_p)
+        ('next', CvSparseNode_p),
     ]
 
 class CvSparseMatIterator(_Structure):
     _fields_ = [
         ('mat', CvSparseMat_p),
         ('node', CvSparseNode_p),
+        ('curidx', c_int),
     ]
-
+CvSparseMatIterator_p = POINTER(CvSparseMatIterator)
+CvSparseMatIterator_r = ByRefArg(CvSparseMatIterator)
+    
 #-----------------------------------------------------------------------------
 # Histogram
 #-----------------------------------------------------------------------------
@@ -1174,20 +1183,6 @@ CV_HIST_TREE          = CV_HIST_SPARSE
 
 CV_HIST_UNIFORM       = 1
 
-class CvHistogram(_Structure):
-    _fields_ = [('type', c_int),
-                ('bins', CvArr_p),
-                ('thresh', (c_float*2)*CV_MAX_DIM), # for uniform histograms
-                ('thresh2', POINTER(c_float_p)), # for non-uniform histograms
-                ('mat', CvMatND)] # embedded matrix header for array histograms
-                
-    def __del__(self):
-        if self._owner is True:
-            _cvReleaseHist(pointer(self))
-        
-CvHistogram_p = POINTER(CvHistogram)
-CvHistogram_r = ByRefArg(CvHistogram)
-                
 
 #-----------------------------------------------------------------------------
 # CvRect
@@ -2180,61 +2175,72 @@ def cvCloneMatND(*args):
     sdAdd_autoclean(z, _cvReleaseMat)
     return z
 
+# Deallocates sparse array
 _cvReleaseSparseMat = cfunc('cvReleaseSparseMat', _cxDLL, None,
     ('mat', ByRefArg(CvSparseMat_p), 1), # CvSparseMat** mat 
 )
 
+# Creates sparse array
 _cvCreateSparseMat = cfunc('cvCreateSparseMat', _cxDLL, CvSparseMat_p,
     ('dims', c_int, 1), # int dims
     ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type 
 )
 
-# Creates sparse array
 def cvCreateSparseMat(sizes, cvmat_type):
-    """CvSparseMat* cvCreateSparseMat(list_or_tuple_of_int sizes, int type)
+    """CvSparseMat cvCreateSparseMat(list_or_tuple_of_int sizes, int type)
 
     Creates sparse array
     """
-    z = _cvCreateSparseMat(len(sizes), sizes, cvmat_type)
-    sdAdd_autoclean(z, _cvReleaseSparseMat)
-    return z
-
-# Deallocates sparse array
-cvReleaseSparseMat = cvFree
-
-_cvCloneSparseMat = cfunc('cvCloneSparseMat', _cxDLL, CvSparseMat_p,
-    ('mat', CvSparseMat_p, 1), # const CvSparseMat* mat 
-)
+    return deref(_cvCreateSparseMat(len(sizes), sizes, cvmat_type))
 
 # Creates full copy of sparse array
-def cvCloneSparseMat(*args):
-    """CvSparseMat* cvCloneSparseMat(const CvSparseMat* mat)
+_cvCloneSparseMat = cfunc('cvCloneSparseMat', _cxDLL, CvSparseMat_p,
+    ('mat', CvSparseMat_r, 1), # const CvSparseMat* mat 
+)
+
+def cvCloneSparseMat(mat):
+    """CvSparseMat cvCloneSparseMat(const CvSparseMat mat)
 
     Creates full copy of sparse array
     """
-    z = _cvCloneSparseMat(*args)
-    sdAdd_autoclean(z, _cvReleaseSparseMat)
-    return z
+    return deref(_cvCloneSparseMat(mat))
+    
+# Initializes sparse array elements iterator
+_cvInitSparseMatIterator = cfunc('cvInitSparseMatIterator', _cxDLL, CvSparseNode_p,
+    ('mat', CvSparseMat_r, 1), # const CvSparseMat* mat
+    ('mat_iterator', CvSparseMatIterator_r, 1), # CvSparseMatIterator* mat_iterator
+)
 
-# ------------------------------------------------
-# not implemented yet
-# TODO: implement these methods        
-# ------------------------------------------------
+def cvInitSparseMatIterator(mat):
+    """(CvSparseMatIterator iter, CvSparseNode first) = cvInitSparseMatIterator(CvSparseMat node)
+    
+    Initializes sparse array elements iterator
+    [ctypes-opencv] *Creates* CvSparseMatIterator before initializing
+    """
+    iter = CvSparseMatIterator()
+    z = deref(_cvInitSparseMatIterator(mat, iter), mat)
+    iter._depends = (mat,) # to make sure mat is deleted after iter is deleted
+    return (iter, z)
+    
 # Initializes sparse array elements iterator
-#cvInitSparseMatIterator = _cxDLL.cvInitSparseMatIterator
-#cvInitSparseMatIterator.restype = CvSparseNode_p # CvSparseNode*
-#cvInitSparseMatIterator.argtypes = [
-#    c_void_p, # const CvSparseMat* mat
-#    c_void_p # CvSparseMatIterator* mat_iterator
-#    ]
-#
-# Initializes sparse array elements iterator
-#cvGetNextSparseNode = _cxDLL.cvGetNextSparseNode
-#cvGetNextSparseNode.restype = CvSparseNode_p # CvSparseNode*
-#cvGetNextSparseNode.argtypes = [
-#    c_void_p # CvSparseMatIterator* mat_iterator
-#    ]
+def cvGetNextSparseNode(mat_iterator):
+    """CvSparseNode cvGetNextSparseNode(CvSparseMatIterator mat_iterator)
+    
+    Initializes sparse array elements iterator
+    """
+    if bool(mat_iterator.node.contents.next):
+        mat_iterator.node = mat_iterator.node.contents.next
+        return deref(mat_iterator.node)
+
+    mat_iterator.curidx += 1
+    for idx in xrange(mat_iterator.curidx, mat_iterator.mat.contents.hashsize):
+        node = cast(mat_iterator.mat.contents.hashtable, POINTER(CvSparseNode_p))[idx]
+        if bool(node):
+            mat_iterator.curidx = idx
+            mat_iterator.node = node
+            return node
+    return None
 
         
 #-----------------------------------------------------------------------------
