@@ -702,10 +702,38 @@ CV_SHAPE_CROSS = 1
 CV_SHAPE_ELLIPSE = 2
 CV_SHAPE_CUSTOM = 100
 
+class IplConvKernel(_Structure):
+    _fields_ = [
+        ('nCols', c_int),
+        ('nRows', c_int),
+        ('anchorX', c_int),
+        ('anchorY', c_int),
+        ('values', c_int_p),
+        ('nShiftR', c_int),
+    ]
+    
+    def __del__(self):
+        _cvReleaseStructuringElement(pointer(self))
+    
+IplConvKernel_p = POINTER(IplConvKernel)
+IplConvKernel_r = ByRefArg(IplConvKernel)
+    
+class IplConvKernelFP(_Structure):
+    _fields_ = [
+        ('nCols', c_int),
+        ('nRows', c_int),
+        ('anchorX', c_int),
+        ('anchorY', c_int),
+        ('values', c_int_p),
+    ]    
+IplConvKernelFP_p = POINTER(IplConvKernelFP)
+
+# Deletes structuring element
 _cvReleaseStructuringElement = cfunc('cvReleaseStructuringElement', _cvDLL, None,
     ('element', ByRefArg(IplConvKernel_p), 1), # IplConvKernel** element 
 )
 
+# Creates structuring element
 _cvCreateStructuringElementEx = cfunc('cvCreateStructuringElementEx', _cvDLL, IplConvKernel_p,
     ('cols', c_int, 1), # int cols
     ('rows', c_int, 1), # int rows
@@ -715,27 +743,22 @@ _cvCreateStructuringElementEx = cfunc('cvCreateStructuringElementEx', _cvDLL, Ip
     ('values', c_int_p, 1, None), # int* values
 )
 
-# Creates structuring element
 def cvCreateStructuringElementEx(cols, rows, anchor_x, anchor_y, shape, values=None):
-    """IplConvKernel* cvCreateStructuringElementEx(int cols, int rows, int anchor_x, int anchor_y, int shape, int* values=NULL)
+    """IplConvKernel cvCreateStructuringElementEx(int cols, int rows, int anchor_x, int anchor_y, int shape, int* values=NULL)
 
     Creates structuring element
+    [ctypes-opencv] returns None if IplConvKernel is not created
     """
-    z = _cvCreateStructuringElementEx(cols, rows, anchor_x, anchor_y, shape, values)
-    sdAdd_autoclean(z, _cvReleaseStructuringElement)
-    return z
-
-# Deletes structuring element
-cvReleaseStructuringElement = cvFree
+    return deref(_cvCreateStructuringElementEx(cols, rows, anchor_x, anchor_y, shape, values))
 
 # Erodes image by using arbitrary structuring element
 cvErode = cfunc('cvErode', _cvDLL, None,
     ('src', CvArr_p, 1), # const CvArr* src
     ('dst', CvArr_p, 1), # CvArr* dst
-    ('element', IplConvKernel_p, 1, None), # IplConvKernel* element
+    ('element', IplConvKernel_r, 1, None), # IplConvKernel* element
     ('iterations', c_int, 1, 1), # int iterations
 )
-cvErode.__doc__ = """void cvErode(const CvArr* src, CvArr* dst, IplConvKernel* element=NULL, int iterations=1)
+cvErode.__doc__ = """void cvErode(const CvArr* src, CvArr* dst, IplConvKernel element=NULL, int iterations=1)
 
 Erodes image by using arbitrary structuring element
 """
@@ -744,10 +767,10 @@ Erodes image by using arbitrary structuring element
 cvDilate = cfunc('cvDilate', _cvDLL, None,
     ('src', CvArr_p, 1), # const CvArr* src
     ('dst', CvArr_p, 1), # CvArr* dst
-    ('element', IplConvKernel_p, 1, None), # IplConvKernel* element
+    ('element', IplConvKernel_r, 1, None), # IplConvKernel* element
     ('iterations', c_int, 1, 1), # int iterations
 )
-cvDilate.__doc__ = """void cvDilate(const CvArr* src, CvArr* dst, IplConvKernel* element=NULL, int iterations=1)
+cvDilate.__doc__ = """void cvDilate(const CvArr* src, CvArr* dst, IplConvKernel element=NULL, int iterations=1)
 
 Dilates image by using arbitrary structuring element
 """
@@ -763,11 +786,11 @@ cvMorphologyEx = cfunc('cvMorphologyEx', _cvDLL, None,
     ('src', CvArr_p, 1), # const CvArr* src
     ('dst', CvArr_p, 1), # CvArr* dst
     ('temp', CvArr_p, 1), # CvArr* temp
-    ('element', IplConvKernel_p, 1), # IplConvKernel* element
+    ('element', IplConvKernel_r, 1), # IplConvKernel* element
     ('operation', c_int, 1), # int operation
     ('iterations', c_int, 1, 1), # int iterations
 )
-cvMorphologyEx.__doc__ = """void cvMorphologyEx(const CvArr* src, CvArr* dst, CvArr* temp, IplConvKernel* element, int operation, int iterations=1)
+cvMorphologyEx.__doc__ = """void cvMorphologyEx(const CvArr* src, CvArr* dst, CvArr* temp, IplConvKernel element, int operation, int iterations=1)
 
 Performs advanced morphological transformations
 """

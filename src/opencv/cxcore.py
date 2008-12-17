@@ -757,30 +757,6 @@ class IplROI(_Structure):
     ]    
 IplROI_p = POINTER(IplROI)
 
-class IplConvKernel(_Structure):
-    _fields_ = [
-        ('nCols', c_int),
-        ('nRows', c_int),
-        ('anchorX', c_int),
-        ('anchorY', c_int),
-        ('values', c_int_p),
-        ('nShiftR', c_int),
-    ]
-IplConvKernel_p = POINTER(IplConvKernel)
-    
-# Minh-Tri's hacks
-sdHack_del(IplConvKernel_p)
-
-class IplConvKernelFP(_Structure):
-    _fields_ = [
-        ('nCols', c_int),
-        ('nRows', c_int),
-        ('anchorX', c_int),
-        ('anchorY', c_int),
-        ('values', c_int_p),
-    ]    
-IplConvKernelFP_p = POINTER(IplConvKernelFP)
-
 IPL_IMAGE_HEADER = 1
 IPL_IMAGE_DATA = 2
 IPL_IMAGE_ROI = 4
@@ -990,6 +966,7 @@ class CvMatNDdim(_Structure):
     _fields_ = [("size", c_int),
                 ("step", c_int)]                
 CvMatNDdim_p = POINTER(CvMatNDdim)
+CvMatNDdim_r = ByRefArg(CvMatNDdim)
                 
 class CvMatND(_Structure):
     _fields_ = [("type", c_int),
@@ -998,11 +975,12 @@ class CvMatND(_Structure):
                 ("hdrefcount", c_int),
                 ("data", CvMatData),
                 ("dim", CvMatNDdim*CV_MAX_DIM)]
+                
+    def __del__(self):
+        _cvReleaseMat(pointer(self))
+                
 CvMatND_p = POINTER(CvMatND)
-
-# Minh-Tri's hacks
-sdHack_contents_getattr(CvMatND_p)
-sdHack_del(CvMatND_p)
+CvMatND_r = ByRefArg(CvMatND)
 
 
 #-----------------------------------------------------------------------------
@@ -2122,62 +2100,58 @@ _cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, CvMatND_p,
 
 # Creates new matrix header
 def cvCreateMatNDHeader(sizes, cvmat_type):
-    """CvMatND* cvCreateMatNDHeader(list_or_tuple_of_int sizes, int type)
+    """CvMatND cvCreateMatNDHeader(list_or_tuple_of_int sizes, int type)
 
     Creates new matrix header
+    [ctypes-opencv] returns None if CvMatND is not created
     """
-    z = _cvCreateMatNDHeader(len(sizes), sizes, cvmat_type)
-    sdAdd_autoclean(z, _cvReleaseMat)
-    return z
+    return deref(_cvCreateMatNDHeader(len(sizes), sizes, cvmat_type))
 
+# Creates multi-dimensional dense array
 _cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, CvMatND_p,
     ('dims', c_int, 1), # int dims
     ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type 
 )
 
-# Creates multi-dimensional dense array
 def cvCreateMatND(sizes, cvmat_type):
-    """CvMatND* cvCreateMatND(list_or_tuple_of_int sizes, int type)
+    """CvMatND cvCreateMatND(list_or_tuple_of_int sizes, int type)
 
     Creates multi-dimensional dense array
+    [ctypes-opencv] returns None if CvMatND is not created
     """
-    z = _cvCreateMatND(len(sizes), sizes, cvmat_type)
-    sdAdd_autoclean(z, _cvReleaseMat)
-    return z
+    return deref(_cvCreateMatND(len(sizes), sizes, cvmat_type))
 
+# Initializes multi-dimensional array header
 _cvInitMatNDHeader = cfunc('cvInitMatNDHeader', _cxDLL, CvMatND_p,
-    ('mat', CvMatND_p, 1), # CvMatND* mat
+    ('mat', CvMatND_r, 1), # CvMatND* mat
     ('dims', c_int, 1), # int dims
     ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type
     ('data', c_void_p, 1, None), # void* data
 )
 
-# Initializes multi-dimensional array header
 def cvInitMatNDHeader(mat, sizes, cvmat_type, data=None):
-    """CvMatND* cvInitMatNDHeader(CvMatND* mat, list_or_tuple_of_int sizes, int type, void* data=NULL)
+    """CvMatND cvInitMatNDHeader(CvMatND mat, list_or_tuple_of_int sizes, int type, void* data=NULL)
 
     Initializes multi-dimensional array header
     """
-    return _cvInitMatNDHeader(mat, len(sizes), sizes, cvmat_type, data)
+    _cvInitMatNDHeader(mat, len(sizes), sizes, cvmat_type, data)
+    if data is not None:
+        mat._depends = (data,)
+    return mat
     
-# Releases CvMatND
-cvReleaseMatND = cvReleaseMat
-
 _cvCloneMatND = cfunc('cvCloneMatND', _cxDLL, CvMatND_p,
-    ('mat', CvMatND_p, 1), # const CvMatND* mat 
+    ('mat', CvMatND_r, 1), # const CvMatND* mat 
 )
 
 # Creates full copy of multi-dimensional array
-def cvCloneMatND(*args):
-    """CvMatND* cvCloneMatND(const CvMatND* mat)
+def cvCloneMatND(mat):
+    """CvMatND cvCloneMatND(const CvMatND mat)
 
     Creates full copy of multi-dimensional array
     """
-    z = _cvCloneMatND(*args)
-    sdAdd_autoclean(z, _cvReleaseMat)
-    return z
+    return deref(_cvCloneMatND(mat))
 
 # Deallocates sparse array
 _cvReleaseSparseMat = cfunc('cvReleaseSparseMat', _cxDLL, None,
