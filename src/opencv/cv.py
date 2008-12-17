@@ -2173,7 +2173,7 @@ CV_VALUE = 1
 CV_ARRAY = 2
 
 # Changes contour position to minimize its energy
-cvSnakeImage = cfunc('cvSnakeImage', _cvDLL, None,
+_cvSnakeImage = cfunc('cvSnakeImage', _cvDLL, None,
     ('image', IplImage_p, 1), # const IplImage* image
     ('points', CvPoint_p, 1), # CvPoint* points
     ('length', c_int, 1), # int length
@@ -2185,10 +2185,25 @@ cvSnakeImage = cfunc('cvSnakeImage', _cvDLL, None,
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
     ('calc_gradient', c_int, 1, 1), # int calc_gradient
 )
-cvSnakeImage.__doc__ = """void cvSnakeImage(const IplImage* image, CvPoint* points, int length, float* alpha, float* beta, float* gamma, int coeff_usage, CvSize win, CvTermCriteria criteria, int calc_gradient=1)
 
-Changes contour position to minimize its energy
-"""
+def cvSnakeImage(image, points, alpha, beta, gamma, coeff_usage, win, criteria, calc_gradient=1):
+    """void cvSnakeImage(const IplImage* image, list_or_tuple_of_CvPoint points, list_or_tuple_of_float alpha, list_or_tuple_of_float beta, list_or_tuple_of_float gamma, int coeff_usage, CvSize win, CvTermCriteria criteria, int calc_gradient=1)
+
+    Changes contour position to minimize its energy
+    """
+    npts = len(points)
+    
+    pts2 = (CvPoint*npts)()
+    alpha2 = (c_float*npts)()
+    beta2 = (c_float*npts)()
+    gamma2 = (c_float*npts)()
+    for i in xrange(npts):
+        pts2[i] = points[i]
+        alpha2[i] = alpha[i]
+        beta2[i] = beta[i]
+        gamma2[i] = gamma[i]
+            
+    _cvSnakeImage(image, pts2, alpha2, beta2, gamma2, coeff_usage, win, criteria, calc_gradient)
 
 
 #-----------------------------------------------------------------------------

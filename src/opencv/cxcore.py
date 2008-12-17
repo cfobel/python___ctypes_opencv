@@ -1244,6 +1244,7 @@ class CvPoint(_Structure):
     _fields_ = [("x", c_int),
                 ("y", c_int)]
 CvPoint_p = POINTER(CvPoint)
+CvPoint_r = ByRefArg(CvPoint)
 sizeof_CvPoint = sizeof(CvPoint)
                 
 def cvPoint(x, y):
@@ -4922,10 +4923,10 @@ def CV_NEXT_LINE_POINT(line_iterator):
 # Clips the line against the image rectangle
 cvClipLine = cfunc('cvClipLine', _cxDLL, c_int,
     ('img_size', CvSize, 1), # CvSize img_size
-    ('pt1', CvPoint_p, 1), # CvPoint* pt1
-    ('pt2', CvPoint_p, 1), # CvPoint* pt2 
+    ('pt1', CvPoint_r, 1), # CvPoint* pt1
+    ('pt2', CvPoint_r, 1), # CvPoint* pt2 
 )
-cvClipLine.__doc__ = """int cvClipLine(CvSize img_size, CvPoint* pt1, CvPoint* pt2)
+cvClipLine.__doc__ = """int cvClipLine(CvSize img_size, CvPoint pt1, CvPoint pt2)
 
 Clips the line against the image rectangle
 """
@@ -4937,10 +4938,10 @@ cvEllipse2Poly = cfunc('cvEllipse2Poly', _cxDLL, c_int,
     ('angle', c_int, 1), # int angle
     ('arc_start', c_int, 1), # int arc_start
     ('arc_end', c_int, 1), # int arc_end
-    ('pts', CvPoint_p, 1), # CvPoint* pts
+    ('pts', CvPoint_r, 1), # CvPoint* pts
     ('delta', c_int, 1), # int delta 
 )
-cvEllipse2Poly.__doc__ = """int cvEllipse2Poly(CvPoint center, CvSize axes, int angle, int arc_start, int arc_end, CvPoint* pts, int delta)
+cvEllipse2Poly.__doc__ = """int cvEllipse2Poly(CvPoint center, CvSize axes, int angle, int arc_start, int arc_end, CvPoint pts, int delta)
 
 Approximates elliptic arc with polyline
 """
