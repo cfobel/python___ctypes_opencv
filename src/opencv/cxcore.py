@@ -1555,6 +1555,7 @@ def CV_SEQ_WRITER_FIELDS():
 class CvSeqWriter(_Structure):
     _fields_ = CV_SEQ_WRITER_FIELDS()
 CvSeqWriter_p = POINTER(CvSeqWriter)
+CvSeqWriter_r = ByRefArg(CvSeqWriter)
     
 def CV_SEQ_READER_FIELDS():
     return [
@@ -1571,6 +1572,7 @@ def CV_SEQ_READER_FIELDS():
 class CvSeqReader(_Structure):
     _fields_ = CV_SEQ_READER_FIELDS()
 CvSeqReader_p = POINTER(CvSeqReader)
+CvSeqReader_r = ByRefArg(CvSeqReader)
     
 #-----------------------------------------------------------------------------
 # Data structures for persistence (a.k.a serialization) functionality
@@ -3951,73 +3953,93 @@ Returns index of concrete sequence element
 """
 
 # Initializes process of writing data to sequence
-cvStartAppendToSeq = cfunc('cvStartAppendToSeq', _cxDLL, None,
+_cvStartAppendToSeq = cfunc('cvStartAppendToSeq', _cxDLL, None,
     ('seq', CvSeq_p, 1), # CvSeq* seq
-    ('writer', CvSeqWriter_p, 1), # CvSeqWriter* writer 
+    ('writer', CvSeqWriter_r, 1), # CvSeqWriter* writer 
 )
-cvStartAppendToSeq.__doc__ = """void cvStartAppendToSeq(CvSeq* seq, CvSeqWriter* writer)
 
-Initializes process of writing data to sequence
-"""
+def cvStartAppendToSeq(seq):
+    """CvSeqWriter cvStartAppendToSeq(CvSeq* seq)
+
+    Initializes process of writing data to sequence
+    [ctypes-opencv] *creates* and initializes the writer instead
+    """
+    z = CvSeqWriter()
+    _cvStartAppendToSeq(seq, writer)
+    return z
 
 # Creates new sequence and initializes writer for it
-cvStartWriteSeq = cfunc('cvStartWriteSeq', _cxDLL, None,
+_cvStartWriteSeq = cfunc('cvStartWriteSeq', _cxDLL, None,
     ('seq_flags', c_int, 1), # int seq_flags
     ('header_size', c_int, 1), # int header_size
     ('elem_size', c_int, 1), # int elem_size
     ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
-    ('writer', CvSeqWriter_p, 1), # CvSeqWriter* writer 
+    ('writer', CvSeqWriter_r, 1), # CvSeqWriter* writer 
 )
-cvStartWriteSeq.__doc__ = """void cvStartWriteSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage, CvSeqWriter* writer)
 
-Creates new sequence and initializes writer for it
-"""
+def cvStartWriteSeq(seq_flags, header_size, elem_size, storage):
+    """CvSeqWriter cvStartWriteSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage, CvSeqWriter* writer)
+
+    Creates new sequence and initializes writer for it
+    [ctypes-opencv] *creates* and initializes the writer instead
+    """
+    z = CvSeqWriter()
+    _cvStartWriteSeq(seq_flags, header_size, elem_size, storage, z)
+    z._depends = (storage,) # to make sure storage is always deleted after z is deleted
+    return z
+    
 
 # Finishes process of writing sequence
 cvEndWriteSeq = cfunc('cvEndWriteSeq', _cxDLL, CvSeq_p,
-    ('writer', CvSeqWriter_p, 1), # CvSeqWriter* writer 
+    ('writer', CvSeqWriter_r, 1), # CvSeqWriter* writer 
 )
-cvEndWriteSeq.__doc__ = """CvSeq* cvEndWriteSeq(CvSeqWriter* writer)
+cvEndWriteSeq.__doc__ = """CvSeq* cvEndWriteSeq(CvSeqWriter writer)
 
 Finishes process of writing sequence
 """
 
 # Updates sequence headers from the writer state
 cvFlushSeqWriter = cfunc('cvFlushSeqWriter', _cxDLL, None,
-    ('writer', CvSeqWriter_p, 1), # CvSeqWriter* writer 
+    ('writer', CvSeqWriter_r, 1), # CvSeqWriter* writer 
 )
-cvFlushSeqWriter.__doc__ = """void cvFlushSeqWriter(CvSeqWriter* writer)
+cvFlushSeqWriter.__doc__ = """void cvFlushSeqWriter(CvSeqWriter writer)
 
 Updates sequence headers from the writer state
 """
 
 # Initializes process of sequential reading from sequence
-cvStartReadSeq = cfunc('cvStartReadSeq', _cxDLL, None,
+_cvStartReadSeq = cfunc('cvStartReadSeq', _cxDLL, None,
     ('seq', CvSeq_p, 1), # const CvSeq* seq
-    ('reader', CvSeqReader_p, 1), # CvSeqReader* reader
+    ('reader', CvSeqReader_r, 1), # CvSeqReader* reader
     ('reverse', c_int, 1, 0), # int reverse
 )
-cvStartReadSeq.__doc__ = """void cvStartReadSeq(const CvSeq* seq, CvSeqReader* reader, int reverse=0)
 
-Initializes process of sequential reading from sequence
-"""
+def cvStartReadSeq(seq, reverse=0):
+    """CvSeqReader cvStartReadSeq(const CvSeq* seq, int reverse=0)
+
+    Initializes process of sequential reading from sequence
+    [ctypes-opencv] *creates* and initializes a sequence reader instead
+    """
+    z = CvSeqReader()
+    _cvStartReadSeq(seq, z, reverse)
+    return z
 
 # Returns the current reader position
 cvGetSeqReaderPos = cfunc('cvGetSeqReaderPos', _cxDLL, c_int,
-    ('reader', CvSeqReader_p, 1), # CvSeqReader* reader 
+    ('reader', CvSeqReader_r, 1), # CvSeqReader* reader 
 )
-cvGetSeqReaderPos.__doc__ = """int cvGetSeqReaderPos(CvSeqReader* reader)
+cvGetSeqReaderPos.__doc__ = """int cvGetSeqReaderPos(CvSeqReader reader)
 
 Returns the current reader position
 """
 
 # Moves the reader to specified position
 cvSetSeqReaderPos = cfunc('cvSetSeqReaderPos', _cxDLL, None,
-    ('reader', CvSeqReader_p, 1), # CvSeqReader* reader
+    ('reader', CvSeqReader_r, 1), # CvSeqReader* reader
     ('index', c_int, 1), # int index
     ('is_relative', c_int, 1, 0), # int is_relative
 )
-cvSetSeqReaderPos.__doc__ = """void cvSetSeqReaderPos(CvSeqReader* reader, int index, int is_relative=0)
+cvSetSeqReaderPos.__doc__ = """void cvSetSeqReaderPos(CvSeqReader reader, int index, int is_relative=0)
 
 Moves the reader to specified position
 """
@@ -5222,9 +5244,9 @@ Reads multiple numbers
 cvStartReadRawData = cfunc('cvStartReadRawData', _cxDLL, None,
     ('fs', CvFileStorage_r, 1), # const CvFileStorage* fs
     ('src', CvFileNode_r, 1), # const CvFileNode* src
-    ('reader', CvSeqReader_p, 1), # CvSeqReader* reader 
+    ('reader', CvSeqReader_r, 1), # CvSeqReader* reader 
 )
-cvStartReadRawData.__doc__ = """void cvStartReadRawData(const CvFileStorage fs, const CvFileNode src, CvSeqReader* reader)
+cvStartReadRawData.__doc__ = """void cvStartReadRawData(const CvFileStorage fs, const CvFileNode src, CvSeqReader reader)
 
 Initializes file node sequence reader
 """
@@ -5232,12 +5254,12 @@ Initializes file node sequence reader
 # Initializes file node sequence reader
 cvReadRawDataSlice = cfunc('cvReadRawDataSlice', _cxDLL, None,
     ('fs', CvFileStorage_r, 1), # const CvFileStorage* fs
-    ('reader', CvSeqReader_p, 1), # CvSeqReader* reader
+    ('reader', CvSeqReader_r, 1), # CvSeqReader* reader
     ('count', c_int, 1), # int count
     ('dst', c_void_p, 1), # void* dst
     ('dt', c_char_p, 1), # const char* dt 
 )
-cvReadRawDataSlice.__doc__ = """void cvReadRawDataSlice(const CvFileStorage fs, CvSeqReader* reader, int count, void* dst, const char* dt)
+cvReadRawDataSlice.__doc__ = """void cvReadRawDataSlice(const CvFileStorage fs, CvSeqReader reader, int count, void* dst, const char* dt)
 
 Initializes file node sequence reader
 """
