@@ -1607,6 +1607,7 @@ def cvAttrList(attr=None, next=None):
 class CvTypeInfo(_Structure): # forward declaration
     pass
 CvTypeInfo_p = POINTER(CvTypeInfo)
+CvTypeInfo_r = ByRefArg(CvTypeInfo)
     
 CV_NODE_NONE        = 0
 CV_NODE_INT         = 1
@@ -5234,9 +5235,9 @@ Initializes file node sequence reader
 
 # Registers new type
 cvRegisterType = cfunc('cvRegisterType', _cxDLL, None,
-    ('info', CvTypeInfo_p, 1), # const CvTypeInfo* info 
+    ('info', CvTypeInfo_r, 1), # const CvTypeInfo* info 
 )
-cvRegisterType.__doc__ = """void cvRegisterType(const CvTypeInfo* info)
+cvRegisterType.__doc__ = """void cvRegisterType(const CvTypeInfo info)
 
 Registers new type
 """
@@ -5251,45 +5252,61 @@ Unregisters the type
 """
 
 # Returns the beginning of type list
-cvFirstType = cfunc('cvFirstType', _cxDLL, CvTypeInfo_p,
+_cvFirstType = cfunc('cvFirstType', _cxDLL, CvTypeInfo_p,
 )
-cvFirstType.__doc__ = """CvTypeInfo* cvFirstType(voi)
 
-Returns the beginning of type list
-"""
+def cvFirstType():
+    """CvTypeInfo cvFirstType(void)
+
+    Returns the beginning of type list
+    [ctypes-opencv] returns None if no type info is found
+    """
+    z = _cvFirstType()
+    return z.contents if bool(z) else None
 
 # Finds type by its name
-cvFindType = cfunc('cvFindType', _cxDLL, CvTypeInfo_p,
+_cvFindType = cfunc('cvFindType', _cxDLL, CvTypeInfo_p,
     ('type_name', c_char_p, 1), # const char* type_name 
 )
-cvFindType.__doc__ = """CvTypeInfo* cvFindType(const char* type_name)
 
-Finds type by its name
-"""
+def cvFindType(type_name):
+    """CvTypeInfo cvFindType(const char* type_name)
+
+    Finds type by its name
+    [ctypes-opencv] returns None if no type info is found
+    """
+    z = _cvFindType(type_name)
+    return z.contents if bool(z) else None
 
 # Returns type of the object
-cvTypeOf = cfunc('cvTypeOf', _cxDLL, CvTypeInfo_p,
+_cvTypeOf = cfunc('cvTypeOf', _cxDLL, CvTypeInfo_p,
     ('struct_ptr', c_void_p, 1), # const void* struct_ptr 
 )
-cvTypeOf.__doc__ = """CvTypeInfo* cvTypeOf(const void* struct_ptr)
 
-Returns type of the object
-"""
+def cvTypeOf(struct_ptr):
+    """CvTypeInfo cvTypeOf(const void* struct_ptr)
+
+    Returns type of the object
+    [ctypes-opencv] returns None if no type info is found
+    """
+    z = _cvTypeOf(struct_ptr)
+    return z.contents if bool(z) else None
+    
 
 # Releases the object
-cvRelease = cfunc('cvRelease', _cxDLL, None,
+_cvRelease = cfunc('cvRelease', _cxDLL, None,
     ('struct_ptr', c_void_p_p, 1), # void** struct_ptr 
 )
-cvRelease.__doc__ = """void cvRelease(void** struct_ptr)
+_cvRelease.__doc__ = """void cvRelease(void** struct_ptr)
 
 Releases the object
 """
 
 # Makes a clone of the object
-cvClone = cfunc('cvClone', _cxDLL, c_void_p,
+_cvClone = cfunc('cvClone', _cxDLL, c_void_p,
     ('struct_ptr', c_void_p, 1), # const void* struct_ptr 
 )
-cvClone.__doc__ = """void* cvClone(const void* struct_ptr)
+_cvClone.__doc__ = """void* cvClone(const void* struct_ptr)
 
 Makes a clone of the object
 """
