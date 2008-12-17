@@ -4502,32 +4502,40 @@ class CvTreeNodeIterator(_Structure):
         ('level', c_int),
         ('max_level', c_int),
     ]
+CvTreeNodeIterator_p = POINTER(CvTreeNodeIterator)
+CvTreeNodeIterator_r = ByRefArg(CvTreeNodeIterator)
 
 # Initializes tree node iterator
-cvInitTreeNodeIterator = cfunc('cvInitTreeNodeIterator', _cxDLL, None,
-    ('tree_iterator', POINTER(CvTreeNodeIterator), 1), # CvTreeNodeIterator* tree_iterator
+_cvInitTreeNodeIterator = cfunc('cvInitTreeNodeIterator', _cxDLL, None,
+    ('tree_iterator', CvTreeNodeIterator_r, 1), # CvTreeNodeIterator* tree_iterator
     ('first', c_void_p, 1), # const void* first
     ('max_level', c_int, 1), # int max_level 
 )
-cvInitTreeNodeIterator.__doc__ = """void cvInitTreeNodeIterator(CvTreeNodeIterator* tree_iterator, const void* first, int max_level)
 
-Initializes tree node iterator
-"""
+def cvInitTreeNodeIterator(first, max_level):
+    """CvTreeNodeIterator cvInitTreeNodeIterator(const void* first, int max_level)
+
+    Initializes tree node iterator
+    [ctypes-opencv] *creates* and initializes a CvTreenodeIterator instead
+    """
+    z = CvTreeNodeIterator()
+    _cvInitTreeNodeIterator(z, first, max_level)
+    return z
 
 # Returns the currently observed node and moves iterator toward the next node
 cvNextTreeNode = cfunc('cvNextTreeNode', _cxDLL, c_void_p,
-    ('tree_iterator', POINTER(CvTreeNodeIterator), 1), # CvTreeNodeIterator* tree_iterator 
+    ('tree_iterator', CvTreeNodeIterator_r, 1), # CvTreeNodeIterator* tree_iterator 
 )
-cvNextTreeNode.__doc__ = """void* cvNextTreeNode(CvTreeNodeIterator* tree_iterator)
+cvNextTreeNode.__doc__ = """void* cvNextTreeNode(CvTreeNodeIterator tree_iterator)
 
 Returns the currently observed node and moves iterator toward the next node
 """
 
 # Returns the currently observed node and moves iterator toward the previous node
 cvPrevTreeNode = cfunc('cvPrevTreeNode', _cxDLL, c_void_p,
-    ('tree_iterator', POINTER(CvTreeNodeIterator), 1), # CvTreeNodeIterator* tree_iterator 
+    ('tree_iterator', CvTreeNodeIterator_r, 1), # CvTreeNodeIterator* tree_iterator 
 )
-cvPrevTreeNode.__doc__ = """void* cvPrevTreeNode(CvTreeNodeIterator* tree_iterator)
+cvPrevTreeNode.__doc__ = """void* cvPrevTreeNode(CvTreeNodeIterator tree_iterator)
 
 Returns the currently observed node and moves iterator toward the previous node
 """
@@ -4745,10 +4753,11 @@ class CvFont(_Structure):
                 ("dx", c_float),
                 ("line_type", c_int)]
 CvFont_p = POINTER(CvFont)
+CvFont_r = ByRefArg(CvFont)
                 
 # Initializes font structure
 _cvInitFont = cfunc('cvInitFont', _cxDLL, None,
-    ('font', ByRefArg(CvFont), 1), # CvFont* font
+    ('font', CvFont_r, 1), # CvFont* font
     ('font_face', c_int, 1), # int font_face
     ('hscale', c_double, 1), # double hscale
     ('vscale', c_double, 1), # double vscale
@@ -4761,6 +4770,7 @@ def cvInitFont(font_face, hscale, vscale, shear=0, thickness=1, line_type=8):
     """CvFont cvInitFont(int font_face, double hscale, double vscale, double shear=0, int thickness=1, int line_type=8)
 
     Initializes font structure
+    [ctypes-opencv] *creates* and initializes a CvFont instead
     """
     font = CvFont()
     _cvInitFont(font, font_face, hscale, vscale, shear, thickness, line_type)
@@ -4778,10 +4788,10 @@ cvPutText = cfunc('cvPutText', _cxDLL, None,
     ('img', CvArr_p, 1), # CvArr* img
     ('text', c_char_p, 1), # const char* text
     ('org', CvPoint, 1), # CvPoint org
-    ('font', CvFont_p, 1), # const CvFont* font
+    ('font', CvFont_r, 1), # const CvFont* font
     ('color', CvScalar, 1), # CvScalar color 
 )
-cvPutText.__doc__ = """void cvPutText(CvArr* img, const char* text, CvPoint org, const CvFont* font, CvScalar color)
+cvPutText.__doc__ = """void cvPutText(CvArr* img, const char* text, CvPoint org, const CvFont font, CvScalar color)
 
 Draws text string
 """
@@ -4789,11 +4799,11 @@ Draws text string
 # Retrieves width and height of text string
 cvGetTextSize = cfunc('cvGetTextSize', _cxDLL, None,
     ('text_string', c_char_p, 1), # const char* text_string
-    ('font', ByRefArg(CvFont), 1), # const CvFont* font
+    ('font', CvFont_r, 1), # const CvFont* font
     ('text_size', CvSize_p, 2), # CvSize* text_size
     ('baseline', POINTER(c_int), 2), # int* baseline 
 )
-cvGetTextSize.__doc__ = """void cvGetTextSize(const char* text_string, const CvFont* font, CvSize* text_size, int* baseline)
+cvGetTextSize.__doc__ = """void cvGetTextSize(const char* text_string, const CvFont font, CvSize* text_size, int* baseline)
 
 Retrieves width and height of text string
 """
@@ -5611,10 +5621,8 @@ __all__ += [
     'cfunc',
     '_Structure', 'ListPOINTER', 'ListPOINTER2', 'FlexibleListPOINTER',
     'ByRefArg', 'CallableToFunc',
-    'sdHack_iplimage', 'sdHack_cvmat', 'sdHack_cvmat2', 
     'sdHack_cvseq',
-    'sdHack_contents_getattr', 'sdHack_del',
-    'sdAdd_autoclean',
+    'sdHack_contents_getattr', 
 ]
         
 

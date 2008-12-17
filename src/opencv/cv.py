@@ -76,9 +76,6 @@ class CvConnectedComp(_Structure):
 CvConnectedComp_p = POINTER(CvConnectedComp)
 CvConnectedComp_r = ByRefArg(CvConnectedComp)
                 
-# Minh-Tri's hacks
-# sdHack_contents_getattr(CvConnectedComp_p)
-
 #Viji Periapoilan 4/16/2007 (start)
 #Added constants for contour retrieval mode - Apr 19th
 CV_RETR_EXTERNAL = 0
