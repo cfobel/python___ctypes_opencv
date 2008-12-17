@@ -619,11 +619,11 @@ Applies affine transformation to the image
 
 # Calculates affine transform from 3 corresponding points
 cvGetAffineTransform = cfunc('cvGetAffineTransform', _cvDLL, CvMat_p,
-    ('src', CvPoint2D32f_p, 1), # const CvPoint2D32f* src
-    ('dst', CvPoint2D32f_p, 1), # const CvPoint2D32f* dst
+    ('src', CvPoint2D32f_r, 1), # const CvPoint2D32f* src
+    ('dst', CvPoint2D32f_r, 1), # const CvPoint2D32f* dst
     ('map_matrix', CvMat_p, 1), # CvMat* map_matrix
 )
-cvGetAffineTransform.__doc__ = """CvMat* cvGetAffineTransform(const CvPoint2D32f* src, const CvPoint2D32f* dst, CvMat* map_matrix)
+cvGetAffineTransform.__doc__ = """CvMat* cvGetAffineTransform(const CvPoint2D32f src, const CvPoint2D32f dst, CvMat* map_matrix)
 
 Calculates affine transform from 3 corresponding points
 """
@@ -655,11 +655,11 @@ Applies perspective transformation to the image
 
 # Calculates perspective transform from 4 corresponding points
 cvGetPerspectiveTransform = cfunc('cvGetPerspectiveTransform', _cvDLL, CvMat_p,
-    ('src', CvPoint2D32f_p, 1), # const CvPoint2D32f* src
-    ('dst', CvPoint2D32f_p, 1), # const CvPoint2D32f* dst
+    ('src', CvPoint2D32f_r, 1), # const CvPoint2D32f* src
+    ('dst', CvPoint2D32f_r, 1), # const CvPoint2D32f* dst
     ('map_matrix', CvMat_p, 1), # CvMat* map_matrix 
 )
-cvGetPerspectiveTransform.__doc__ = """CvMat* cvGetPerspectiveTransform(const CvPoint2D32f* src, const CvPoint2D32f* dst, CvMat* map_matrix)
+cvGetPerspectiveTransform.__doc__ = """CvMat* cvGetPerspectiveTransform(const CvPoint2D32f src, const CvPoint2D32f dst, CvMat* map_matrix)
 
 Calculates perspective transform from 4 corresponding points
 """
@@ -2643,13 +2643,13 @@ def cvCreatePOSITObject(points):
 # Implements POSIT algorithm
 cvPOSIT = cfunc('cvPOSIT', _cvDLL, None,
     ('posit_object', CvPOSITObject_r, 1), # CvPOSITObject* posit_object
-    ('image_points', CvPoint2D32f_p, 1), # CvPoint2D32f* image_points
+    ('image_points', CvPoint2D32f_r, 1), # CvPoint2D32f* image_points
     ('focal_length', c_double, 1), # double focal_length
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
     ('rotation_matrix', CvMatr32f, 1), # CvMatr32f rotation_matrix
     ('translation_vector', CvVect32f, 1), # CvVect32f translation_vector 
 )
-cvPOSIT.__doc__ = """void cvPOSIT(CvPOSITObject posit_object, CvPoint2D32f* image_points, double focal_length, CvTermCriteria criteria, CvMatr32f rotation_matrix, CvVect32f translation_vector)
+cvPOSIT.__doc__ = """void cvPOSIT(CvPOSITObject posit_object, CvPoint2D32f image_points, double focal_length, CvTermCriteria criteria, CvMatr32f rotation_matrix, CvVect32f translation_vector)
 
 Implements POSIT algorithm
 """
@@ -2657,11 +2657,11 @@ Implements POSIT algorithm
 # Calculates homography matrix for oblong planar object (e.g. arm)
 cvCalcImageHomography = cfunc('cvCalcImageHomography', _cvDLL, None,
     ('line', c_float_p, 1), # float* line
-    ('center', CvPoint3D32f_p, 1), # CvPoint3D32f* center
+    ('center', CvPoint3D32f_r, 1), # CvPoint3D32f* center
     ('intrinsic', c_float_p, 1), # float* intrinsic
     ('homography', c_float_p, 1), # float* homography 
 )
-cvCalcImageHomography.__doc__ = """void cvCalcImageHomography(float* line, CvPoint3D32f* center, float* intrinsic, float* homography)
+cvCalcImageHomography.__doc__ = """void cvCalcImageHomography(float* line, CvPoint3D32f center, float* intrinsic, float* homography)
 
 Calculates homography matrix for oblong planar object (e.g. arm)
 """

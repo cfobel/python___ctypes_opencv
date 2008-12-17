@@ -1254,6 +1254,7 @@ class CvPoint2D32f(_Structure):
     _fields_ = [("x", c_float),
                 ("y", c_float)]
 CvPoint2D32f_p = POINTER(CvPoint2D32f)
+CvPoint2D32f_r = POINTER(CvPoint2D32f)
                 
 def cvPoint2D32f(x, y):
     return CvPoint2D32f(c_float(x), c_float(y))
@@ -1273,6 +1274,7 @@ class CvPoint3D32f(_Structure):
                 ("y", c_float),
                 ("z", c_float)]
 CvPoint3D32f_p = POINTER(CvPoint3D32f)
+CvPoint3D32f_r = POINTER(CvPoint3D32f)
 
 def cvPoint3D32f(x, y, z):
     return CvPoint3D32f(c_float(x), c_float(y), c_float(z))
