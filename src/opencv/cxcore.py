@@ -1357,6 +1357,7 @@ class CvScalar(_Structure):
         else:
             super(CvScalar, self).__init__(vals)
 CvScalar_p = POINTER(CvScalar)
+CvScalar_r = ByRefArg(CvScalar)
 
 def cvScalar(val0, val1=0, val2=0, val3=0):
     return CvScalar(val0, val1, val2, val3)
@@ -3549,11 +3550,11 @@ Calculates average (mean) of array elements
 # Calculates average (mean) of array elements
 cvAvgSdv = cfunc('cvAvgSdv', _cxDLL, None,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('mean', CvScalar_p, 1), # CvScalar* mean
-    ('std_dev', CvScalar_p, 1), # CvScalar* std_dev
+    ('mean', CvScalar_r, 1), # CvScalar* mean
+    ('std_dev', CvScalar_r, 1), # CvScalar* std_dev
     ('mask', CvArr_p, 1, None), # const CvArr* mask
 )
-cvAvgSdv.__doc__ = """void cvAvgSdv(const CvArr* arr, CvScalar* mean, CvScalar* std_dev, const CvArr* mask=NULL)
+cvAvgSdv.__doc__ = """void cvAvgSdv(const CvArr* arr, CvScalar mean, CvScalar std_dev, const CvArr* mask=NULL)
 
 Calculates average (mean) of array elements
 """
