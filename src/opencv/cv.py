@@ -2612,45 +2612,46 @@ class CvPOSITObject(_Structure):
         ('obj_vecs', c_float_p), # float* obj_vecs
         ('img_vecs', c_float_p), # float* img_vecs
     ]
+    
+    def __del__(self):
+        _cvReleasePOSITObject(pointer(self))
+        
+CvPOSITObject_p = POINTER(CvPOSITObject)
+CvPOSITObject_r = ByRefArg(CvPOSITObject)
 
-# Minh-Tri's hacks
-sdHack_del(POINTER(CvPOSITObject))
-
+# Deallocates 3D object structure
 _cvReleasePOSITObject = cfunc('cvReleasePOSITObject', _cvDLL, None,
-    ('posit_object', ByRefArg(POINTER(CvPOSITObject)), 1), # CvPOSITObject** posit_object 
+    ('posit_object', ByRefArg(CvPOSITObject_p), 1), # CvPOSITObject** posit_object 
 )
 
-_cvCreatePOSITObject = cfunc('cvCreatePOSITObject', _cvDLL, POINTER(CvPOSITObject),
+_cvCreatePOSITObject = cfunc('cvCreatePOSITObject', _cvDLL, CvPOSITObject_p,
     ('points', ListPOINTER(CvPoint3D32f), 1), # CvPoint3D32f* points
     ('point_count', c_int, 1), # int point_count 
 )
 
 # Initializes structure containing object information
 def cvCreatePOSITObject(points):
-    """CvPOSITObject* cvCreatePOSITObject(list_or_tupleof_CvPoint3D32f points)
+    """CvPOSITObject cvCreatePOSITObject(list_or_tupleof_CvPoint3D32f points)
 
     Initializes structure containing object information
+    [ctypes-opencv] returns None if no posit object is created
     """
     z = _cvCreatePOSITObject(points, len(points))
-    sdAdd_autoclean(z, _cvReleasePOSITObject)
-    return z
+    return z.contents if bool(z) else None
 
 # Implements POSIT algorithm
 cvPOSIT = cfunc('cvPOSIT', _cvDLL, None,
-    ('posit_object', POINTER(CvPOSITObject), 1), # CvPOSITObject* posit_object
+    ('posit_object', CvPOSITObject_r, 1), # CvPOSITObject* posit_object
     ('image_points', CvPoint2D32f_p, 1), # CvPoint2D32f* image_points
     ('focal_length', c_double, 1), # double focal_length
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
     ('rotation_matrix', CvMatr32f, 1), # CvMatr32f rotation_matrix
     ('translation_vector', CvVect32f, 1), # CvVect32f translation_vector 
 )
-cvPOSIT.__doc__ = """void cvPOSIT(CvPOSITObject* posit_object, CvPoint2D32f* image_points, double focal_length, CvTermCriteria criteria, CvMatr32f rotation_matrix, CvVect32f translation_vector)
+cvPOSIT.__doc__ = """void cvPOSIT(CvPOSITObject posit_object, CvPoint2D32f* image_points, double focal_length, CvTermCriteria criteria, CvMatr32f rotation_matrix, CvVect32f translation_vector)
 
 Implements POSIT algorithm
 """
-
-# Deallocates 3D object structure
-cvReleasePOSITObject = cvFree
 
 # Calculates homography matrix for oblong planar object (e.g. arm)
 cvCalcImageHomography = cfunc('cvCalcImageHomography', _cvDLL, None,
