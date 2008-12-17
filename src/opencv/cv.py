@@ -135,6 +135,7 @@ CvSubdiv2DEdge = c_size_t
 class CvSubdiv2DPoint(_Structure):
     pass
 CvSubdiv2DPoint_p = POINTER(CvSubdiv2DPoint)
+CvSubdiv2DPoint_r = ByRefArg(CvSubdiv2DPoint)
     
 def CV_QUADEDGE2D_FIELDS():
     return [
@@ -159,7 +160,7 @@ CvQuadEdge2D_p = POINTER(CvQuadEdge2D)
 CvSubdiv2DPoint._fields_ = CV_SUBDIV2D_POINT_FIELDS()
 
 # Minh-Tri's hacks
-sdHack_contents_getattr(CvSubdiv2DPoint_p)
+# sdHack_contents_getattr(CvSubdiv2DPoint_p)
 
 def CV_SUBDIV2D_FIELDS():
     return CV_GRAPH_FIELDS() + [
@@ -1889,23 +1890,27 @@ def cvSubdiv2DRotateEdge(edge, rotate):
 
 # Returns edge origin
 def cvSubdiv2DEdgeOrg(edge):
-    """CvSubdiv2DPoint* cvSubdiv2DEdgeOrg( CvSubdiv2DEdge edge )
+    """CvSubdiv2DPoint cvSubdiv2DEdgeOrg( CvSubdiv2DEdge edge )
 
     Returns edge origin
+    [ctypes-opencv] returns None if no point is found
     """
     ev = edge.value
     e = pointer(CvQuadEdge2D.from_address(ev & ~3))
-    return e.contents.pt[ev & 3]
+    z = e.contents.pt[ev & 3]
+    return z.contents if bool(z) else None
 
 # Returns edge destination
 def cvSubdiv2DEdgeDst(edge):
-    """CvSubdiv2DPoint* cvSubdiv2DEdgeDst( CvSubdiv2DEdge edge )
+    """CvSubdiv2DPoint cvSubdiv2DEdgeDst( CvSubdiv2DEdge edge )
 
     Returns edge destination
+    [ctypes-opencv] returns None if no point is found
     """
     ev = edge.value
     e = cast(c_void_p(ev & ~3), POINTER(CvQuadEdge2D))
-    return e.contents.pt[(ev + 2) & 3]
+    z = e.contents.pt[(ev + 2) & 3]
+    return z.contents if bool(z) else None
 
 # Initializes Delaunay triangulation
 cvInitSubdivDelaunay2D = cfunc('cvInitSubdivDelaunay2D', _cvDLL, None,
@@ -1942,14 +1947,18 @@ def cvCreateSubdivDelaunay2D(rect, storage):
     return subdiv
     
 # Inserts a single point to Delaunay triangulation
-cvSubdivDelaunay2DInsert = cfunc('cvSubdivDelaunay2DInsert', _cvDLL, CvSubdiv2DPoint_p,
+_cvSubdivDelaunay2DInsert = cfunc('cvSubdivDelaunay2DInsert', _cvDLL, CvSubdiv2DPoint_p,
     ('subdiv', CvSubdiv2D_p, 1), # CvSubdiv2D* subdiv
     ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
 )
-cvSubdivDelaunay2DInsert.__doc__ = """CvSubdiv2DPoint* cvSubdivDelaunay2DInsert(CvSubdiv2D* subdiv, CvPoint2D32f p)
+def cvSubdivDelaunay2DInsert(subdiv, pt):
+    """CvSubdiv2DPoint cvSubdivDelaunay2DInsert(CvSubdiv2D* subdiv, CvPoint2D32f p)
 
-Inserts a single point to Delaunay triangulation
-"""
+    Inserts a single point to Delaunay triangulation
+    [ctypes-opencv] returns None if no subdiv2dpoint is inserted
+    """
+    z = _cvSubdivDelaunay2DInsert(subdiv, pt)
+    return z.contents if bool(z) else None
 
 # Inserts a single point to Delaunay triangulation
 _cvSubdiv2DLocate = cfunc('cvSubdiv2DLocate', _cvDLL, CvSubdiv2DPointLocation,
@@ -1960,25 +1969,33 @@ _cvSubdiv2DLocate = cfunc('cvSubdiv2DLocate', _cvDLL, CvSubdiv2DPointLocation,
 )
 
 def cvSubdiv2DLocate(subdiv, pt):
-    """(CvSubdiv2DPointLocation res, CvSubdiv2DEdge edge, CvSubdiv2DPoint* vertex) = cvSubdiv2DLocate(CvSubdiv2D* subdiv, CvPoint2D32f pt)
+    """(CvSubdiv2DPointLocation res[, CvSubdiv2DEdge edge][, CvSubdiv2DPoint vertex]) = cvSubdiv2DLocate(CvSubdiv2D* subdiv, CvPoint2D32f pt)
 
     Inserts a single point to Delaunay triangulation
-    [ctypes-opencv] Both 'edge' and 'vertex' are returned in addition to the the return value of the function.
+    [ctypes-opencv] Depending on the value of 'res', addtional objects are returned. But the returning object is always a tuple.
     """
     edge = CvSubdiv2DEdge()
     vertex = CvSubdiv2DPoint_p()
     z = _cvSubdiv2DLocate(subdiv, pt, edge, vertex)
-    return z, edge, vertex
+    return \
+        (z, edge) if z == CV_PTLOC_INSIDE or z == CV_PTLOC_ONEDGE else \
+        (z, vertex.contents) if z == CV_PTLOC_VERTEX else \
+        (z,)
 
 # Finds the closest subdivision vertex to given point
-cvFindNearestPoint2D = cfunc('cvFindNearestPoint2D', _cvDLL, CvSubdiv2DPoint_p,
+_cvFindNearestPoint2D = cfunc('cvFindNearestPoint2D', _cvDLL, CvSubdiv2DPoint_p,
     ('subdiv', CvSubdiv2D_p, 1), # CvSubdiv2D* subdiv
     ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt 
 )
-cvFindNearestPoint2D.__doc__ = """CvSubdiv2DPoint* cvFindNearestPoint2D(CvSubdiv2D* subdiv, CvPoint2D32f pt)
 
-Finds the closest subdivision vertex to given point
-"""
+def cvFindNearestPoint2D(subdiv, pt):
+    """CvSubdiv2DPoint cvFindNearestPoint2D(CvSubdiv2D* subdiv, CvPoint2D32f pt)
+
+    Finds the closest subdivision vertex to given point
+    [ctypes-opencv] returns None if no subdiv2dpoint is found
+    """
+    z = _cvFindNearestPoint2D(subdiv, pt)
+    return z.contents if bool(z) else None
 
 # Calculates coordinates of Voronoi diagram cells
 cvCalcSubdivVoronoi2D = cfunc('cvCalcSubdivVoronoi2D', _cvDLL, None,

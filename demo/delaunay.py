@@ -45,7 +45,7 @@ def draw_subdiv( img, subdiv, delaunay_color, voronoi_color ):
 
 def locate_point( subdiv, fp, img, active_color ):
 
-    [res, e0, p] = cvSubdiv2DLocate( subdiv, fp );
+    (res, e0) = cvSubdiv2DLocate( subdiv, fp );
     
     if e0:
         e = e0
@@ -54,7 +54,7 @@ def locate_point( subdiv, fp, img, active_color ):
             e = cvSubdiv2DGetEdge(e,CV_NEXT_AROUND_LEFT);
             if e.value == e0.value:
                 break
-                
+    
     draw_subdiv_point( img, fp, active_color );
     
 
