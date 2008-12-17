@@ -1734,6 +1734,7 @@ CvPluginFuncInfo_p = POINTER(CvPluginFuncInfo)
 class CvModuleInfo(_Structure):
     pass
 CvModuleInfo_p = POINTER(CvModuleInfo)
+CvModuleInfo_r = ByRefArg(CvModuleInfo)
 CvModuleInfo._fields_ = [
     ('next', CvModuleInfo_p),
     ('name', c_char_p),
@@ -5030,10 +5031,10 @@ Writes multiple numbers
 cvWriteFileNode = cfunc('cvWriteFileNode', _cxDLL, None,
     ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('new_node_name', c_char_p, 1), # const char* new_node_name
-    ('node', CvFileNode_p, 1), # const CvFileNode* node
+    ('node', CvFileNode_r, 1), # const CvFileNode* node
     ('embed', c_int, 1), # int embed 
 )
-cvWriteFileNode.__doc__ = """void cvWriteFileNode(CvFileStorage* fs, const char* new_node_name, const CvFileNode* node, int embed)
+cvWriteFileNode.__doc__ = """void cvWriteFileNode(CvFileStorage* fs, const char* new_node_name, CvFileNode node, int embed)
 
 Writes file node to another file storage
 """
@@ -5045,25 +5046,35 @@ Writes file node to another file storage
 
 
 # Retrieves one of top-level nodes of the file storage
-cvGetRootFileNode = cfunc('cvGetRootFileNode', _cxDLL, CvFileNode_p,
+_cvGetRootFileNode = cfunc('cvGetRootFileNode', _cxDLL, CvFileNode_p,
     ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
     ('stream_index', c_int, 1, 0), # int stream_index
 )
-cvGetRootFileNode.__doc__ = """CvFileNode* cvGetRootFileNode(const CvFileStorage* fs, int stream_index=0)
 
-Retrieves one of top-level nodes of the file storage
-"""
+def cvGetRootFileNode(fs, stream_index=0):
+    """CvFileNode cvGetRootFileNode(const CvFileStorage* fs, int stream_index=0)
+
+    Retrieves one of top-level nodes of the file storage
+    [ctypes-opencv] returns None if no root file node is found
+    """
+    z = _cvGetRootFileNode(fs, stream_index)
+    return z.contents if bool(z) else None
 
 # Finds node in the map or file storage
-cvGetFileNodeByName = cfunc('cvGetFileNodeByName', _cxDLL, CvFileNode_p,
+_cvGetFileNodeByName = cfunc('cvGetFileNodeByName', _cxDLL, CvFileNode_p,
     ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
-    ('map', CvFileNode_p, 1), # const CvFileNode* map
+    ('map', CvFileNode_r, 1), # const CvFileNode* map
     ('name', c_char_p, 1), # const char* name 
 )
-cvGetFileNodeByName.__doc__ = """CvFileNode* cvGetFileNodeByName(const CvFileStorage* fs, const CvFileNode* map, const char* name)
 
-Finds node in the map or file storage
-"""
+def cvGetFileNodeByName(fs, map, name):
+    """CvFileNode cvGetFileNodeByName(const CvFileStorage* fs, const CvFileNode map, const char* name)
+
+    Finds node in the map or file storage
+    [ctypes-opencv] returns None if no file node is found
+    """
+    z = _cvGetFileNodeByname(fs, map, name)
+    return z.contents if bool(z) else None
 
 # Returns a unique POINTER for given name
 cvGetHashedKey = cfunc('cvGetHashedKey', _cxDLL, CvStringHashNode_p,
@@ -5078,42 +5089,46 @@ Returns a unique POINTER for given name
 """
 
 # Finds node in the map or file storage
-cvGetFileNode = cfunc('cvGetFileNode', _cxDLL, CvFileNode_p,
+_cvGetFileNode = cfunc('cvGetFileNode', _cxDLL, CvFileNode_p,
     ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
-    ('map', CvFileNode_p, 1), # CvFileNode* map
+    ('map', CvFileNode_r, 1), # CvFileNode* map
     ('key', CvStringHashNode_p, 1), # const CvStringHashNode* key
     ('create_missing', c_int, 1, 0), # int create_missing
 )
-cvGetFileNode.__doc__ = """CvFileNode* cvGetFileNode(CvFileStorage* fs, CvFileNode* map, const CvStringHashNode* key, int create_missing=0)
 
-Finds node in the map or file storage
-"""
+def cvGetFileNode(fs, map, key, create_missing=0):
+    """CvFileNode cvGetFileNode(CvFileStorage* fs, CvFileNode map, const CvStringHashNode* key, int create_missing=0)
+
+    Finds node in the map or file storage
+    [ctypes-opencv] returns None if no file node is found
+    """
+    z = _cvGetFileNode(fs, map, key, create_missing)
+    return z.contents if bool(z) else None
 
 # Returns name of file node
 cvGetFileNodeName = cfunc('cvGetFileNodeName', _cxDLL, c_char_p,
-    ('node', CvFileNode_p, 1), # const CvFileNode* node 
+    ('node', CvFileNode_r, 1), # const CvFileNode* node 
 )
-cvGetFileNodeName.__doc__ = """const char* cvGetFileNodeName(const CvFileNode* node)
+cvGetFileNodeName.__doc__ = """const char* cvGetFileNodeName(CvFileNode node)
 
 Returns name of file node
 """
 
 # Retrieves integer value from file node
 def cvReadInt(node, default_value=0):
-    """int cvReadInt( const CvFileNode* node, int default_value=0)
+    """int cvReadInt( const CvFileNode node, int default_value=0)
     
     Retrieves integer value from file node
     """
-    if not bool(node):
+    if node is None:
         return default_value
-    nc = node.contents
-    if CV_NODE_IS_INT(nc.tag):
-        return nc.data.i
-    return cvRound(nc.data.f) if CV_NODE_IS_REAL(nc.tag) else 0x7fffffff
+    if CV_NODE_IS_INT(node.tag):
+        return node.data.i
+    return cvRound(node.data.f) if CV_NODE_IS_REAL(node.tag) else 0x7fffffff
 
 # Finds file node and returns its value
 def cvReadIntByName(fs, map, name, default_value=0):
-    """int cvReadIntByName( const CvFileStorage* fs, const CvFileNode* map, const char* name, int default_value=0)
+    """int cvReadIntByName( const CvFileStorage* fs, const CvFileNode map, const char* name, int default_value=0)
     
     Finds file node and returns its value
     """
@@ -5121,20 +5136,19 @@ def cvReadIntByName(fs, map, name, default_value=0):
 
 # Retrieves floating-point value from file node
 def cvReadReal(node, default_value=0.0):
-    """double cvReadReal( const CvFileNode* node, double default_value=0.0)
+    """double cvReadReal( const CvFileNode node, double default_value=0.0)
     
     Retrieves floating-point value from file node
     """
-    if not bool(node):
+    if node is None:
         return default_value
-    nc = node.contents
-    if CV_NODE_IS_INT(nc.tag):
-        return float(nc.data.i)
-    return nc.data.f if CV_NODE_IS_REAL(nc.tag) else 1e300
+    if CV_NODE_IS_INT(node.tag):
+        return float(node.data.i)
+    return node.data.f if CV_NODE_IS_REAL(node.tag) else 1e300
 
 # Finds file node and returns its value
 def cvReadRealByName(fs, map, name, default_value=0.0):
-    """double cvReadRealByName( const CvFileStorage* fs, const CvFileNode* map, const char* name, double default_value=0.0)
+    """double cvReadRealByName( const CvFileStorage* fs, const CvFileNode map, const char* name, double default_value=0.0)
     
     Finds file node and returns its value
     """
@@ -5142,18 +5156,17 @@ def cvReadRealByName(fs, map, name, default_value=0.0):
 
 # Retrieves text string from file node
 def cvReadString(node, default_value=None):
-    """const char* cvReadString( const CvFileNode* node, const char* default_value=NULL)
+    """const char* cvReadString( const CvFileNode node, const char* default_value=NULL)
     
     Retrieves text string from file node
     """
-    if not bool(node):
+    if node is None:
         return default_value
-    nc = node.contents
-    return nc.data.str.ptr if CV_NODE_IS_STRING(nc.tag) else 0
+    return node.data.str.ptr if CV_NODE_IS_STRING(node.tag) else None
 
 # Finds file node and returns its value
 def cvReadStringByName(fs, map, name, default_value=None):
-    """const char* cvReadStringByName( const CvFileStorage* fs, const CvFileNode* map, const char* name, const char* default_value CV_DEFAULT(NULL) )
+    """const char* cvReadStringByName( const CvFileStorage* fs, const CvFileNode map, const char* name, const char* default_value CV_DEFAULT(NULL) )
     
     Finds file node and returns its value
     """
@@ -5163,10 +5176,10 @@ def cvReadStringByName(fs, map, name, default_value=None):
 # Decodes object and returns POINTER to it
 cvRead = cfunc('cvRead', _cxDLL, c_void_p,
     ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
-    ('node', CvFileNode_p, 1), # CvFileNode* node
+    ('node', CvFileNode_r, 1), # CvFileNode* node
     ('attributes', CvAttrList_p, 1, None), # CvAttrList* attributes
 )
-cvRead.__doc__ = """void* cvRead(CvFileStorage* fs, CvFileNode* node, CvAttrList* attributes=NULL)
+cvRead.__doc__ = """void* cvRead(CvFileStorage* fs, CvFileNode node, CvAttrList* attributes=NULL)
 
 Decodes object and returns POINTER to it
 """
@@ -5174,11 +5187,11 @@ Decodes object and returns POINTER to it
 # Reads multiple numbers
 cvReadRawData = cfunc('cvReadRawData', _cxDLL, None,
     ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
-    ('src', CvFileNode_p, 1), # const CvFileNode* src
+    ('src', CvFileNode_r, 1), # const CvFileNode* src
     ('dst', c_void_p, 1), # void* dst
     ('dt', c_char_p, 1), # const char* dt 
 )
-cvReadRawData.__doc__ = """void cvReadRawData(const CvFileStorage* fs, const CvFileNode* src, void* dst, const char* dt)
+cvReadRawData.__doc__ = """void cvReadRawData(const CvFileStorage* fs, const CvFileNode src, void* dst, const char* dt)
 
 Reads multiple numbers
 """
@@ -5186,10 +5199,10 @@ Reads multiple numbers
 # Initializes file node sequence reader
 cvStartReadRawData = cfunc('cvStartReadRawData', _cxDLL, None,
     ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
-    ('src', CvFileNode_p, 1), # const CvFileNode* src
+    ('src', CvFileNode_r, 1), # const CvFileNode* src
     ('reader', CvSeqReader_p, 1), # CvSeqReader* reader 
 )
-cvStartReadRawData.__doc__ = """void cvStartReadRawData(const CvFileStorage* fs, const CvFileNode* src, CvSeqReader* reader)
+cvStartReadRawData.__doc__ = """void cvStartReadRawData(const CvFileStorage* fs, const CvFileNode src, CvSeqReader* reader)
 
 Initializes file node sequence reader
 """
@@ -5475,9 +5488,9 @@ Returns number of tics per microsecond
 
 # Registers another module
 cvRegisterModule = cfunc('cvRegisterModule', _cxDLL, c_int,
-    ('module_info', CvModuleInfo_p, 1), # const CvModuleInfo* module_info 
+    ('module_info', CvModuleInfo_r, 1), # const CvModuleInfo* module_info 
 )
-cvRegisterModule.__doc__ = """int cvRegisterModule(const CvModuleInfo* module_info)
+cvRegisterModule.__doc__ = """int cvRegisterModule(CvModuleInfo module_info)
 
 Registers another module
 """
