@@ -1592,17 +1592,18 @@ CV_STORAGE_APPEND = 2
 class CvAttrList(_Structure):
     pass
 CvAttrList_p = POINTER(CvAttrList)
+CvAttrList_r = ByRefArg(CvAttrList)
 CvAttrList._fields_ = [
     ("attr", POINTER(c_char_p)), # NULL-terminated array of (attribute_name,attribute_value) pairs
     ("next", CvAttrList_p), # POINTER to next chunk of the attributes list
 ]
 
 def cvAttrList(attr=None, next=None):
-    """CvAttrList cvAttrList( const char** attr=NULL, CvAttrList* next=NULL )
+    """CvAttrList cvAttrList( const char** attr=NULL, CvAttrList next=None )
     
     Initializes CvAttrList structure
     """
-    return CvAttrList(attr, next)
+    return CvAttrList(attr, None) if next is None else CvAttrList(attr, next)
 
 class CvTypeInfo(_Structure): # forward declaration
     pass
@@ -4915,10 +4916,10 @@ Releases file storage
 """
 
 cvAttrValue = cfunc('cvAttrValue', _cxDLL, c_char_p,
-    ('attr', CvAttrList_p, 1), # const CvAttrList* attr
+    ('attr', CvAttrList_r, 1), # const CvAttrList* attr
     ('attr_name', c_char_p, 1), # const char* attr_name
 )
-cvAttrValue.__doc__ = """const char* cvAttrValue( const CvAttrList* attr, const char* attr_name )
+cvAttrValue.__doc__ = """const char* cvAttrValue( const CvAttrList attr, const char* attr_name )
 
 Returns attribute value or 0 (NULL) if there is no such attribute
 """
@@ -4937,7 +4938,7 @@ cvStartWriteStruct = cfunc('cvStartWriteStruct', _cxDLL, None,
     ('type_name', c_char_p, 1, None), # const char* type_name
     ('attributes', CvAttrList, 1), # CvAttrList attributes
 )
-cvStartWriteStruct.__doc__ = """void cvStartWriteStruct(CvFileStorage* fs, const char* name, int struct_flags, const char* type_name=NULL, CvAttrList attributes=cvAttrLis)
+cvStartWriteStruct.__doc__ = """void cvStartWriteStruct(CvFileStorage* fs, const char* name, int struct_flags, const char* type_name=NULL, CvAttrList attributes=cvAttrList())
 
 Starts writing a new structure
 """
@@ -5184,9 +5185,9 @@ def cvReadStringByName(fs, map, name, default_value=None):
 cvRead = cfunc('cvRead', _cxDLL, c_void_p,
     ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('node', CvFileNode_r, 1), # CvFileNode* node
-    ('attributes', CvAttrList_p, 1, None), # CvAttrList* attributes
+    ('attributes', CvAttrList_r, 1, None), # CvAttrList* attributes
 )
-cvRead.__doc__ = """void* cvRead(CvFileStorage* fs, CvFileNode node, CvAttrList* attributes=NULL)
+cvRead.__doc__ = """void* cvRead(CvFileStorage* fs, CvFileNode node, CvAttrList attributes=NULL)
 
 Decodes object and returns POINTER to it
 """
@@ -5319,7 +5320,7 @@ cvSave = cfunc('cvSave', _cxDLL, None,
     ('comment', c_char_p, 1, None), # const char* comment
     ('attributes', CvAttrList, 1), # CvAttrList attributes
 )
-cvSave.__doc__ = """void cvSave(const char* filename, const void* struct_ptr, const char* name=NULL, const char* comment=NULL, CvAttrList attributes=cvAttrLis)
+cvSave.__doc__ = """void cvSave(const char* filename, const void* struct_ptr, const char* name=NULL, const char* comment=NULL, CvAttrList attributes=cvAttrList())
 
 Saves object to file
 """
