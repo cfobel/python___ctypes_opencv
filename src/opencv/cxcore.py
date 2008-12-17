@@ -160,7 +160,7 @@ class ByRefArg(object):
         self.atype = atype
 
     def from_param(self, param):
-        return byref(param)
+        return None if param is None else byref(param)
 
 class CallableToFunc(object):
     '''Make the callable argument into a C callback'''

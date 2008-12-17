@@ -74,9 +74,10 @@ class CvConnectedComp(_Structure):
                 ('rect', CvRect), # ROI of the component
                 ('contour', CvSeq_p)] # optional component boundary
 CvConnectedComp_p = POINTER(CvConnectedComp)
+CvConnectedComp_r = ByRefArg(CvConnectedComp)
                 
 # Minh-Tri's hacks
-sdHack_contents_getattr(CvConnectedComp_p)
+# sdHack_contents_getattr(CvConnectedComp_p)
 
 #Viji Periapoilan 4/16/2007 (start)
 #Added constants for contour retrieval mode - Apr 19th
@@ -1014,11 +1015,11 @@ cvFloodFill = cfunc('cvFloodFill', _cvDLL, None,
     ('new_val', CvScalar, 1), # CvScalar new_val
     ('lo_diff', CvScalar, 1), # CvScalar lo_diff
     ('up_diff', CvScalar, 1), # CvScalar up_diff
-    ('comp', CvConnectedComp_p, 1, None), # CvConnectedComp* comp
+    ('comp', CvConnectedComp_r, 1, None), # CvConnectedComp* comp
     ('flags', c_int, 1, 4), # int flags
     ('mask', CvArr_p, 1, None), # CvArr* mask
 )
-cvFloodFill.__doc__ = """void cvFloodFill(CvArr* image, CvPoint seed_point, CvScalar new_val, CvScalar lo_diff=cvScalarAll(0), CvScalar up_diff=cvScalarAll(0), CvConnectedComp* comp=NULL, int flags=4, CvArr* mask=NULL)
+cvFloodFill.__doc__ = """void cvFloodFill(CvArr* image, CvPoint seed_point, CvScalar new_val, CvScalar lo_diff=cvScalarAll(0), CvScalar up_diff=cvScalarAll(0), CvConnectedComp comp=None, int flags=4, CvArr* mask=NULL)
 
 Fills a connected component with given color
 """
@@ -2117,9 +2118,9 @@ cvMeanShift = cfunc('cvMeanShift', _cvDLL, c_int,
     ('prob_image', CvArr_p, 1), # const CvArr* prob_image
     ('window', CvRect, 1), # CvRect window
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
-    ('comp', CvConnectedComp_p, 1), # CvConnectedComp* comp 
+    ('comp', CvConnectedComp_r, 1), # CvConnectedComp* comp 
 )
-cvMeanShift.__doc__ = """int cvMeanShift(const CvArr* prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp* comp)
+cvMeanShift.__doc__ = """int cvMeanShift(const CvArr* prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp)
 
 Finds object center on back projection
 """
@@ -2129,10 +2130,10 @@ cvCamShift = cfunc('cvCamShift', _cvDLL, c_int,
     ('prob_image', CvArr_p, 1), # const CvArr* prob_image
     ('window', CvRect, 1), # CvRect window
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
-    ('comp', CvConnectedComp_p, 1), # CvConnectedComp* comp
+    ('comp', CvConnectedComp_r, 1), # CvConnectedComp* comp
     ('box', CvBox2D_p, 1), # CvBox2D* box
 )
-cvCamShift.__doc__ = """int cvCamShift(const CvArr* prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp* comp, CvBox2D* box=NULL)
+cvCamShift.__doc__ = """int cvCamShift(const CvArr* prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp, CvBox2D* box=NULL)
 
 Finds object center, size, and orientation
 """
