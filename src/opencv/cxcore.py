@@ -1579,7 +1579,12 @@ CvSeqReader_p = POINTER(CvSeqReader)
 # File storage
 class CvFileStorage(_Structure):
     _fields_ = []
+    
+    def __del__(self):
+        _cvReleaseFileStorage(pointer(self))
+    
 CvFileStorage_p = POINTER(CvFileStorage)
+CvFileStorage_r = ByRefArg(CvFileStorage)
     
 # Data structures for persistence (a.k.a serialization) functionality
 CV_STORAGE_READ = 0
@@ -4896,21 +4901,30 @@ Approximates elliptic arc with polyline
 
 
 # Opens file storage for reading or writing data
-cvOpenFileStorage = cfunc('cvOpenFileStorage', _cxDLL, CvFileStorage_p,
+_cvOpenFileStorage = cfunc('cvOpenFileStorage', _cxDLL, CvFileStorage_p,
     ('filename', c_char_p, 1), # const char* filename
     ('memstorage', CvMemStorage_p, 1), # CvMemStorage* memstorage
     ('flags', c_int, 1), # int flags 
 )
-cvOpenFileStorage.__doc__ = """CvFileStorage* cvOpenFileStorage(const char* filename, CvMemStorage* memstorage, int flags)
 
-Opens file storage for reading or writing data
-"""
+def cvOpenFileStorage(filename, memstorage, flags):
+    """CvFileStorage cvOpenFileStorage(const char* filename, CvMemStorage memstorage, int flags)
+
+    Opens file storage for reading or writing data
+    [ctypes-opencv] returns None if no file storage is opened
+    """
+    z = _cvOpenFileStorage(filename, memstorage, flags)
+    if bool(z):
+        y = z.contents
+        y._depends = (memstorage,) # to make sure y is always deleted before memstorage
+        return y
+    return None
 
 # Releases file storage
-cvReleaseFileStorage = cfunc('cvReleaseFileStorage', _cxDLL, None,
+_cvReleaseFileStorage = cfunc('cvReleaseFileStorage', _cxDLL, None,
     ('fs', ByRefArg(CvFileStorage_p), 1), # CvFileStorage** fs 
 )
-cvReleaseFileStorage.__doc__ = """void cvReleaseFileStorage(CvFileStorage** fs)
+_cvReleaseFileStorage.__doc__ = """void cvReleaseFileStorage(CvFileStorage** fs)
 
 Releases file storage
 """
@@ -4932,112 +4946,112 @@ Returns attribute value or 0 (NULL) if there is no such attribute
 
 # Starts writing a new structure
 cvStartWriteStruct = cfunc('cvStartWriteStruct', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('struct_flags', c_int, 1), # int struct_flags
     ('type_name', c_char_p, 1, None), # const char* type_name
     ('attributes', CvAttrList, 1), # CvAttrList attributes
 )
-cvStartWriteStruct.__doc__ = """void cvStartWriteStruct(CvFileStorage* fs, const char* name, int struct_flags, const char* type_name=NULL, CvAttrList attributes=cvAttrList())
+cvStartWriteStruct.__doc__ = """void cvStartWriteStruct(CvFileStorage fs, const char* name, int struct_flags, const char* type_name=NULL, CvAttrList attributes=cvAttrList())
 
 Starts writing a new structure
 """
 
 # Ends writing a structure
 cvEndWriteStruct = cfunc('cvEndWriteStruct', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs 
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs 
 )
-cvEndWriteStruct.__doc__ = """void cvEndWriteStruct(CvFileStorage* fs)
+cvEndWriteStruct.__doc__ = """void cvEndWriteStruct(CvFileStorage fs)
 
 Ends writing a structure
 """
 
 # Writes an integer value
 cvWriteInt = cfunc('cvWriteInt', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('value', c_int, 1), # int value 
 )
-cvWriteInt.__doc__ = """void cvWriteInt(CvFileStorage* fs, const char* name, int value)
+cvWriteInt.__doc__ = """void cvWriteInt(CvFileStorage fs, const char* name, int value)
 
 Writes an integer value
 """
 
 # Writes a floating-point value
 cvWriteReal = cfunc('cvWriteReal', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('value', c_double, 1), # double value 
 )
-cvWriteReal.__doc__ = """void cvWriteReal(CvFileStorage* fs, const char* name, double value)
+cvWriteReal.__doc__ = """void cvWriteReal(CvFileStorage fs, const char* name, double value)
 
 Writes a floating-point value
 """
 
 # Writes a text string
 cvWriteString = cfunc('cvWriteString', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('str', c_char_p, 1), # const char* str
     ('quote', c_int, 1, 0), # int quote
 )
-cvWriteString.__doc__ = """void cvWriteString(CvFileStorage* fs, const char* name, const char* str, int quote=0)
+cvWriteString.__doc__ = """void cvWriteString(CvFileStorage fs, const char* name, const char* str, int quote=0)
 
 Writes a text string
 """
 
 # Writes comment
 cvWriteComment = cfunc('cvWriteComment', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('comment', c_char_p, 1), # const char* comment
     ('eol_comment', c_int, 1), # int eol_comment 
 )
-cvWriteComment.__doc__ = """void cvWriteComment(CvFileStorage* fs, const char* comment, int eol_comment)
+cvWriteComment.__doc__ = """void cvWriteComment(CvFileStorage fs, const char* comment, int eol_comment)
 
 Writes comment
 """
 
 # Starts the next stream
 cvStartNextStream = cfunc('cvStartNextStream', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs 
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs 
 )
-cvStartNextStream.__doc__ = """void cvStartNextStream(CvFileStorage* fs)
+cvStartNextStream.__doc__ = """void cvStartNextStream(CvFileStorage fs)
 
 Starts the next stream
 """
 
 # Writes user object
 cvWrite = cfunc('cvWrite', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('ptr', c_void_p, 1), # const void* ptr
     ('attributes', CvAttrList, 1), # CvAttrList attributes
 )
-cvWrite.__doc__ = """void cvWrite(CvFileStorage* fs, const char* name, const void* ptr, CvAttrList attributes=cvAttrList)
+cvWrite.__doc__ = """void cvWrite(CvFileStorage fs, const char* name, const void* ptr, CvAttrList attributes=cvAttrList)
 
 Writes user object
 """
 
 # Writes multiple numbers
 cvWriteRawData = cfunc('cvWriteRawData', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('src', c_void_p, 1), # const void* src
     ('len', c_int, 1), # int len
     ('dt', c_char_p, 1), # const char* dt 
 )
-cvWriteRawData.__doc__ = """void cvWriteRawData(CvFileStorage* fs, const void* src, int len, const char* dt)
+cvWriteRawData.__doc__ = """void cvWriteRawData(CvFileStorage fs, const void* src, int len, const char* dt)
 
 Writes multiple numbers
 """
 
 # Writes file node to another file storage
 cvWriteFileNode = cfunc('cvWriteFileNode', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('new_node_name', c_char_p, 1), # const char* new_node_name
     ('node', CvFileNode_r, 1), # const CvFileNode* node
     ('embed', c_int, 1), # int embed 
 )
-cvWriteFileNode.__doc__ = """void cvWriteFileNode(CvFileStorage* fs, const char* new_node_name, CvFileNode node, int embed)
+cvWriteFileNode.__doc__ = """void cvWriteFileNode(CvFileStorage fs, const char* new_node_name, CvFileNode node, int embed)
 
 Writes file node to another file storage
 """
@@ -5050,12 +5064,12 @@ Writes file node to another file storage
 
 # Retrieves one of top-level nodes of the file storage
 _cvGetRootFileNode = cfunc('cvGetRootFileNode', _cxDLL, CvFileNode_p,
-    ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # const CvFileStorage* fs
     ('stream_index', c_int, 1, 0), # int stream_index
 )
 
 def cvGetRootFileNode(fs, stream_index=0):
-    """CvFileNode cvGetRootFileNode(const CvFileStorage* fs, int stream_index=0)
+    """CvFileNode cvGetRootFileNode(const CvFileStorage fs, int stream_index=0)
 
     Retrieves one of top-level nodes of the file storage
     [ctypes-opencv] returns None if no root file node is found
@@ -5065,13 +5079,13 @@ def cvGetRootFileNode(fs, stream_index=0):
 
 # Finds node in the map or file storage
 _cvGetFileNodeByName = cfunc('cvGetFileNodeByName', _cxDLL, CvFileNode_p,
-    ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # const CvFileStorage* fs
     ('map', CvFileNode_r, 1), # const CvFileNode* map
     ('name', c_char_p, 1), # const char* name 
 )
 
 def cvGetFileNodeByName(fs, map, name):
-    """CvFileNode cvGetFileNodeByName(const CvFileStorage* fs, const CvFileNode map, const char* name)
+    """CvFileNode cvGetFileNodeByName(const CvFileStorage fs, const CvFileNode map, const char* name)
 
     Finds node in the map or file storage
     [ctypes-opencv] returns None if no file node is found
@@ -5081,14 +5095,14 @@ def cvGetFileNodeByName(fs, map, name):
 
 # Returns a unique POINTER for given name
 _cvGetHashedKey = cfunc('cvGetHashedKey', _cxDLL, CvStringHashNode_p,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('len', c_int, 1, -1), # int len
     ('create_missing', c_int, 1, 0), # int create_missing
 )
 
 def cvGetHashedKey(fs, name, len=-1, create_missing=0):
-    """CvStringHashNode cvGetHashedKey(CvFileStorage* fs, const char* name, int len=-1, int create_missing=0)
+    """CvStringHashNode cvGetHashedKey(CvFileStorage fs, const char* name, int len=-1, int create_missing=0)
 
     Returns a unique POINTER for given name
     [ctypes-opencv] returns None if no string hash node is found
@@ -5098,14 +5112,14 @@ def cvGetHashedKey(fs, name, len=-1, create_missing=0):
 
 # Finds node in the map or file storage
 _cvGetFileNode = cfunc('cvGetFileNode', _cxDLL, CvFileNode_p,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('map', CvFileNode_r, 1), # CvFileNode* map
     ('key', CvStringHashNode_r, 1), # const CvStringHashNode* key
     ('create_missing', c_int, 1, 0), # int create_missing
 )
 
 def cvGetFileNode(fs, map, key, create_missing=0):
-    """CvFileNode cvGetFileNode(CvFileStorage* fs, CvFileNode map, const CvStringHashNode key, int create_missing=0)
+    """CvFileNode cvGetFileNode(CvFileStorage fs, CvFileNode map, const CvStringHashNode key, int create_missing=0)
 
     Finds node in the map or file storage
     [ctypes-opencv] returns None if no file node is found
@@ -5136,7 +5150,7 @@ def cvReadInt(node, default_value=0):
 
 # Finds file node and returns its value
 def cvReadIntByName(fs, map, name, default_value=0):
-    """int cvReadIntByName( const CvFileStorage* fs, const CvFileNode map, const char* name, int default_value=0)
+    """int cvReadIntByName( const CvFileStorage fs, const CvFileNode map, const char* name, int default_value=0)
     
     Finds file node and returns its value
     """
@@ -5156,7 +5170,7 @@ def cvReadReal(node, default_value=0.0):
 
 # Finds file node and returns its value
 def cvReadRealByName(fs, map, name, default_value=0.0):
-    """double cvReadRealByName( const CvFileStorage* fs, const CvFileNode map, const char* name, double default_value=0.0)
+    """double cvReadRealByName( const CvFileStorage fs, const CvFileNode map, const char* name, double default_value=0.0)
     
     Finds file node and returns its value
     """
@@ -5174,7 +5188,7 @@ def cvReadString(node, default_value=None):
 
 # Finds file node and returns its value
 def cvReadStringByName(fs, map, name, default_value=None):
-    """const char* cvReadStringByName( const CvFileStorage* fs, const CvFileNode map, const char* name, const char* default_value CV_DEFAULT(NULL) )
+    """const char* cvReadStringByName( const CvFileStorage fs, const CvFileNode map, const char* name, const char* default_value CV_DEFAULT(NULL) )
     
     Finds file node and returns its value
     """
@@ -5183,47 +5197,47 @@ def cvReadStringByName(fs, map, name, default_value=None):
 
 # Decodes object and returns POINTER to it
 cvRead = cfunc('cvRead', _cxDLL, c_void_p,
-    ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('node', CvFileNode_r, 1), # CvFileNode* node
     ('attributes', CvAttrList_r, 1, None), # CvAttrList* attributes
 )
-cvRead.__doc__ = """void* cvRead(CvFileStorage* fs, CvFileNode node, CvAttrList attributes=NULL)
+cvRead.__doc__ = """void* cvRead(CvFileStorage fs, CvFileNode node, CvAttrList attributes=NULL)
 
 Decodes object and returns POINTER to it
 """
 
 # Reads multiple numbers
 cvReadRawData = cfunc('cvReadRawData', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # const CvFileStorage* fs
     ('src', CvFileNode_r, 1), # const CvFileNode* src
     ('dst', c_void_p, 1), # void* dst
     ('dt', c_char_p, 1), # const char* dt 
 )
-cvReadRawData.__doc__ = """void cvReadRawData(const CvFileStorage* fs, const CvFileNode src, void* dst, const char* dt)
+cvReadRawData.__doc__ = """void cvReadRawData(const CvFileStorage fs, const CvFileNode src, void* dst, const char* dt)
 
 Reads multiple numbers
 """
 
 # Initializes file node sequence reader
 cvStartReadRawData = cfunc('cvStartReadRawData', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # const CvFileStorage* fs
     ('src', CvFileNode_r, 1), # const CvFileNode* src
     ('reader', CvSeqReader_p, 1), # CvSeqReader* reader 
 )
-cvStartReadRawData.__doc__ = """void cvStartReadRawData(const CvFileStorage* fs, const CvFileNode src, CvSeqReader* reader)
+cvStartReadRawData.__doc__ = """void cvStartReadRawData(const CvFileStorage fs, const CvFileNode src, CvSeqReader* reader)
 
 Initializes file node sequence reader
 """
 
 # Initializes file node sequence reader
 cvReadRawDataSlice = cfunc('cvReadRawDataSlice', _cxDLL, None,
-    ('fs', CvFileStorage_p, 1), # const CvFileStorage* fs
+    ('fs', CvFileStorage_r, 1), # const CvFileStorage* fs
     ('reader', CvSeqReader_p, 1), # CvSeqReader* reader
     ('count', c_int, 1), # int count
     ('dst', c_void_p, 1), # void* dst
     ('dt', c_char_p, 1), # const char* dt 
 )
-cvReadRawDataSlice.__doc__ = """void cvReadRawDataSlice(const CvFileStorage* fs, CvSeqReader* reader, int count, void* dst, const char* dt)
+cvReadRawDataSlice.__doc__ = """void cvReadRawDataSlice(const CvFileStorage fs, CvSeqReader* reader, int count, void* dst, const char* dt)
 
 Initializes file node sequence reader
 """
