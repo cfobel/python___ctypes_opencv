@@ -170,6 +170,14 @@ class CallableToFunc(object):
     def from_param(self, param):
         return self.cbacktype(param)
 
+
+def deref(ptr, *depends_args):
+    """Returns None if ptr is NULL else ptr's object with dependency tuple associated"""
+    if bool(ptr):
+        z = ptr.contents
+        z._depends = depends_args
+        return z
+    return None
         
 #=============================================================================
 # End of basic stuff
@@ -1369,6 +1377,7 @@ def cvScalarAll(val0123):
 class CvGraphEdge(_Structure): # forward declaration
     pass
 CvGraphEdge_p = POINTER(CvGraphEdge)
+CvGraphEdge_r = ByRefArg(CvGraphEdge)
     
 class CvGraphVtx(_Structure): # forward declaration
     pass
@@ -4314,10 +4323,10 @@ cvGraphAddEdge = cfunc('cvGraphAddEdge', _cxDLL, c_int,
     ('graph', CvGraph_p, 1), # CvGraph* graph
     ('start_idx', c_int, 1), # int start_idx
     ('end_idx', c_int, 1), # int end_idx
-    ('edge', CvGraphEdge_p, 1, None), # const CvGraphEdge* edge
+    ('edge', CvGraphEdge_r, 1, None), # const CvGraphEdge* edge
     ('inserted_edge', POINTER(CvGraphEdge_p), 1, None), # CvGraphEdge** inserted_edge
 )
-cvGraphAddEdge.__doc__ = """int cvGraphAddEdge(CvGraph* graph, int start_idx, int end_idx, const CvGraphEdge* edge=NULL, CvGraphEdge** inserted_edge=NULL)
+cvGraphAddEdge.__doc__ = """int cvGraphAddEdge(CvGraph* graph, int start_idx, int end_idx, const CvGraphEdge edge=NULL, CvGraphEdge** inserted_edge=NULL)
 
 Adds edge to graph
 """
@@ -4327,10 +4336,10 @@ cvGraphAddEdgeByPtr = cfunc('cvGraphAddEdgeByPtr', _cxDLL, c_int,
     ('graph', CvGraph_p, 1), # CvGraph* graph
     ('start_vtx', CvGraphVtx_r, 1), # CvGraphVtx* start_vtx
     ('end_vtx', CvGraphVtx_r, 1), # CvGraphVtx* end_vtx
-    ('edge', CvGraphEdge_p, 1, None), # const CvGraphEdge* edge
+    ('edge', CvGraphEdge_r, 1, None), # const CvGraphEdge* edge
     ('inserted_edge', POINTER(CvGraphEdge_p), 1, None), # CvGraphEdge** inserted_edge
 )
-cvGraphAddEdgeByPtr.__doc__ = """int cvGraphAddEdgeByPtr(CvGraph* graph, CvGraphVtx start_vtx, CvGraphVtx end_vtx, const CvGraphEdge* edge=NULL, CvGraphEdge** inserted_edge=NULL)
+cvGraphAddEdgeByPtr.__doc__ = """int cvGraphAddEdgeByPtr(CvGraph* graph, CvGraphVtx start_vtx, CvGraphVtx end_vtx, const CvGraphEdge edge=NULL, CvGraphEdge** inserted_edge=NULL)
 
 Adds edge to graph
 """
@@ -4358,28 +4367,36 @@ Removes edge from graph
 """
 
 # Finds edge in graph
-cvFindGraphEdge = cfunc('cvFindGraphEdge', _cxDLL, CvGraphEdge_p,
+_cvFindGraphEdge = cfunc('cvFindGraphEdge', _cxDLL, CvGraphEdge_p,
     ('graph', CvGraph_p, 1), # const CvGraph* graph
     ('start_idx', c_int, 1), # int start_idx
     ('end_idx', c_int, 1), # int end_idx 
 )
-cvFindGraphEdge.__doc__ = """CvGraphEdge* cvFindGraphEdge(const CvGraph* graph, int start_idx, int end_idx)
 
-Finds edge in graph
-"""
+def cvFindGraphEdge(graph, start_idx, end_idx):
+    """CvGraphEdge cvFindGraphEdge(const CvGraph* graph, int start_idx, int end_idx)
+
+    Finds edge in graph
+    [ctypes-opencv] returns None if no edge is found
+    """
+    return deref(_cvFindGraphEdge(graph, start_idx, end_idx), graph)
 
 cvGraphFindEdge = cvFindGraphEdge
 
 # Finds edge in graph
-cvFindGraphEdgeByPtr = cfunc('cvFindGraphEdgeByPtr', _cxDLL, CvGraphEdge_p,
+_cvFindGraphEdgeByPtr = cfunc('cvFindGraphEdgeByPtr', _cxDLL, CvGraphEdge_p,
     ('graph', CvGraph_p, 1), # const CvGraph* graph
     ('start_vtx', CvGraphVtx_r, 1), # const CvGraphVtx* start_vtx
     ('end_vtx', CvGraphVtx_r, 1), # const CvGraphVtx* end_vtx 
 )
-cvFindGraphEdgeByPtr.__doc__ = """CvGraphEdge* cvFindGraphEdgeByPtr(const CvGraph* graph, const CvGraphVtx start_vtx, const CvGraphVtx end_vtx)
 
-Finds edge in graph
-"""
+def cvFindGraphEdgeByPtr(graph, start_vtx, end_vtx):
+    """CvGraphEdge cvFindGraphEdgeByPtr(const CvGraph* graph, const CvGraphVtx start_vtx, const CvGraphVtx end_vtx)
+
+    Finds edge in graph
+    [ctypes-opencv] returns None if no edge is found
+    """
+    return deref(_cvFindGraphEdgeByPtr(graph, start_vtx, end_vtx), graph)
 
 cvGraphFindEdgeByPtr = cvFindGraphEdgeByPtr
 
@@ -4410,8 +4427,7 @@ def cvGetGraphVtx(graph, idx):
     Retrieves graph vertex by given index
     [ctypes-opencv] returns None if no CvGraphVtx is found
     """
-    z = cast(cvGetSetElem(graph, idx), POINTER(CvGraphVtx))
-    return z.contents if bool(z) else None
+    return deref(cast(cvGetSetElem(graph, idx), POINTER(CvGraphVtx)), graph)
 
 # Retrieves index of a graph vertex given its pointer
 def cvGraphVtxIdx(graph, vtx):
@@ -4511,12 +4527,7 @@ def cvCreateGraphScanner(graph, vtx=None, mask=CV_GRAPH_ALL_ITEMS):
 
     Creates structure for depth-first graph traversal
     """
-    z = _cvCreateGraphScanner(graph, vtx, mask)
-    if vtx is None:
-        z._depends = (graph,) # to make sure graph is always deleted after z is deleted
-    else:
-        z._depends = (graph, vtx) # to make sure graph and vtx are always deleted after z is deleted
-    return z.contents if bool(z) else None
+    return deref(_cvCreateGraphScanner(graph, vtx, mask), graph)
 
 # Makes one or more steps of the graph traversal procedure
 cvNextGraphItem = cfunc('cvNextGraphItem', _cxDLL, c_int,
@@ -4941,12 +4952,7 @@ def cvOpenFileStorage(filename, memstorage, flags):
     Opens file storage for reading or writing data
     [ctypes-opencv] returns None if no file storage is opened
     """
-    z = _cvOpenFileStorage(filename, memstorage, flags)
-    if bool(z):
-        y = z.contents
-        y._depends = (memstorage,) # to make sure y is always deleted before memstorage
-        return y
-    return None
+    return deref(_cvOpenFileStorage(filename, memstorage, flags), memstorage)
 
 # Releases file storage
 _cvReleaseFileStorage = cfunc('cvReleaseFileStorage', _cxDLL, None,
@@ -5102,8 +5108,7 @@ def cvGetRootFileNode(fs, stream_index=0):
     Retrieves one of top-level nodes of the file storage
     [ctypes-opencv] returns None if no root file node is found
     """
-    z = _cvGetRootFileNode(fs, stream_index)
-    return z.contents if bool(z) else None
+    return deref(_cvGetRootFileNode(fs, stream_index), fs)
 
 # Finds node in the map or file storage
 _cvGetFileNodeByName = cfunc('cvGetFileNodeByName', _cxDLL, CvFileNode_p,
@@ -5118,8 +5123,7 @@ def cvGetFileNodeByName(fs, map, name):
     Finds node in the map or file storage
     [ctypes-opencv] returns None if no file node is found
     """
-    z = _cvGetFileNodeByName(fs, map, name)
-    return z.contents if bool(z) else None
+    return deref(_cvGetFileNodeByName(fs, map, name), fs, map)
 
 # Returns a unique POINTER for given name
 _cvGetHashedKey = cfunc('cvGetHashedKey', _cxDLL, CvStringHashNode_p,
@@ -5135,8 +5139,7 @@ def cvGetHashedKey(fs, name, len=-1, create_missing=0):
     Returns a unique POINTER for given name
     [ctypes-opencv] returns None if no string hash node is found
     """
-    z = _cvGetHashedKey(fs, name, len, create_missing)
-    return z.contents if bool(z) else None
+    return deref(_cvGetHashedKey(fs, name, len, create_missing), fs)
 
 # Finds node in the map or file storage
 _cvGetFileNode = cfunc('cvGetFileNode', _cxDLL, CvFileNode_p,
@@ -5152,8 +5155,7 @@ def cvGetFileNode(fs, map, key, create_missing=0):
     Finds node in the map or file storage
     [ctypes-opencv] returns None if no file node is found
     """
-    z = _cvGetFileNode(fs, map, key, create_missing)
-    return z.contents if bool(z) else None
+    return deref(_cvGetFileNode(fs, map, key, create_missing), fs, map)
 
 # Returns name of file node
 cvGetFileNodeName = cfunc('cvGetFileNodeName', _cxDLL, c_char_p,
@@ -5304,8 +5306,7 @@ def cvFirstType():
     Returns the beginning of type list
     [ctypes-opencv] returns None if no type info is found
     """
-    z = _cvFirstType()
-    return z.contents if bool(z) else None
+    return deref(_cvFirstType())
 
 # Finds type by its name
 _cvFindType = cfunc('cvFindType', _cxDLL, CvTypeInfo_p,
@@ -5318,8 +5319,7 @@ def cvFindType(type_name):
     Finds type by its name
     [ctypes-opencv] returns None if no type info is found
     """
-    z = _cvFindType(type_name)
-    return z.contents if bool(z) else None
+    return deref(_cvFindType(type_name))
 
 # Returns type of the object
 _cvTypeOf = cfunc('cvTypeOf', _cxDLL, CvTypeInfo_p,
@@ -5332,8 +5332,7 @@ def cvTypeOf(struct_ptr):
     Returns type of the object
     [ctypes-opencv] returns None if no type info is found
     """
-    z = _cvTypeOf(struct_ptr)
-    return z.contents if bool(z) else None
+    return deref(_cvTypeOf(struct_ptr))
     
 
 # Releases the object

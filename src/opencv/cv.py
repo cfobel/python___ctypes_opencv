@@ -1605,7 +1605,7 @@ def cvStartReadChainPoints(chain):
     z = CvChainPtReader()
     _cvStartReadChainPoints(chain, z)
     z._depends = (chain,) # to make sure chain is always deleted after z is deleted
-    return z.contents if bool(z) else None
+    return z
 
 # Gets next chain point
 cvReadChainPoint = cfunc('cvReadChainPoint', _cvDLL, CvPoint,
@@ -1914,8 +1914,7 @@ def cvSubdiv2DEdgeOrg(edge):
     """
     ev = edge.value
     e = pointer(CvQuadEdge2D.from_address(ev & ~3))
-    z = e.contents.pt[ev & 3]
-    return z.contents if bool(z) else None
+    return deref(e.contents.pt[ev & 3])
 
 # Returns edge destination
 def cvSubdiv2DEdgeDst(edge):
@@ -1926,8 +1925,7 @@ def cvSubdiv2DEdgeDst(edge):
     """
     ev = edge.value
     e = cast(c_void_p(ev & ~3), POINTER(CvQuadEdge2D))
-    z = e.contents.pt[(ev + 2) & 3]
-    return z.contents if bool(z) else None
+    return deref(e.contents.pt[(ev + 2) & 3])
 
 # Initializes Delaunay triangulation
 cvInitSubdivDelaunay2D = cfunc('cvInitSubdivDelaunay2D', _cvDLL, None,
@@ -1974,8 +1972,7 @@ def cvSubdivDelaunay2DInsert(subdiv, pt):
     Inserts a single point to Delaunay triangulation
     [ctypes-opencv] returns None if no subdiv2dpoint is inserted
     """
-    z = _cvSubdivDelaunay2DInsert(subdiv, pt)
-    return z.contents if bool(z) else None
+    return deref(_cvSubdivDelaunay2DInsert(subdiv, pt), subdiv)
 
 # Inserts a single point to Delaunay triangulation
 _cvSubdiv2DLocate = cfunc('cvSubdiv2DLocate', _cvDLL, CvSubdiv2DPointLocation,
@@ -2011,8 +2008,7 @@ def cvFindNearestPoint2D(subdiv, pt):
     Finds the closest subdivision vertex to given point
     [ctypes-opencv] returns None if no subdiv2dpoint is found
     """
-    z = _cvFindNearestPoint2D(subdiv, pt)
-    return z.contents if bool(z) else None
+    return deref(_cvFindNearestPoint2D(subdiv, pt), subdiv)
 
 # Calculates coordinates of Voronoi diagram cells
 cvCalcSubdivVoronoi2D = cfunc('cvCalcSubdivVoronoi2D', _cvDLL, None,
@@ -2306,8 +2302,7 @@ def cvCreateKalman(dynam_params, measure_params, control_params=0):
     Allocates Kalman filter structure
     [ctypes-opencv] returns None if no CvKalman is created
     """
-    z = _cvCreateKalman(dynam_params, measure_params, control_params)
-    return z.contents if bool(z) else None
+    return deref(_cvCreateKalman(dynam_params, measure_params, control_params))
 
 # Estimates subsequent model state
 cvKalmanPredict = cfunc('cvKalmanPredict', _cvDLL, CvMat_p,
@@ -2345,14 +2340,13 @@ _cvCreateConDensation = cfunc('cvCreateConDensation', _cvDLL, CvConDensation_p,
 )
 
 # Allocates ConDensation filter structure
-def cvCreateConDensation(*args):
+def cvCreateConDensation(dynam_params, measure_params, sample_count):
     """CvConDensation cvCreateConDensation(int dynam_params, int measure_params, int sample_count)
 
     Allocates ConDensation filter structure
     [ctypes-opencv] returns None if no CvConDensation is created
     """
-    z = _cvCreateConDensation(*args)
-    return z.contents if bool(z) else None
+    return deref(_cvCreateConDensation(dynam_params, measure_params, sample_count))
 
 # Initializes sample set for ConDensation algorithm
 cvConDensInitSampleSet = cfunc('cvConDensInitSampleSet', _cvDLL, None,
@@ -2397,8 +2391,7 @@ def cvLoadHaarClassifierCascade(directory, orig_window_size):
     Loads a trained cascade classifier from file or the classifier database embedded in OpenCV
     [ctypes-opencv] returns None if no cascade is loaded
     """
-    z = _cvLoadHaarClassifierCascade(directory, orig_window_size)
-    return z.contents if bool(z) else None
+    return deref(_cvLoadHaarClassifierCascade(directory, orig_window_size))
 
 
 CV_HAAR_DO_CANNY_PRUNING = 1
@@ -2645,8 +2638,7 @@ def cvCreatePOSITObject(points):
     Initializes structure containing object information
     [ctypes-opencv] returns None if no posit object is created
     """
-    z = _cvCreatePOSITObject(points, len(points))
-    return z.contents if bool(z) else None
+    return deref(_cvCreatePOSITObject(points, len(points)))
 
 # Implements POSIT algorithm
 cvPOSIT = cfunc('cvPOSIT', _cvDLL, None,
