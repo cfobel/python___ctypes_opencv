@@ -1228,7 +1228,7 @@ CV_HOUGH_GRADIENT = 3
 # Finds lines in binary image using Hough transform
 cvHoughLines2 = cfunc('cvHoughLines2', _cvDLL, CvSeq_p,
     ('image', CvArr_p, 1), # CvArr* image
-    ('line_storage', c_void_p, 1), # void* line_storage
+    ('line_storage', ByRefArg(CvMemStorage), 1), # void* line_storage
     ('method', c_int, 1), # int method
     ('rho', c_double, 1), # double rho
     ('theta', c_double, 1), # double theta
@@ -1236,7 +1236,7 @@ cvHoughLines2 = cfunc('cvHoughLines2', _cvDLL, CvSeq_p,
     ('param1', c_double, 1, 0), # double param1
     ('param2', c_double, 1, 0), # double param2
 )
-cvHoughLines2.__doc__ = """CvSeq* cvHoughLines2(CvArr* image, void* line_storage, int method, double rho, double theta, int threshold, double param1=0, double param2=0)
+cvHoughLines2.__doc__ = """CvSeq* cvHoughLines2(CvArr* image, CvMemStorage_or_CvMat line_storage, int method, double rho, double theta, int threshold, double param1=0, double param2=0)
 
 Finds lines in binary image using Hough transform
 """

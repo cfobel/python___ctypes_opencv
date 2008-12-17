@@ -5716,7 +5716,7 @@ __all__ += [
     'cfunc',
     '_Structure', 'ListPOINTER', 'ListPOINTER2', 'FlexibleListPOINTER',
     'ByRefArg', 'CallableToFunc', 'deref',
-    'sdHack_cvseq',
+    'sdHack_cvseq', 'sdAdd_autoclean',
     'sdHack_contents_getattr', 
 ]
         
