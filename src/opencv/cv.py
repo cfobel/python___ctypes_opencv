@@ -1726,10 +1726,10 @@ Compares two contours using their tree representations
 
 # Finds bounding rectangle for two given rectangles
 cvMaxRect = cfunc('cvMaxRect', _cvDLL, CvRect,
-    ('rect1', CvRect_p, 1), # const CvRect* rect1
-    ('rect2', CvRect_p, 1), # const CvRect* rect2 
+    ('rect1', CvRect_r, 1), # const CvRect* rect1
+    ('rect2', CvRect_r, 1), # const CvRect* rect2 
 )
-cvMaxRect.__doc__ = """CvRect cvMaxRect(const CvRect* rect1, const CvRect* rect2)
+cvMaxRect.__doc__ = """CvRect cvMaxRect(const CvRect rect1, const CvRect rect2)
 
 Finds bounding rectangle for two given rectangles
 """

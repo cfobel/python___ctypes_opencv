@@ -1199,6 +1199,7 @@ class CvRect(_Structure):
     def bloat(self, s):
         return CvRect(self.x-s, self.y-s, self.width+2*s, self.height+2*s)
 CvRect_p = POINTER(CvRect)
+CvRect_r = ByRefArg(CvRect)
         
 def cvRect(x, y, width, height):
     return CvRect(c_int(x), c_int(y), c_int(width), c_int(height))
@@ -1231,6 +1232,7 @@ class CvTermCriteria(_Structure):
                 ("max_iter", c_int),
                 ("epsilon", c_double)]
 CvTermCriteria_p = POINTER(CvTermCriteria)
+CvTermCriteria_r = ByRefArg(CvTermCriteria)
                 
 def cvTermCriteria(type, max_iter, epsilon):
     return CvTermCriteria(c_int(type), c_int(max_iter), c_double(epsilon))
