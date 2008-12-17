@@ -668,6 +668,7 @@ def cvCeil(val): # here, this function is not correct
 
 CvRNG = c_uint64
 CvRNG_p = POINTER(CvRNG)
+CvRNG_r = ByRefARg(CvRNG)
 
 def cvRNG(seed=-1):
     """CvRNG cvRNG( int64 seed = CV_DEFAULT(-1))
@@ -679,27 +680,17 @@ def cvRNG(seed=-1):
     return CvRNG(-1)
 
 def cvRandInt(rng):
-    """unsigned cvRandInt( CvRNG* rng )
+    """unsigned cvRandInt( CvRNG rng )
     
     Returns random 32-bit unsigned integer. 
     """
-    if isinstance(rng, CvRNG_p):
-        temp = rng.contents.value
-        temp = c_uint32(temp*1554115554).value + (temp >> 32)
-        rng.contents.value = temp
-    elif isinstance(rng, CvRNG):
-        temp = rng.value
-        temp = c_uint32(temp*1554115554).value + (temp >> 32)
-        rng.value = temp
-    else:
-        temp = rng._obj.value
-        temp = c_uint32(temp*1554115554).value + (temp >> 32)
-        rng._obj.value = temp
-        
+    temp = rng.value
+    temp = c_uint32(temp*1554115554).value + (temp >> 32)
+    rng.value = temp
     return c_uint32(temp).value
     
 def cvRandReal(rng):
-    """double cvRandReal( CvRNG* rng )
+    """double cvRandReal( CvRNG rng )
     
     Returns random floating-point number between 0 and 1.
     """
@@ -3191,13 +3182,13 @@ CV_RAND_NORMAL = 1
 
 # Fills array with random numbers and updates the RNG state
 cvRandArr = cfunc('cvRandArr', _cxDLL, None,
-    ('rng', CvRNG_p, 1), # CvRNG* rng
+    ('rng', CvRNG_r, 1), # CvRNG* rng
     ('arr', CvArr_p, 1), # CvArr* arr
     ('dist_type', c_int, 1), # int dist_type
     ('param1', CvScalar, 1), # CvScalar param1
     ('param2', CvScalar, 1), # CvScalar param2 
 )
-cvRandArr.__doc__ = """void cvRandArr(CvRNG* rng, CvArr* arr, int dist_type, CvScalar param1, CvScalar param2)
+cvRandArr.__doc__ = """void cvRandArr(CvRNG rng, CvArr* arr, int dist_type, CvScalar param1, CvScalar param2)
 
 Fills array with random numbers and updates the RNG state
 """
@@ -3205,10 +3196,10 @@ Fills array with random numbers and updates the RNG state
 # Shuffles the matrix by swapping randomly chosen pairs of the matrix elements on each iteration
 cvRandShuffle = cfunc('cvRandShuffle', _cxDLL, None,
     ('mat', CvArr_p, 1), # CvArr* arr
-    ('rng', CvRNG_p, 1), # CvRNG* rng
+    ('rng', CvRNG_r, 1), # CvRNG* rng
     ('iter_factor', c_double, 1, 1.0), # double iter_factor=1
 )
-cvRandShuffle.__doc__ = """void cvRandShuffle( CvArr* mat, CvRNG* rng, double iter_factor=1. )
+cvRandShuffle.__doc__ = """void cvRandShuffle( CvArr* mat, CvRNG rng, double iter_factor=1. )
 
 Shuffles the matrix by swapping randomly chosen pairs of the matrix elements on each iteration
 """
