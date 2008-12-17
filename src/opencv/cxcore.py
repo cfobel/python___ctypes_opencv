@@ -2695,7 +2695,22 @@ cvMerge.__doc__ = """void cvMerge(const CvArr* src0, const CvArr* src1, const Cv
 Composes multi-channel array from several single-channel arrays or inserts a single channel into the array
 """
 
-# TODO: to implement a wrapper for cvMixChannels()
+# Copies several channels from input arrays to certain channels of output arrays
+_cvMixChannels = cfunc('cvMixChannels', _cxDLL, None,
+    ('src', ListPOINTER(CvArr_p), 1), # const CvArr** src
+    ('src_count', c_int, 1), # int src_count
+    ('dst', ListPOINTER(CvArr_p), 1), # CvArr** dst
+    ('dst_count', c_int, 1), # int dst_count
+    ('from_to', ListPOINTER(c_int), 1), # const int* from_to
+    ('pair_count', c_int, 1), # int pair_count
+)    
+
+def cvMixChannels(src, dst, from_to):
+    """void cvMixChannels(list_or_tuple_of_CvArr_p src, list_or_tuple_of_CvArr_p dst, list_or_tuple_of_int from_to)
+    
+    Copies several channels from input arrays to certain channels of output arrays
+    """
+    return _cvMixChannels(src, len(src), dst, len(dst), from_to, len(from_to))
 
 
 #-----------------------------------------------------------------------------
