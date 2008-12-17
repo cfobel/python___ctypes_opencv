@@ -51,6 +51,7 @@ class CvMoments(_Structure):
         ('inv_sqrt_m00', c_double),
     ]
 CvMoments_p = POINTER(CvMoments)
+CvMoments_r = ByRefArg(CvMoments)
     
 # Hu invariants
 class CvHuMoments(_Structure):
@@ -64,6 +65,7 @@ class CvHuMoments(_Structure):
         ('hu7', c_double),
     ]
 CvHuMoments_p = POINTER(CvHuMoments)
+CvHuMoments_r = ByRefArg(CvHuMoments)
     
 # Connected Component
 class CvConnectedComp(_Structure):
@@ -1148,53 +1150,53 @@ Does watershed segmentation
 # Calculates all moments up to third order of a polygon or rasterized shape
 cvMoments = cfunc('cvMoments', _cvDLL, None,
     ('arr', CvArr_p, 1), # const CvArr* arr
-    ('moments', CvMoments_p, 1), # CvMoments* moments
+    ('moments', CvMoments_r, 1), # CvMoments* moments
     ('binary', c_int, 1, 0), # int binary
 )
-cvMoments.__doc__ = """void cvMoments(const CvArr* arr, CvMoments* moments, int binary=0)
+cvMoments.__doc__ = """void cvMoments(const CvArr* arr, CvMoments moments, int binary=0)
 
 Calculates all moments up to third order of a polygon or rasterized shape
 """
 
 # Retrieves spatial moment from moment state structure
 cvGetSpatialMoment = cfunc('cvGetSpatialMoment', _cvDLL, c_double,
-    ('moments', CvMoments_p, 1), # CvMoments* moments
+    ('moments', CvMoments_r, 1), # CvMoments* moments
     ('x_order', c_int, 1), # int x_order
     ('y_order', c_int, 1), # int y_order 
 )
-cvGetSpatialMoment.__doc__ = """double cvGetSpatialMoment(CvMoments* moments, int x_order, int y_order)
+cvGetSpatialMoment.__doc__ = """double cvGetSpatialMoment(CvMoments moments, int x_order, int y_order)
 
 Retrieves spatial moment from moment state structure
 """
 
 # Retrieves central moment from moment state structure
 cvGetCentralMoment = cfunc('cvGetCentralMoment', _cvDLL, c_double,
-    ('moments', CvMoments_p, 1), # CvMoments* moments
+    ('moments', CvMoments_r, 1), # CvMoments* moments
     ('x_order', c_int, 1), # int x_order
     ('y_order', c_int, 1), # int y_order 
 )
-cvGetCentralMoment.__doc__ = """double cvGetCentralMoment(CvMoments* moments, int x_order, int y_order)
+cvGetCentralMoment.__doc__ = """double cvGetCentralMoment(CvMoments moments, int x_order, int y_order)
 
 Retrieves central moment from moment state structure
 """
 
 # Retrieves normalized central moment from moment state structure
 cvGetNormalizedCentralMoment = cfunc('cvGetNormalizedCentralMoment', _cvDLL, c_double,
-    ('moments', CvMoments_p, 1), # CvMoments* moments
+    ('moments', CvMoments_r, 1), # CvMoments* moments
     ('x_order', c_int, 1), # int x_order
     ('y_order', c_int, 1), # int y_order 
 )
-cvGetNormalizedCentralMoment.__doc__ = """double cvGetNormalizedCentralMoment(CvMoments* moments, int x_order, int y_order)
+cvGetNormalizedCentralMoment.__doc__ = """double cvGetNormalizedCentralMoment(CvMoments moments, int x_order, int y_order)
 
 Retrieves normalized central moment from moment state structure
 """
 
 # Calculates seven Hu invariants
 cvGetHuMoments = cfunc('cvGetHuMoments', _cvDLL, None,
-    ('moments', CvMoments_p, 1), # CvMoments* moments
-    ('hu_moments', CvHuMoments_p, 1), # CvHuMoments* hu_moments 
+    ('moments', CvMoments_r, 1), # CvMoments* moments
+    ('hu_moments', CvHuMoments_r, 1), # CvHuMoments* hu_moments 
 )
-cvGetHuMoments.__doc__ = """void cvGetHuMoments(CvMoments* moments, CvHuMoments* hu_moments)
+cvGetHuMoments.__doc__ = """void cvGetHuMoments(CvMoments moments, CvHuMoments hu_moments)
 
 Calculates seven Hu invariants
 """
