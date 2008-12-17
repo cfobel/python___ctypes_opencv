@@ -1671,6 +1671,7 @@ CvString_p = POINTER(CvString)
 class CvStringHashNode(_Structure):
     pass
 CvStringHashNode_p = POINTER(CvStringHashNode)
+CvStringHashNode_r = ByRefArg(CvStringHashNode)
 CvStringHashNode._fields_ = [("hashval", c_uint32),
                 ("str", CvString),
                 ("next", CvStringHashNode_p)]
@@ -5073,31 +5074,36 @@ def cvGetFileNodeByName(fs, map, name):
     Finds node in the map or file storage
     [ctypes-opencv] returns None if no file node is found
     """
-    z = _cvGetFileNodeByname(fs, map, name)
+    z = _cvGetFileNodeByName(fs, map, name)
     return z.contents if bool(z) else None
 
 # Returns a unique POINTER for given name
-cvGetHashedKey = cfunc('cvGetHashedKey', _cxDLL, CvStringHashNode_p,
+_cvGetHashedKey = cfunc('cvGetHashedKey', _cxDLL, CvStringHashNode_p,
     ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
-    ('len', c_int, 1), # int len
+    ('len', c_int, 1, -1), # int len
     ('create_missing', c_int, 1, 0), # int create_missing
 )
-cvGetHashedKey.__doc__ = """CvStringHashNode* cvGetHashedKey(CvFileStorage* fs, const char* name, int len=-1, int create_missing=0)
 
-Returns a unique POINTER for given name
-"""
+def cvGetHashedKey(fs, name, len=-1, create_missing=0):
+    """CvStringHashNode cvGetHashedKey(CvFileStorage* fs, const char* name, int len=-1, int create_missing=0)
+
+    Returns a unique POINTER for given name
+    [ctypes-opencv] returns None if no string hash node is found
+    """
+    z = _cvGetHashedKey(fs, name, len, create_missing)
+    return z.contents if bool(z) else None
 
 # Finds node in the map or file storage
 _cvGetFileNode = cfunc('cvGetFileNode', _cxDLL, CvFileNode_p,
     ('fs', CvFileStorage_p, 1), # CvFileStorage* fs
     ('map', CvFileNode_r, 1), # CvFileNode* map
-    ('key', CvStringHashNode_p, 1), # const CvStringHashNode* key
+    ('key', CvStringHashNode_r, 1), # const CvStringHashNode* key
     ('create_missing', c_int, 1, 0), # int create_missing
 )
 
 def cvGetFileNode(fs, map, key, create_missing=0):
-    """CvFileNode cvGetFileNode(CvFileStorage* fs, CvFileNode map, const CvStringHashNode* key, int create_missing=0)
+    """CvFileNode cvGetFileNode(CvFileStorage* fs, CvFileNode map, const CvStringHashNode key, int create_missing=0)
 
     Finds node in the map or file storage
     [ctypes-opencv] returns None if no file node is found
