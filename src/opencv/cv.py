@@ -107,6 +107,7 @@ class CvChainPtReader(_Structure):
         ('deltas', ((c_char*2)*8)),
     ]
 CvChainPtReader_p = POINTER(CvChainPtReader)
+CvChainPtReader_r = ByRefArg(CvChainPtReader)
     
 # Contour tree header
 class CvContourTree(_Structure):
@@ -1581,18 +1582,18 @@ Approximates Freeman chain(s) with polygonal curve
 # Initializes chain reader
 cvStartReadChainPoints = cfunc('cvStartReadChainPoints', _cvDLL, None,
     ('chain', CvChain_p, 1), # CvChain* chain
-    ('reader', CvChainPtReader_p, 1), # CvChainPtReader* reader 
+    ('reader', CvChainPtReader_r, 1), # CvChainPtReader* reader 
 )
-cvStartReadChainPoints.__doc__ = """void cvStartReadChainPoints(CvChain* chain, CvChainPtReader* reader)
+cvStartReadChainPoints.__doc__ = """void cvStartReadChainPoints(CvChain* chain, CvChainPtReader reader)
 
 Initializes chain reader
 """
 
 # Gets next chain point
 cvReadChainPoint = cfunc('cvReadChainPoint', _cvDLL, CvPoint,
-    ('reader', CvChainPtReader_p, 1), # CvChainPtReader* reader 
+    ('reader', CvChainPtReader_r, 1), # CvChainPtReader* reader 
 )
-cvReadChainPoint.__doc__ = """CvPoint cvReadChainPoint(CvChainPtReader* reader)
+cvReadChainPoint.__doc__ = """CvPoint cvReadChainPoint(CvChainPtReader reader)
 
 Gets next chain point
 """
