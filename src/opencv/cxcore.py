@@ -1313,6 +1313,7 @@ class CvSize(_Structure):
     _fields_ = [("width", c_int),
                 ("height", c_int)]
 CvSize_p = POINTER(CvSize)
+CvSize_r = ByRefArg(CvSize)
                 
 def cvSize(x, y):
     return CvSize(c_int(x), c_int(y))
@@ -1342,6 +1343,7 @@ class CvLineIterator(_Structure):
         ('minus_step', c_int),        
     ]
 CvLineIterator_p = POINTER(CvLineIterator)
+CvLineIterator_r = ByRefArg(CvLineIterator)
     
     
 #-----------------------------------------------------------------------------
@@ -4852,10 +4854,10 @@ Draws text string
 cvGetTextSize = cfunc('cvGetTextSize', _cxDLL, None,
     ('text_string', c_char_p, 1), # const char* text_string
     ('font', CvFont_r, 1), # const CvFont* font
-    ('text_size', CvSize_r, 2), # CvSize* text_size
+    ('text_size', CvSize_p, 2), # CvSize* text_size
     ('baseline', POINTER(c_int), 2), # int* baseline 
 )
-cvGetTextSize.__doc__ = """void cvGetTextSize(const char* text_string, const CvFont font, CvSize text_size, int* baseline)
+cvGetTextSize.__doc__ = """(CvSize text_size, int baseline) = cvGetTextSize(const char* text_string, const CvFont font, CvSize text_size, int* baseline)
 
 Retrieves width and height of text string
 """
