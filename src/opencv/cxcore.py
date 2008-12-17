@@ -1098,6 +1098,7 @@ CV_TYPE_NAME_SEQ_TREE        = "opencv-sequence-tree"
 class CvSetElem(_Structure):
     pass
 CvSetElem_p = POINTER(CvSetElem)
+CvSetElem_r = ByRefArg(CvSetElem)
 CvSetElem._fields_ = [
     ('flags', c_int),
     ('next_free', CvSetElem_p)]
@@ -2231,7 +2232,7 @@ def cvGetNextSparseNode(mat_iterator):
     """
     if bool(mat_iterator.node.contents.next):
         mat_iterator.node = mat_iterator.node.contents.next
-        return deref(mat_iterator.node)
+        return deref(mat_iterator.node, mat_iterator.mat)
 
     mat_iterator.curidx += 1
     for idx in xrange(mat_iterator.curidx, mat_iterator.mat.contents.hashsize):
@@ -4230,45 +4231,44 @@ Creates empty set
 # Occupies a node in the set
 cvSetAdd = cfunc('cvSetAdd', _cxDLL, c_int,
     ('set_header', CvSet_p, 1), # CvSet* set_header
-    ('elem', CvSetElem_p, 1, None), # CvSetElem* elem
+    ('elem', CvSetElem_r, 1, None), # CvSetElem* elem
     ('inserted_elem', POINTER(CvSetElem_p), 1, None), # CvSetElem** inserted_elem
 )
-cvSetAdd.__doc__ = """int cvSetAdd(CvSet* set_header, CvSetElem* elem=NULL, CvSetElem** inserted_elem=NULL)
+cvSetAdd.__doc__ = """int cvSetAdd(CvSet* set_header, CvSetElem elem=NULL, CvSetElem** inserted_elem=NULL)
 
 Occupies a node in the set
 """
 
 # Adds element to set (fast variant)
 def cvSetNew(set_header):
-    """CvSetElem* cvSetNew( CvSet* set_header )
+    """CvSetElem cvSetNew( CvSet* set_header )
     
     Adds element to set (fast variant)
     [ctypes-opencv] Warning: I have not tested this function.
+    [ctypes-opencv] returns None if not successful
     """
-    elem = set_header.contents.free_elem
+    elem = set_header.contents.free_elems
     if elem:
         set_header.contents.free_elems = elem.contents.next_free
         elem.contents.flags &= CV_SET_ELEM_IDX_MASK
         set_header.contents.active_count += 1
     else:
         cvSetAdd( set_header, None, elem )
-    return elem
+    return deref(elem)
 
 # Removes set element given its pointer
 def cvSetRemoveByPtr(set_header, elem):
-    """void cvSetRemoveByPtr( CvSet* set_header, CvSetElem* elem )
+    """void cvSetRemoveByPtr( CvSet* set_header, CvSetElem elem )
     
     Removes set element given its pointer
     [ctypes-opencv] Warning: I have not tested this function.
     """
     assert set_header, "Parameter 'set_header' must point to a valid CvSet"
     sc = set_header.contents
-    assert elem, "Parameter 'elem' must point to a valid CvSetElem"
-    ec = elem.contents
-    assert ec.flags >= 0
-    ec.next_free = sc.free_elems
-    ec.flags = (ec.flags & CV_SET_ELEM_IDX_MASK) | CV_SET_ELEM_FREE_FLAG
-    sc.free_elems = em
+    assert elem.flags >= 0
+    elem.next_free = sc.free_elems
+    elem.flags = (elem.flags & CV_SET_ELEM_IDX_MASK) | CV_SET_ELEM_FREE_FLAG
+    sc.free_elems = pointer(elem)
     sc.active_count -= 1
     
 # Removes element from set
@@ -4283,13 +4283,13 @@ Removes element from set
 
 # Returns a set element by index. If the element doesn't belong to the set, NULL is returned
 def cvGetSetElem(set_header, index):
-    """CvSetElem* cvGetSetElem( const CvSet* set_header, int index )
+    """CvSetElem cvGetSetElem( const CvSet* set_header, int index )
     
     Returns a set element by index. If the element doesn't belong to the set, NULL is returned
     [ctypes-opencv] Warning: I have not tested this function.
     """
     elem = cvGetSeqElem(set_header, index)
-    return elem if bool(elem) and CV_IS_SET_ELEM( elem ) else 0
+    return deref(cast(elem, POINTER(CvSetElem)), set_header) if bool(elem) and CV_IS_SET_ELEM( elem ) else None
 
     
 # Clears set
