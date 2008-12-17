@@ -2681,16 +2681,29 @@ For points in one image of stereo pair computes the corresponding epilines in th
 """
 
 # Convert points to/from homogeneous coordinates
-cvConvertPointsHomogenious = cfunc('cvConvertPointsHomogenious', _cvDLL, None,
-    ('src', CvMat_p, 1), # const CvMat* src
-    ('dst', CvMat_p, 1), # CvMat* dst 
-)
-cvConvertPointsHomogenious.__doc__ = """void cvConvertPointsHomogeneous(const CvMat* src, CvMat* dst)
+if _cvver == 110:
+    cvConvertPointsHomogeneous = cfunc('cvConvertPointsHomogeneous', _cvDLL, None,
+        ('src', CvMat_p, 1), # const CvMat* src
+        ('dst', CvMat_p, 1), # CvMat* dst 
+    )
+    cvConvertPointsHomogeneous.__doc__ = """void cvConvertPointsHomogeneous(const CvMat* src, CvMat* dst)
 
-Convert points to/from homogeneous coordinates
-"""
+    Convert points to/from homogeneous coordinates
+    """
+    
+    cvConvertPointsHomogenious = cvConvertPointsHomogeneous
+elif _cvver == 100:
+    cvConvertPointsHomogenious = cfunc('cvConvertPointsHomogenious', _cvDLL, None,
+        ('src', CvMat_p, 1), # const CvMat* src
+        ('dst', CvMat_p, 1), # CvMat* dst 
+    )
+    cvConvertPointsHomogenious.__doc__ = """void cvConvertPointsHomogeneous(const CvMat* src, CvMat* dst)
 
-cvConvertPointsHomogeneous = cvConvertPointsHomogenious
+    Convert points to/from homogeneous coordinates
+    """
+    
+    cvConvertPointsHomogeneous = cvConvertPointsHomogenious
+
 
 
 # --- 1 Image Processing -----------------------------------------------------

@@ -15,7 +15,7 @@
 # For further inquiries, please contact Minh-Tri Pham at pmtri80@gmail.com.
 # ----------------------------------------------------------------------------
 
-import os
+import os, sys
 from ctypes import *
 from math import floor, ceil, pi
 
@@ -37,30 +37,43 @@ c_short_p = POINTER(c_short)
 
 # ----Load the DLLs ----------------------------------------------------------
 # modified a little bit by Minh-Tri Pham
-if os.name == 'posix' and sys.platform.startswith('linux'):
-    try:
-        _cxDLL = cdll.LoadLibrary('libcxcore.so.1')
-        _cvDLL = cdll.LoadLibrary('libcv.so.1')
-        _hgDLL = cdll.LoadLibrary('libhighgui.so.1')
-    except:
-        raise ImportError("Cannot import OpenCV's .so files. Make sure you have their path included in your PATH variable.")
-elif os.name == 'posix' and sys.platform.startswith('darwin'):
-    try:
-        _cxDLL = cdll.LoadLibrary('libcxcore.dylib')
-        _cvDLL = cdll.LoadLibrary('libcv.dylib')
-        _hgDLL = cdll.LoadLibrary('libhighgui.dylib')
-    except:
-        raise ImportError("Cannot import OpenCV's .dylib files. Make sure you have their path included in your PATH variable.")
-elif os.name == 'nt':
-    try:
-        _cxDLL = cdll.cxcore100
-        _cvDLL = cdll.cv100
-        _hgDLL = cdll.highgui100
-    except:
-        raise ImportError("Cannot import OpenCV's .DLL files. Make sure you have their path included in your PATH variable.")
-else:
-    raise NotImplemented
-    
+def detect_opencv():
+    if os.name == 'posix' and sys.platform.startswith('linux'):
+        try:
+            cxDLL = cdll.LoadLibrary('libcxcore.so.1')
+            cvDLL = cdll.LoadLibrary('libcv.so.1')
+            hgDLL = cdll.LoadLibrary('libhighgui.so.1')
+            cvver = 100
+        except:
+            raise ImportError("Cannot import OpenCV's .so files. Make sure you have their paths included in your PATH variable.")
+    elif os.name == 'posix' and sys.platform.startswith('darwin'):
+        try:
+            cxDLL = cdll.LoadLibrary('libcxcore.dylib')
+            cvDLL = cdll.LoadLibrary('libcv.dylib')
+            hgDLL = cdll.LoadLibrary('libhighgui.dylib')
+            cvver = 100
+        except:
+            raise ImportError("Cannot import OpenCV's .dylib files. Make sure you have their paths included in your PATH variable.")
+    elif os.name == 'nt':
+        try:
+            cxDLL = cdll.cxcore110
+            cvDLL = cdll.cv110
+            hgDLL = cdll.highgui110
+            cvver = 110
+        except:
+            try:
+                cxDLL = cdll.cxcore100
+                cvDLL = cdll.cv100
+                hgDLL = cdll.highgui100
+                cvver = 100
+            except:
+                raise ImportError("Cannot import OpenCV's .DLL files. Make sure you have their paths included in your PATH variable.")
+    else:
+        raise NotImplementedError("Your OS is not supported.")
+
+    return cvver, cxDLL, cvDLL, hgDLL
+
+_cvver, _cxDLL, _cvDLL, _hgDLL = detect_opencv()    
 #------
 
 # make function prototypes a bit easier to declare
@@ -169,12 +182,18 @@ class CallableToFunc(object):
 # Begin of cxcore/cvver.h
 #=============================================================================
 
-
-CV_MAJOR_VERSION    = 1
-CV_MINOR_VERSION    = 0
-CV_SUBMINOR_VERSION = 0
-CV_VERSION          = "1.0.0"
-
+if _cvver == 110:
+    CV_MAJOR_VERSION    = 1
+    CV_MINOR_VERSION    = 0
+    CV_SUBMINOR_VERSION = 0
+    CV_VERSION          = "1.0.0"
+elif _cvver == 100:
+    CV_MAJOR_VERSION    = 1
+    CV_MINOR_VERSION    = 0
+    CV_SUBMINOR_VERSION = 0
+    CV_VERSION          = "1.0.0"
+else:
+    raise NotImplementedError("This version of OpenCV is not supported.")
 
 #=============================================================================
 # End of cxcore/cvver.h
@@ -5588,7 +5607,7 @@ __all__ = [x for x in locals().keys() \
 __all__ += [
     'c_int_p', 'c_int8_p', 'c_ubyte_p', 'c_float_p', 'c_double_p', 
     'c_void_p_p', 'c_short_p',
-    '_cxDLL', '_cvDLL', '_hgDLL',
+    '_cvver', '_cxDLL', '_cvDLL', '_hgDLL',
     'cfunc',
     '_Structure', 'ListPOINTER', 'ListPOINTER2', 'FlexibleListPOINTER',
     'ByRefArg', 'CallableToFunc',

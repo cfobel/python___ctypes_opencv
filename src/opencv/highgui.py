@@ -267,35 +267,16 @@ CV_TYZX_COLOR = 402
 CV_TYZX_Z = 403
 CV_CAP_QT = 500     # Quicktime
 
-# CvCapture
-class CvCapture(_Structure): # forward declaration
-    pass
-CvCapture_p = POINTER(CvCapture)
+# CvCapture, supposed to be a black box
+class CvCapture(_Structure):
+    fields = []
     
-CvCaptureCloseFunc = CFUNCTYPE(None, CvCapture_p)
-CvCaptureGrabFrameFunc = CFUNCTYPE(c_int, CvCapture_p)
-CvCaptureRetrieveFrameFunc = CFUNCTYPE(IplImage_p, CvCapture_p)
-CvCaptureGetPropertyFunc = CFUNCTYPE(c_double, CvCapture_p, c_int)
-CvCaptureSetPropertyFunc = CFUNCTYPE(c_int, CvCapture_p, c_int, c_double)
-CvCaptureGetDescriptionFunc = CFUNCTYPE(c_char_p, CvCapture_p)
-
-class CvCaptureVTable(_Structure):
-    _fields_ = [
-        ('count', c_int),
-        ('close', CvCaptureCloseFunc),
-        ('grab_frame', CvCaptureGrabFrameFunc),
-        ('retrieve_frame', CvCaptureRetrieveFrameFunc),
-        ('get_property', CvCaptureGetPropertyFunc),
-        ('set_property', CvCaptureSetPropertyFunc),
-        ('get_description', CvCaptureGetDescriptionFunc),
-    ]
-CvCaptureVTable_p = POINTER(CvCaptureVTable)
-
-CvCapture._fields_ = [('vtable', CvCaptureVTable_p)]
-
-# Minh-Tri's hacks
-sdHack_del(CvCapture_p)
-
+    def __del__(self):
+        _cvReleaseCapture(pointer(self))
+        
+CvCapture_p = POINTER(CvCapture)
+CvCapture_r = ByRefArg(CvCapture)
+    
 # CvCapture
 class CvVideoWriter(_Structure):
     _fields_ = [] # seriously, no field at all
@@ -314,13 +295,15 @@ _cvCreateFileCapture = cfunc('cvCreateFileCapture', _hgDLL, CvCapture_p,
 
 # Initializes capturing video from file
 def cvCreateFileCapture(filename):
-    """CvCapture* cvCreateFileCapture(const char* filename)
+    """CvCapture cvCreateFileCapture(const char* filename)
 
     Initializes capturing video from file
+    [ctypes-opencv] returns None if no capture is created
     """
     z = _cvCreateFileCapture(filename)
-    sdAdd_autoclean(z, _cvReleaseCapture)
-    return z
+    # sdAdd_autoclean(z, _cvReleaseCapture)
+    # return z
+    return z.content if bool(z) else None
 
 cvCaptureFromFile = cvCreateFileCapture
 cvCaptureFromAVI = cvCaptureFromFile
@@ -331,13 +314,15 @@ _cvCreateCameraCapture = cfunc('cvCreateCameraCapture', _hgDLL, CvCapture_p,
 
 # Initializes capturing video from camera
 def cvCreateCameraCapture(index):
-    """CvCapture* cvCreateCameraCapture(int index)
+    """CvCapture cvCreateCameraCapture(int index)
 
     Initializes capturing video from camera
+    [ctypes-opencv] returns None if no capture is created
     """
     z = _cvCreateCameraCapture(index)
-    sdAdd_autoclean(z, _cvReleaseCapture)
-    return z
+    # sdAdd_autoclean(z, _cvReleaseCapture)
+    # return z
+    return z.contents if bool(z) else None
     
 cvCaptureFromCAM = cvCreateCameraCapture
 
@@ -346,27 +331,27 @@ cvReleaseCapture = cvFree
 
 # Grabs frame from camera or file
 cvGrabFrame = cfunc('cvGrabFrame', _hgDLL, c_int,
-    ('capture', CvCapture_p, 1), # CvCapture* capture 
+    ('capture', CvCapture_r, 1), # CvCapture* capture 
 )
-cvGrabFrame.__doc__ = """int cvGrabFrame(CvCapture* capture)
+cvGrabFrame.__doc__ = """int cvGrabFrame(CvCapture capture)
 
 Grabs frame from camera or file
 """
 
 # Gets the image grabbed with cvGrabFrame
 cvRetrieveFrame = cfunc('cvRetrieveFrame', _hgDLL, IplImage_p,
-    ('capture', CvCapture_p, 1), # CvCapture* capture 
+    ('capture', CvCapture_r, 1), # CvCapture* capture 
 )
-cvRetrieveFrame.__doc__ = """IplImage* cvRetrieveFrame(CvCapture* capture)
+cvRetrieveFrame.__doc__ = """IplImage* cvRetrieveFrame(CvCapture capture)
 
 Gets the image grabbed with cvGrabFrame
 """
 
 # Grabs and returns a frame from camera or file
 cvQueryFrame = cfunc('cvQueryFrame', _hgDLL, IplImage_p,
-    ('capture', CvCapture_p, 1), # CvCapture* capture 
+    ('capture', CvCapture_r, 1), # CvCapture* capture 
 )
-cvQueryFrame.__doc__ = """IplImage* cvQueryFrame(CvCapture* capture)
+cvQueryFrame.__doc__ = """IplImage* cvQueryFrame(CvCapture capture)
 
 Grabs and returns a frame from camera or file
 """
@@ -398,21 +383,21 @@ def CV_FOURCC(c1,c2,c3,c4):
 
 # Gets video capturing properties
 cvGetCaptureProperty = cfunc('cvGetCaptureProperty', _hgDLL, c_double,
-    ('capture', CvCapture_p, 1), # CvCapture* capture
+    ('capture', CvCapture_r, 1), # CvCapture* capture
     ('property_id', c_int, 1), # int property_id 
 )
-cvGetCaptureProperty.__doc__ = """double cvGetCaptureProperty(CvCapture* capture, int property_id)
+cvGetCaptureProperty.__doc__ = """double cvGetCaptureProperty(CvCapture capture, int property_id)
 
 Gets video capturing properties
 """
 
 # Sets video capturing properties
 cvSetCaptureProperty = cfunc('cvSetCaptureProperty', _hgDLL, c_int,
-    ('capture', CvCapture_p, 1), # CvCapture* capture
+    ('capture', CvCapture_r, 1), # CvCapture* capture
     ('property_id', c_int, 1), # int property_id
     ('value', c_double, 1), # double value 
 )
-cvSetCaptureProperty.__doc__ = """int cvSetCaptureProperty(CvCapture* capture, int property_id, double value)
+cvSetCaptureProperty.__doc__ = """int cvSetCaptureProperty(CvCapture capture, int property_id, double value)
 
 Sets video capturing properties
 """
