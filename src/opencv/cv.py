@@ -156,11 +156,9 @@ CV_SUBDIV2D_VIRTUAL_POINT_FLAG = (1 << 30)
 class CvQuadEdge2D(_Structure):
     _fields_ = CV_QUADEDGE2D_FIELDS()
 CvQuadEdge2D_p = POINTER(CvQuadEdge2D)
+CvQuadEdge2D_r = ByRefArg(CvQuadEdge2D)
     
 CvSubdiv2DPoint._fields_ = CV_SUBDIV2D_POINT_FIELDS()
-
-# Minh-Tri's hacks
-# sdHack_contents_getattr(CvSubdiv2DPoint_p)
 
 def CV_SUBDIV2D_FIELDS():
     return CV_GRAPH_FIELDS() + [
@@ -174,6 +172,7 @@ def CV_SUBDIV2D_FIELDS():
 class CvSubdiv2D(_Structure):
     _fields_ = CV_SUBDIV2D_FIELDS()
 CvSubdiv2D_p = POINTER(CvSubdiv2D)    
+CvSubdiv2D_r = ByRefArg(CvSubdiv2D)    
     
 # Minh-Tri's hacks
 sdHack_contents_getattr(CvSubdiv2D_p)
@@ -242,6 +241,7 @@ class CvRandState(_Structure):
         ('param', CvScalar*2), # parameters of RNG
     ]
 CvRandState_p = POINTER(CvRandState)
+CvRandState_r = ByRefArg(CvRandState)
     
 # CvConDensation
 class CvConDensation(_Structure):
@@ -259,10 +259,12 @@ class CvConDensation(_Structure):
         ('RandomSample', c_float_p), # RandomVector to update sample set
         ('RandS', CvRandState_p), # Array of structures to generate random vectors
     ]
-CvConDensation_p = POINTER(CvConDensation)
     
-# Minh-Tri's hacks
-sdHack_del(CvConDensation_p)
+    def __del__(self):
+        _cvReleaseCondensation(pointer(self))
+        
+CvConDensation_p = POINTER(CvConDensation)
+CvConDensation_r = ByRefArg(CvConDensation)
     
 # standard Kalman filter (in G. Welch' and G. Bishop's notation):
 #
@@ -2318,6 +2320,7 @@ Adjusts model state
 
 cvKalmanUpdateByMeasurement = cvKalmanCorrect
 
+# Deallocates ConDensation filter structure
 _cvReleaseConDensation = cfunc('cvReleaseConDensation', _cvDLL, None,
     ('condens', ByRefArg(CvConDensation_p), 1), # CvConDensation** condens 
 )
@@ -2330,33 +2333,30 @@ _cvCreateConDensation = cfunc('cvCreateConDensation', _cvDLL, CvConDensation_p,
 
 # Allocates ConDensation filter structure
 def cvCreateConDensation(*args):
-    """CvConDensation* cvCreateConDensation(int dynam_params, int measure_params, int sample_count)
+    """CvConDensation cvCreateConDensation(int dynam_params, int measure_params, int sample_count)
 
     Allocates ConDensation filter structure
+    [ctypes-opencv] returns None if no CvConDensation is created
     """
     z = _cvCreateConDensation(*args)
-    sdAdd_autoclean(z, _cvReleaseConDensation)
-    return z
-
-# Deallocates ConDensation filter structure
-cvReleaseConDensation = cvFree
+    return z.contents if bool(z) else None
 
 # Initializes sample set for ConDensation algorithm
 cvConDensInitSampleSet = cfunc('cvConDensInitSampleSet', _cvDLL, None,
-    ('condens', CvConDensation_p, 1), # CvConDensation* condens
+    ('condens', CvConDensation_r, 1), # CvConDensation* condens
     ('lower_bound', CvMat_p, 1), # CvMat* lower_bound
     ('upper_bound', CvMat_p, 1), # CvMat* upper_bound 
 )
-cvConDensInitSampleSet.__doc__ = """void cvConDensInitSampleSet(CvConDensation* condens, CvMat* lower_bound, CvMat* upper_bound)
+cvConDensInitSampleSet.__doc__ = """void cvConDensInitSampleSet(CvConDensation condens, CvMat* lower_bound, CvMat* upper_bound)
 
 Initializes sample set for ConDensation algorithm
 """
 
 # Estimates subsequent model state
 cvConDensUpdateByTime = cfunc('cvConDensUpdateByTime', _cvDLL, None,
-    ('condens', CvConDensation_p, 1), # CvConDensation* condens 
+    ('condens', CvConDensation_r, 1), # CvConDensation* condens 
 )
-cvConDensUpdateByTime.__doc__ = """void cvConDensUpdateByTime(CvConDensation* condens)
+cvConDensUpdateByTime.__doc__ = """void cvConDensUpdateByTime(CvConDensation condens)
 
 Estimates subsequent model state
 """
