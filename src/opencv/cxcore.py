@@ -2592,9 +2592,9 @@ cvGetRawData = cfunc('cvGetRawData', _cxDLL, None,
     ('arr', CvArr_p, 1), # const CvArr* arr
     ('data', POINTER(POINTER(c_byte)), 1), # uchar** data
     ('step', c_int_p, 1, None), # int* step
-    ('roi_size', CvSize_p, 1, None), # CvSize* roi_size
+    ('roi_size', CvSize_r, 1, None), # CvSize* roi_size
 )
-cvGetRawData.__doc__ = """void cvGetRawData(const CvArr* arr, uchar** data, int* step=NULL, CvSize* roi_size=NULL)
+cvGetRawData.__doc__ = """void cvGetRawData(const CvArr* arr, uchar** data, int* step=NULL, CvSize roi_size=NULL)
 
 Retrieves low-level information about the array
 """
@@ -4850,10 +4850,10 @@ Draws text string
 cvGetTextSize = cfunc('cvGetTextSize', _cxDLL, None,
     ('text_string', c_char_p, 1), # const char* text_string
     ('font', CvFont_r, 1), # const CvFont* font
-    ('text_size', CvSize_p, 2), # CvSize* text_size
+    ('text_size', CvSize_r, 2), # CvSize* text_size
     ('baseline', POINTER(c_int), 2), # int* baseline 
 )
-cvGetTextSize.__doc__ = """void cvGetTextSize(const char* text_string, const CvFont font, CvSize* text_size, int* baseline)
+cvGetTextSize.__doc__ = """void cvGetTextSize(const char* text_string, const CvFont font, CvSize text_size, int* baseline)
 
 Retrieves width and height of text string
 """
@@ -4881,18 +4881,24 @@ Draws contour outlines or interiors in the image
 """
 
 # Initializes line iterator
-cvInitLineIterator = cfunc('cvInitLineIterator', _cxDLL, c_int,
+_cvInitLineIterator = cfunc('cvInitLineIterator', _cxDLL, c_int,
     ('image', CvArr_p, 1), # const CvArr* image
     ('pt1', CvPoint, 1), # CvPoint pt1
     ('pt2', CvPoint, 1), # CvPoint pt2
-    ('line_iterator', CvLineIterator_p, 1), # CvLineIterator* line_iterator
+    ('line_iterator', CvLineIterator_r, 1), # CvLineIterator* line_iterator
     ('connectivity', c_int, 1, 8), # int connectivity
     ('left_to_right', c_int, 1, 0), # int left_to_right
 )
-cvInitLineIterator.__doc__ = """int cvInitLineIterator(const CvArr* image, CvPoint pt1, CvPoint pt2, CvLineIterator* line_iterator, int connectivity=8, int left_to_right=0)
 
-Initializes line iterator
-"""
+def cvInitLineIterator(image, pt1, pt2, connectivity=8, left_to_right=0):
+    """(int, CvLineIterator) cvInitLineIterator(const CvArr* image, CvPoint pt1, CvPoint pt2, int connectivity=8, int left_to_right=0)
+
+    Initializes line iterator
+    [ctypes-opencv] *creates* the iterator before initializing
+    """
+    z = CvLineIterator()
+    _cvInitLineIterator(image, pt1, pt2, z, connectivity, left_to_right)
+    return z
 
 def _ptr_add(ptr, offset):
     pc = ptr.contents
