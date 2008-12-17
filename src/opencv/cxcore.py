@@ -1704,6 +1704,7 @@ CvFileNodeHash_p = POINTER(CvFileNodeHash)
 class CvFileNode(_Structure): # forward declaration
     pass
 CvFileNode_p = POINTER(CvFileNode)
+CvFileNode_r = ByRefArg(CvFileNode)
     
 class CvFileNodeData(Union):
     _fields_ = [
@@ -4439,11 +4440,11 @@ def cvGraphVtxIdx(graph, vtx):
 
 # Returns index of graph edge
 def GraphEdgeIdx(graph, edge):
-    """int cvGraphEdgeIdx( CvGraph* graph, CvGraphEdge* edge )
+    """int cvGraphEdgeIdx( CvGraph* graph, CvGraphEdge edge )
     
     Returns index of graph edge
     """
-    return edge.contents.flags & CV_SET_ELEM_IDX_MASK
+    return edge.flags & CV_SET_ELEM_IDX_MASK
 
 def cvGraphGetVtxCount(graph):
     """int cvGraphGetVtxCount(CvGraph* graph)
@@ -4479,11 +4480,11 @@ def CV_IS_GRAPH_VERTEX_VISITED(vtx):
     return bool(vtx.flags & CV_GRAPH_ITEM_VISITED_FLAG)
 
 def CV_IS_GRAPH_EDGE_VISITED(edge):
-    """bool CV_IS_GRAPH_EDGE_VISITED(CvGraphEdge* edge)
+    """bool CV_IS_GRAPH_EDGE_VISITED(CvGraphEdge edge)
     
     Returns whether an edge is visited
     """
-    return bool(edge.contents.flags & CV_GRAPH_ITEM_VISITED_FLAG)
+    return bool(edge.flags & CV_GRAPH_ITEM_VISITED_FLAG)
 
 CV_GRAPH_SEARCH_TREE_NODE_FLAG = 1 << 29
 CV_GRAPH_FORWARD_EDGE_FLAG = 1 << 28
@@ -5698,7 +5699,7 @@ __all__ += [
     '_cvver', '_cxDLL', '_cvDLL', '_hgDLL',
     'cfunc',
     '_Structure', 'ListPOINTER', 'ListPOINTER2', 'FlexibleListPOINTER',
-    'ByRefArg', 'CallableToFunc',
+    'ByRefArg', 'CallableToFunc', 'deref',
     'sdHack_cvseq',
     'sdHack_contents_getattr', 
 ]
