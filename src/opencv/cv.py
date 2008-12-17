@@ -1326,7 +1326,7 @@ cvSetHistBinRanges = cfunc('cvSetHistBinRanges', _cvDLL, None,
     ('ranges', ListPOINTER2(c_float), 1), # float** ranges
     ('uniform', c_int, 1, 1), # int uniform
 )
-cvSetHistBinRanges.__doc__ = """void cvSetHistBinRanges(CvHistogram hist, float** ranges, int uniform=1)
+cvSetHistBinRanges.__doc__ = """void cvSetHistBinRanges(CvHistogram hist, list_of_list_of_float ranges, int uniform=1)
 
 Sets bounds of histogram bins
 """
@@ -1344,31 +1344,34 @@ Clears histogram
 _cvMakeHistHeaderForArray = cfunc('cvMakeHistHeaderForArray', _cvDLL, CvHistogram_p,
     ('dims', c_int, 1), # int dims
     ('sizes', c_int_p, 1), # int* sizes
-    ('hist', CvHistogram_p, 1), # CvHistogram* hist
+    ('hist', CvHistogram_r, 1), # CvHistogram* hist
     ('data', c_float_p, 1), # float* data
     ('ranges', ListPOINTER2(c_float), 1, None), # float** ranges
     ('uniform', c_int, 1, 1), # int uniform
 )
 
-def cvMakeHistHeaderForArray(dims, sizes, data, ranges=None, uniform=1):
+def cvMakeHistHeaderForArray(sizes, data, ranges=None, uniform=1):
+    """CvHistogram cvMakeHistHeaderForArray(list_or_tuple_of_int sizes, float* data, list_of_list_of_float ranges (default=None), int uniform=1)
+
+    Makes a histogram out of array
+    """
+    z = CvHistogram()
+    _cvMakeHistHeaderForArray(len(sizes), sizes, z, data, ranges, uniform)
     if z is not None:
-        z._owner = True
+        z._depends = (data,) # make sure data is deleted after z is deleted
+        z._owner = False
     return z
 
-.__doc__ = """CvHistogram* cvMakeHistHeaderForArray(int dims, int* sizes, CvHistogram* hist, float* data, float** ranges=NULL, int uniform=1)
-
-Makes a histogram out of array
-"""
 
 # Finds minimum and maximum histogram bins
 cvGetMinMaxHistValue = cfunc('cvGetMinMaxHistValue', _cvDLL, None,
-    ('hist', CvHistogram_p, 1), # const CvHistogram* hist
+    ('hist', CvHistogram_r, 1), # const CvHistogram* hist
     ('min_value', c_float_p, 2), # float* min_value
     ('max_value', c_float_p, 2), # float* max_value
     ('min_idx', c_int_p, 1, None), # int* min_idx
     ('max_idx', c_int_p, 1, None), # int* max_idx
 )
-cvGetMinMaxHistValue.__doc__ = """float min_value, max_value = cvGetMinMaxHistValue(const CvHistogram* hist, int* min_idx=NULL, int* max_idx=NULL)
+cvGetMinMaxHistValue.__doc__ = """float min_value, max_value = cvGetMinMaxHistValue(const CvHistogram hist, int* min_idx=NULL, int* max_idx=NULL)
 
     Finds minimum and maximum histogram bins
     [ctypes-opencv] Note that both min_value and max_value are returned.
@@ -1376,20 +1379,20 @@ cvGetMinMaxHistValue.__doc__ = """float min_value, max_value = cvGetMinMaxHistVa
 
 # Normalizes histogram
 cvNormalizeHist = cfunc('cvNormalizeHist', _cvDLL, None,
-    ('hist', CvHistogram_p, 1), # CvHistogram* hist
+    ('hist', CvHistogram_r, 1), # CvHistogram* hist
     ('factor', c_double, 1), # double factor 
 )
-cvNormalizeHist.__doc__ = """void cvNormalizeHist(CvHistogram* hist, double factor)
+cvNormalizeHist.__doc__ = """void cvNormalizeHist(CvHistogram hist, double factor)
 
 Normalizes histogram
 """
 
 # Thresholds histogram
 cvThreshHist = cfunc('cvThreshHist', _cvDLL, None,
-    ('hist', CvHistogram_p, 1), # CvHistogram* hist
+    ('hist', CvHistogram_r, 1), # CvHistogram* hist
     ('threshold', c_double, 1), # double threshold 
 )
-cvThreshHist.__doc__ = """void cvThreshHist(CvHistogram* hist, double threshold)
+cvThreshHist.__doc__ = """void cvThreshHist(CvHistogram hist, double threshold)
 
 Thresholds histogram
 """
@@ -1401,42 +1404,43 @@ CV_COMP_BHATTACHARYYA= 3
 
 # Compares two dense histograms
 cvCompareHist = cfunc('cvCompareHist', _cvDLL, c_double,
-    ('hist1', CvHistogram_p, 1), # const CvHistogram* hist1
-    ('hist2', CvHistogram_p, 1), # const CvHistogram* hist2
+    ('hist1', CvHistogram_r, 1), # const CvHistogram* hist1
+    ('hist2', CvHistogram_r, 1), # const CvHistogram* hist2
     ('method', c_int, 1), # int method 
 )
-cvCompareHist.__doc__ = """double cvCompareHist(const CvHistogram* hist1, const CvHistogram* hist2, int method)
+cvCompareHist.__doc__ = """double cvCompareHist(const CvHistogram hist1, const CvHistogram hist2, int method)
 
 Compares two dense histograms
 """
 
 _cvCopyHist = cfunc('cvCopyHist', _cvDLL, None,
-    ('src', CvHistogram_p, 1), # const CvHistogram* src
+    ('src', CvHistogram_r, 1), # const CvHistogram* src
     ('dst', ByRefArg(CvHistogram_p), 1, CvHistogram_p()), # CvHistogram** dst 
 )
 
 # Copies histogram
 def cvCopyHist(src, dst=None):
-    """CvHistogram* cvCopyHist(const CvHistogram* src, CvHistogram* dst=NULL)
+    """CvHistogram cvCopyHist(const CvHistogram src, CvHistogram dst=None)
 
     Copies histogram
-    [ctypes-opencv] If dst is NULL, a new CvHistogram is created and the address of it is returned. Otherwise, dst supplies the address of the CvHistogram to be copied to. Warning: I haven't tested this function.
+    [ctypes-opencv] If dst is None, a clone of src is created and returned. Otherwise, The histogram values in src are copied to dst. Warning: I haven't tested this function.
     """
     if dst is None:
-        z = _cvCopyHist(src)
-        sdAdd_autoclean(z, _cvReleaseHist)
+        z = deref(_cvCopyHist(src))
+        if z is not None:
+            z._owner = True
         return z
-    _cvCopyHist(src, dst)
+    _cvCopyHist(src, pointer(dst))
     return dst
     
 # Calculate the histogram
 cvCalcHist = cfunc('cvCalcArrHist', _cvDLL, None,
     ('image', FlexibleListPOINTER(IplImage_p), 1), # IplImage** image
-    ('hist', CvHistogram_p, 1), # CvHistogram* hist
+    ('hist', CvHistogram_r, 1), # CvHistogram* hist
     ('accumulate', c_int, 1, 0), # int accumulate
     ('mask', CvArr_p, 1, None), # CvArr* mask
 )
-cvCalcHist.__doc = """void cvCalcHist( CvArr** arr, CvHistogram* hist, int accumulate=0, const CvArr* mask=NULL )
+cvCalcHist.__doc = """void cvCalcHist( CvArr** arr, CvHistogram hist, int accumulate=0, const CvArr* mask=NULL )
 
 Calculates array histogram
 """
