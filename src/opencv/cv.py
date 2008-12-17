@@ -305,12 +305,13 @@ class CvKalman(_Structure):
         ('temp4', CvMat_p),
         ('temp5', CvMat_p),
     ]
-CvKalman_p = POINTER(CvKalman)
     
-# Minh-Tri's hacks
-sdHack_contents_getattr(CvKalman_p)
-sdHack_del(CvKalman_p)
-
+    def __del__(self):
+        _cvReleaseKalman(pointer(self))
+        
+CvKalman_p = POINTER(CvKalman)
+CvKalman_r = ByRefArg(CvKalman)
+    
 # Haar-like Object Detection structures
 
 CV_HAAR_MAGIC_VAL    = 0x42500000
@@ -366,7 +367,12 @@ class CvHaarClassifierCascade(_Structure):
         ('stage_classifier', CvHaarStageClassifier_p),
         ('hid_cascade', CvHidHaarClassifierCascade_p),
     ]
+    
+    def __del__(self):
+        _cvReleaseHaarClassifierCascade(pointer(self))
+        
 CvHaarClassifierCascade_p = POINTER(CvHaarClassifierCascade)
+CvHaarClassifierCascade_r = ByRefArg(CvHaarClassifierCascade)
 
 class CvAvgComp(_Structure):
     _fields_ = [
@@ -2273,35 +2279,33 @@ def cvCalcOpticalFlowPyrLK(prev, curr, prev_pyr, curr_pyr, pref_features, win_si
 #-----------------------------------------------------------------------------
 
 
+# Deallocates Kalman filter structure
 _cvReleaseKalman = cfunc('cvReleaseKalman', _cvDLL, None,
     ('kalman', ByRefArg(CvKalman_p), 1), # CvKalman** kalman 
 )
 
+# Allocates Kalman filter structure
 _cvCreateKalman = cfunc('cvCreateKalman', _cvDLL, CvKalman_p,
     ('dynam_params', c_int, 1), # int dynam_params
     ('measure_params', c_int, 1), # int measure_params
     ('control_params', c_int, 1, 0), # int control_params
 )
 
-# Allocates Kalman filter structure
 def cvCreateKalman(dynam_params, measure_params, control_params=0):
-    """CvKalman* cvCreateKalman(int dynam_params, int measure_params, int control_params=0)
+    """CvKalman cvCreateKalman(int dynam_params, int measure_params, int control_params=0)
 
     Allocates Kalman filter structure
+    [ctypes-opencv] returns None if no CvKalman is created
     """
     z = _cvCreateKalman(dynam_params, measure_params, control_params)
-    sdAdd_autoclean(z, _cvReleaseKalman)
-    return z
-
-# Deallocates Kalman filter structure
-cvReleaseKalman = cvFree
+    return z.contents if bool(z) else None
 
 # Estimates subsequent model state
 cvKalmanPredict = cfunc('cvKalmanPredict', _cvDLL, CvMat_p,
-    ('kalman', CvKalman_p, 1), # CvKalman* kalman
+    ('kalman', CvKalman_r, 1), # CvKalman* kalman
     ('control', CvMat_p, 1, None), # const CvMat* control
 )
-cvKalmanPredict.__doc__ = """const CvMat* cvKalmanPredict(CvKalman* kalman, const CvMat* control=NULL)
+cvKalmanPredict.__doc__ = """const CvMat* cvKalmanPredict(CvKalman kalman, const CvMat* control=NULL)
 
 Estimates subsequent model state
 """
@@ -2310,10 +2314,10 @@ cvKalmanUpdateByTime = cvKalmanPredict
 
 # Adjusts model state
 cvKalmanCorrect = cfunc('cvKalmanCorrect', _cvDLL, CvMat_p,
-    ('kalman', CvKalman_p, 1), # CvKalman* kalman
+    ('kalman', CvKalman_r, 1), # CvKalman* kalman
     ('measurement', CvMat_p, 1), # const CvMat* measurement 
 )
-cvKalmanCorrect.__doc__ = """const CvMat* cvKalmanCorrect(CvKalman* kalman, const CvMat* measurement)
+cvKalmanCorrect.__doc__ = """const CvMat* cvKalmanCorrect(CvKalman kalman, const CvMat* measurement)
 
 Adjusts model state
 """
@@ -2367,27 +2371,26 @@ Estimates subsequent model state
 #-----------------------------------------------------------------------------
 
 
+# Releases haar classifier cascade
 _cvReleaseHaarClassifierCascade = cfunc('cvReleaseHaarClassifierCascade', _cvDLL, None,
     ('cascade', ByRefArg(CvHaarClassifierCascade_p), 1), # CvHaarClassifierCascade** cascade 
 )
 
+# Loads a trained cascade classifier from file or the classifier database embedded in OpenCV
 _cvLoadHaarClassifierCascade = cfunc('cvLoadHaarClassifierCascade', _cvDLL, CvHaarClassifierCascade_p,
     ('directory', c_char_p, 1), # const char* directory
     ('orig_window_size', CvSize, 1), # CvSize orig_window_size 
 )
 
-# Loads a trained cascade classifier from file or the classifier database embedded in OpenCV
 def cvLoadHaarClassifierCascade(directory, orig_window_size):
-    """CvHaarClassifierCascade* cvLoadHaarClassifierCascade(const char* directory, CvSize orig_window_size)
+    """CvHaarClassifierCascade cvLoadHaarClassifierCascade(const char* directory, CvSize orig_window_size)
 
     Loads a trained cascade classifier from file or the classifier database embedded in OpenCV
+    [ctypes-opencv] returns None if no cascade is loaded
     """
     z = _cvLoadHaarClassifierCascade(directory, orig_window_size)
-    sdAdd_autoclean(z, _cvReleaseHaarClassifierCascade)
-    return z
+    return z.contents if bool(z) else None
 
-# Releases haar classifier cascade
-cvReleaseHaarClassifierCascade = cvFree
 
 CV_HAAR_DO_CANNY_PRUNING = 1
 CV_HAAR_SCALE_IMAGE = 2
@@ -2395,14 +2398,14 @@ CV_HAAR_SCALE_IMAGE = 2
 # Detects objects in the image
 cvHaarDetectObjects = cfunc('cvHaarDetectObjects', _cvDLL, CvSeq_p,
     ('image', CvArr_p, 1), # const CvArr* image
-    ('cascade', CvHaarClassifierCascade_p, 1), # CvHaarClassifierCascade* cascade
+    ('cascade', CvHaarClassifierCascade_r, 1), # CvHaarClassifierCascade* cascade
     ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
     ('scale_factor', c_double, 1, 1), # double scale_factor
     ('min_neighbors', c_int, 1, 3), # int min_neighbors
     ('flags', c_int, 1, 0), # int flags
     ('min_size', CvSize, 1), # CvSize min_size
 )
-cvHaarDetectObjects.__doc__ = """CvSeq* cvHaarDetectObjects(const CvArr* image, CvHaarClassifierCascade* cascade, CvMemStorage* storage, double scale_factor=1.1, int min_neighbors=3, int flags=0, CvSize min_size=cvSize(0, 0)
+cvHaarDetectObjects.__doc__ = """CvSeq* cvHaarDetectObjects(const CvArr* image, CvHaarClassifierCascade cascade, CvMemStorage* storage, double scale_factor=1.1, int min_neighbors=3, int flags=0, CvSize min_size=cvSize(0, 0)
 
 Detects objects in the image
 """
@@ -2418,24 +2421,24 @@ cvHaarDetectObjects.errcheck = ChangeCvSeqToCvRect
 
 # Assigns images to the hidden cascade
 cvSetImagesForHaarClassifierCascade = cfunc('cvSetImagesForHaarClassifierCascade', _cvDLL, None,
-    ('cascade', CvHaarClassifierCascade_p, 1), # CvHaarClassifierCascade* cascade
+    ('cascade', CvHaarClassifierCascade_r, 1), # CvHaarClassifierCascade* cascade
     ('sum', CvArr_p, 1), # const CvArr* sum
     ('sqsum', CvArr_p, 1), # const CvArr* sqsum
     ('tilted_sum', CvArr_p, 1), # const CvArr* tilted_sum
     ('scale', c_double, 1), # double scale 
 )
-cvSetImagesForHaarClassifierCascade.__doc__ = """void cvSetImagesForHaarClassifierCascade(CvHaarClassifierCascade* cascade, const CvArr* sum, const CvArr* sqsum, const CvArr* tilted_sum, double scale)
+cvSetImagesForHaarClassifierCascade.__doc__ = """void cvSetImagesForHaarClassifierCascade(CvHaarClassifierCascade cascade, const CvArr* sum, const CvArr* sqsum, const CvArr* tilted_sum, double scale)
 
 Assigns images to the hidden cascade
 """
 
 # Runs cascade of boosted classifier at given image location
 cvRunHaarClassifierCascade = cfunc('cvRunHaarClassifierCascade', _cvDLL, c_int,
-    ('cascade', CvHaarClassifierCascade_p, 1), # CvHaarClassifierCascade* cascade
+    ('cascade', CvHaarClassifierCascade_r, 1), # CvHaarClassifierCascade* cascade
     ('pt', CvPoint, 1), # CvPoint pt
     ('start_stage', c_int, 1, 0), # int start_stage
 )
-cvRunHaarClassifierCascade.__doc__ = """int cvRunHaarClassifierCascade(CvHaarClassifierCascade* cascade, CvPoint pt, int start_stage=0)
+cvRunHaarClassifierCascade.__doc__ = """int cvRunHaarClassifierCascade(CvHaarClassifierCascade cascade, CvPoint pt, int start_stage=0)
 
 Runs cascade of boosted classifier at given image location
 """
