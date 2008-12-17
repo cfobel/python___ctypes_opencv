@@ -1037,7 +1037,7 @@ CV_FLOODFILL_MASK_ONLY = 1 << 17
 # Finds contours in binary image
 _cvFindContours = cfunc('cvFindContours', _cvDLL, c_int,
     ('image', CvArr_p, 1), # CvArr* image
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('first_contour', POINTER(CvSeq_p), 1), # CvSeq** first_contour
     ('header_size', c_int, 1, sizeof(CvContour)), # int header_size
     ('mode', c_int, 1, CV_RETR_LIST), # int mode
@@ -1047,7 +1047,7 @@ _cvFindContours = cfunc('cvFindContours', _cvDLL, c_int,
 
 # Finds contours in binary image
 def cvFindContours(image, storage, header_size=sizeof(CvContour), mode=CV_RETR_LIST, method=CV_CHAIN_APPROX_SIMPLE, offset=cvPoint(0,0)):
-    """(int ncontours, CvSeq* first_contour) = cvFindContours(CvArr* image, CvMemStorage* storage, int header_size=sizeof(CvContour), int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
+    """(int ncontours, CvSeq* first_contour) = cvFindContours(CvArr* image, CvMemStorage storage, int header_size=sizeof(CvContour), int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
 
     Finds contours in binary image
     """
@@ -1058,7 +1058,7 @@ def cvFindContours(image, storage, header_size=sizeof(CvContour), mode=CV_RETR_L
 # Initializes contour scanning process
 _cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
     ('image', CvArr_p, 1), # CvArr* image
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('header_size', c_int, 1, sizeof(CvContour)), # int header_size
     ('mode', c_int, 1, CV_RETR_LIST), # int mode
     ('method', c_int, 1, CV_CHAIN_APPROX_SIMPLE), # int method
@@ -1066,7 +1066,7 @@ _cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
 )
 
 def cvStartFindContours(image, storage, header_size=sizeof(CvContour), mode=CV_RETR_LIST, method=CV_CHAIN_APPROX_SIMPLE, offset=CvPoint(0,0)):
-    """CvContourScanner cvStartFindContours(CvArr* image, CvMemStorage* storage, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
+    """CvContourScanner cvStartFindContours(CvArr* image, CvMemStorage storage, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
 
     Initializes contour scanning process
     """
@@ -1112,7 +1112,7 @@ Finishes scanning process
 _cvPyrSegmentation = cfunc('cvPyrSegmentation', _cvDLL, None,
     ('src', IplImage_p, 1), # IplImage* src
     ('dst', IplImage_p, 1), # IplImage* dst
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('comp', ByRefArg(CvSeq_p), 1), # CvSeq** comp
     ('level', c_int, 1), # int level
     ('threshold1', c_double, 1), # double threshold1
@@ -1120,7 +1120,7 @@ _cvPyrSegmentation = cfunc('cvPyrSegmentation', _cvDLL, None,
 )
 
 def cvPyrSegmentation(src, dst, storage, level, threshold1, threshold2):
-    """CvSeq* cvPyrSegmentation(IplImage* src, IplImage* dst, CvMemStorage* storage, int level, double threshold1, double threshold2)
+    """CvSeq* cvPyrSegmentation(IplImage* src, IplImage* dst, CvMemStorage storage, int level, double threshold1, double threshold2)
 
     Implements image segmentation by pyramids
     """
@@ -1603,13 +1603,13 @@ Computes earth mover distance between two weighted point sets (called signatures
 # Approximates Freeman chain(s) with polygonal curve
 cvApproxChains = cfunc('cvApproxChains', _cvDLL, CvSeq_p,
     ('src_seq', CvSeq_p, 1), # CvSeq* src_seq
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('method', c_int, 1), # int method
     ('parameter', c_double, 1, 0), # double parameter
     ('minimal_perimeter', c_int, 1, 0), # int minimal_perimeter
     ('recursive', c_int, 1, 0), # int recursive
 )
-cvApproxChains.__doc__ = """CvSeq* cvApproxChains(CvSeq* src_seq, CvMemStorage* storage, int method=CV_CHAIN_APPROX_SIMPLE, double parameter=0, int minimal_perimeter=0, int recursive=0)
+cvApproxChains.__doc__ = """CvSeq* cvApproxChains(CvSeq* src_seq, CvMemStorage storage, int method=CV_CHAIN_APPROX_SIMPLE, double parameter=0, int minimal_perimeter=0, int recursive=0)
 
 Approximates Freeman chain(s) with polygonal curve
 """
@@ -1646,12 +1646,12 @@ CV_POLY_APPROX_DP = 0
 cvApproxPoly = cfunc('cvApproxPoly', _cvDLL, CvSeq_p,
     ('src_seq', c_void_p, 1), # const void* src_seq
     ('header_size', c_int, 1), # int header_size
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('method', c_int, 1), # int method
     ('parameter', c_double, 1), # double parameter
     ('parameter2', c_int, 1, 0), # int parameter2
 )
-cvApproxPoly.__doc__ = """CvSeq* cvApproxPoly(const void* src_seq, int header_size, CvMemStorage* storage, int method, double parameter, int parameter2=0)
+cvApproxPoly.__doc__ = """CvSeq* cvApproxPoly(const void* src_seq, int header_size, CvMemStorage storage, int method, double parameter, int parameter2=0)
 
 Approximates polygonal curve(s) with desired precision
 """
@@ -1661,14 +1661,14 @@ CV_DOMINANT_IPAN = 1
 # Finds high-curvature points of the contour
 cvFindDominantPoints = cfunc('cvFindDominantPoints', _cvDLL, CvSeq_p,
     ('contour', CvSeq_p, 1), # CvSeq* contour
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('method', c_int, 1, CV_DOMINANT_IPAN), # int header_size
     ('parameter1', c_double, 1, 0), # double parameter1
     ('parameter2', c_double, 1, 0), # double parameter2
     ('parameter3', c_double, 1, 0), # double parameter3
     ('parameter4', c_double, 1, 0), # double parameter4
 )
-cvFindDominantPoints.__doc__ = """CvSeq* cvFindDominantPoints( CvSeq* contour, CvMemStorage* storage, int method=CV_DOMINANT_IPAN, double parameter1=0, double parameter2=0, double parameter3=0, double parameter4=0)
+cvFindDominantPoints.__doc__ = """CvSeq* cvFindDominantPoints( CvSeq* contour, CvMemStorage storage, int method=CV_DOMINANT_IPAN, double parameter1=0, double parameter2=0, double parameter3=0, double parameter4=0)
 
 Finds high-curvature points of the contour
 """
@@ -1711,10 +1711,10 @@ def cvContourPerimeter(contour):
 # Creates hierarchical representation of contour
 cvCreateContourTree = cfunc('cvCreateContourTree', _cvDLL, CvContourTree_p,
     ('contour', CvSeq_p, 1), # const CvSeq* contour
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('threshold', c_double, 1), # double threshold 
 )
-cvCreateContourTree.__doc__ = """CvContourTree* cvCreateContourTree(const CvSeq* contour, CvMemStorage* storage, double threshold)
+cvCreateContourTree.__doc__ = """CvContourTree* cvCreateContourTree(const CvSeq* contour, CvMemStorage storage, double threshold)
 
 Creates hierarchical representation of contour
 """
@@ -1722,10 +1722,10 @@ Creates hierarchical representation of contour
 # Restores contour from tree
 cvContourFromContourTree = cfunc('cvContourFromContourTree', _cvDLL, CvSeq_p,
     ('tree', CvContourTree_p, 1), # const CvContourTree* tree
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria 
 )
-cvContourFromContourTree.__doc__ = """CvSeq* cvContourFromContourTree(const CvContourTree* tree, CvMemStorage* storage, CvTermCriteria criteria)
+cvContourFromContourTree.__doc__ = """CvSeq* cvContourFromContourTree(const CvContourTree* tree, CvMemStorage storage, CvTermCriteria criteria)
 
 Restores contour from tree
 """
@@ -1846,9 +1846,9 @@ Tests contour convex
 cvConvexityDefects = cfunc('cvConvexityDefects', _cvDLL, CvSeq_p,
     ('contour', CvArr_p, 1), # const CvArr* contour
     ('convexhull', CvArr_p, 1), # const CvArr* convexhull
-    ('storage', CvMemStorage_p, 1, None), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1, None), # CvMemStorage* storage
 )
-cvConvexityDefects.__doc__ = """CvSeq* cvConvexityDefects(const CvArr* contour, const CvArr* convexhull, CvMemStorage* storage=NULL)
+cvConvexityDefects.__doc__ = """CvSeq* cvConvexityDefects(const CvArr* contour, const CvArr* convexhull, CvMemStorage storage=NULL)
 
 Finds convexity defects of contour
 """
@@ -1867,9 +1867,9 @@ Point in contour test
 # Finds circumscribed rectangle of minimal area for given 2D point set
 cvMinAreaRect2 = cfunc('cvMinAreaRect2', _cvDLL, CvBox2D,
     ('points', CvArr_p, 1), # const CvArr* points
-    ('storage', CvMemStorage_p, 1, None), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1, None), # CvMemStorage* storage
 )
-cvMinAreaRect2.__doc__ = """CvBox2D cvMinAreaRect2(const CvArr* points, CvMemStorage* storage=NULL)
+cvMinAreaRect2.__doc__ = """CvBox2D cvMinAreaRect2(const CvArr* points, CvMemStorage storage=NULL)
 
 Finds circumscribed rectangle of minimal area for given 2D point set
 """
@@ -1967,9 +1967,9 @@ cvCreateSubdiv2D = cfunc('cvCreateSubdiv2D', _cvDLL, CvSubdiv2D_p,
     ('header_size', c_int, 1), # int header_size
     ('vtx_size', c_int, 1), # int vtx_size
     ('quadedge_size', c_int, 1), # int quadedge_size
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
 )
-cvCreateSubdiv2D.__doc__ = """CvSubdiv2D* cvCreateSubdiv2D( int subdiv_type, int header_size, int vtx_size, int quadedge_size, CvMemStorage* storage )
+cvCreateSubdiv2D.__doc__ = """CvSubdiv2D* cvCreateSubdiv2D( int subdiv_type, int header_size, int vtx_size, int quadedge_size, CvMemStorage storage )
 
 Creates new subdivision
 """
@@ -1977,7 +1977,7 @@ Creates new subdivision
 
 # Simplified Delaunay diagram creation
 def cvCreateSubdivDelaunay2D(rect, storage):
-    """CvSubdiv2D* cvCreateSubdivDelaunay2D(CvRect rect, CvMemStorage* storage)
+    """CvSubdiv2D* cvCreateSubdivDelaunay2D(CvRect rect, CvMemStorage storage)
     
     Simplified Delaunay diagram creation
     """
@@ -2153,11 +2153,11 @@ Calculates global motion orientation of some selected region
 cvSegmentMotion = cfunc('cvSegmentMotion', _cvDLL, CvSeq_p,
     ('mhi', CvArr_p, 1), # const CvArr* mhi
     ('seg_mask', CvArr_p, 1), # CvArr* seg_mask
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('timestamp', c_double, 1), # double timestamp
     ('seg_thresh', c_double, 1), # double seg_thresh 
 )
-cvSegmentMotion.__doc__ = """CvSeq* cvSegmentMotion(const CvArr* mhi, CvArr* seg_mask, CvMemStorage* storage, double timestamp, double seg_thresh)
+cvSegmentMotion.__doc__ = """CvSeq* cvSegmentMotion(const CvArr* mhi, CvArr* seg_mask, CvMemStorage storage, double timestamp, double seg_thresh)
 
 Segments whole motion into separate moving parts
 """
@@ -2428,13 +2428,13 @@ CV_HAAR_SCALE_IMAGE = 2
 cvHaarDetectObjects = cfunc('cvHaarDetectObjects', _cvDLL, CvSeq_p,
     ('image', CvArr_p, 1), # const CvArr* image
     ('cascade', CvHaarClassifierCascade_r, 1), # CvHaarClassifierCascade* cascade
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('scale_factor', c_double, 1, 1), # double scale_factor
     ('min_neighbors', c_int, 1, 3), # int min_neighbors
     ('flags', c_int, 1, 0), # int flags
     ('min_size', CvSize, 1), # CvSize min_size
 )
-cvHaarDetectObjects.__doc__ = """CvSeq* cvHaarDetectObjects(const CvArr* image, CvHaarClassifierCascade cascade, CvMemStorage* storage, double scale_factor=1.1, int min_neighbors=3, int flags=0, CvSize min_size=cvSize(0, 0)
+cvHaarDetectObjects.__doc__ = """CvSeq* cvHaarDetectObjects(const CvArr* image, CvHaarClassifierCascade cascade, CvMemStorage storage, double scale_factor=1.1, int min_neighbors=3, int flags=0, CvSize min_size=cvSize(0, 0)
 
 Detects objects in the image
 """

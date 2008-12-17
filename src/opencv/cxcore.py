@@ -1021,8 +1021,12 @@ CV_STORAGE_MAGIC_VAL = 0x42890000
 
 # Memory storage
 class CvMemStorage(_Structure): # forward declaration
-    pass
+    
+    def __del__(self):
+        _cvReleaseMemStorage(pointer(self))
+    
 CvMemStorage_p = POINTER(CvMemStorage)
+CvMemStorage_r = ByRefArg(CvMemStorage)
 CvMemStorage._fields_ = [
     ("signature", c_int),
     ("bottom", CvMemBlock_p), # first allocated block
@@ -1031,13 +1035,11 @@ CvMemStorage._fields_ = [
     ("block_size", c_int), # block size
     ("free_space", c_int)] # free space in the current block
     
-# Minh-Tri's hacks
-sdHack_del(CvMemStorage_p)
-
 class CvMemStoragePos(_Structure):
     _fields_ = [('top', CvMemBlock_p),
                 ('free_space', c_int)]                
 CvMemStoragePos_p = POINTER(CvMemStoragePos)
+CvMemStoragePos_r = ByRefArg(CvMemStoragePos)
     
 #-----------------------------------------------------------------------------
 # Sequence
@@ -3739,102 +3741,81 @@ Performs forward or inverse Discrete Cosine transform of 1D or 2D floating-point
 #-----------------------------------------------------------------------------
 
 
+# Releases memory storage
 _cvReleaseMemStorage = cfunc('cvReleaseMemStorage', _cxDLL, None,
     ('storage', ByRefArg(CvMemStorage_p), 1), # CvMemStorage** storage 
 )
 
-def _my_cvReleaseMemStorage(storage, check_parent=True):
-    if not storage:
-        return
-    if check_parent:
-        z = getattr(storage.contents.parent, '_children_list', None)
-        if z is not None:
-            z.remove(storage)
-                
-    for z in storage._children_list:
-        _my_cvReleaseMemStorage(z, check_parent=False)
-    _cvReleaseMemStorage(storage)
-
+# Creates memory storage
 _cvCreateMemStorage = cfunc('cvCreateMemStorage', _cxDLL, CvMemStorage_p,
     ('block_size', c_int, 1, 0), # int block_size
 )
 
-# Creates memory storage
 def cvCreateMemStorage(block_size=0):
-    """CvMemStorage* cvCreateMemStorage(int block_size=0)
+    """CvMemStorage cvCreateMemStorage(int block_size=0)
 
     Creates memory storage
     """
-    z = _cvCreateMemStorage(block_size)
-    z._children_list = []
-    sdAdd_autoclean(z, _my_cvReleaseMemStorage)
-    return z
-
-_cvCreateChildMemStorage = cfunc('cvCreateChildMemStorage', _cxDLL, CvMemStorage_p,
-    ('parent', CvMemStorage_p, 1), # CvMemStorage* parent 
-)
+    return deref(_cvCreateMemStorage(block_size))
 
 # Creates child memory storage
+_cvCreateChildMemStorage = cfunc('cvCreateChildMemStorage', _cxDLL, CvMemStorage_p,
+    ('parent', CvMemStorage_r, 1), # CvMemStorage* parent 
+)
+
 def cvCreateChildMemStorage(parent):
-    """CvMemStorage* cvCreateChildMemStorage(CvMemStorage* parent)
+    """CvMemStorage cvCreateChildMemStorage(CvMemStorage parent)
 
     Creates child memory storage
     """
-    z = _cvCreateChildMemStorage(parent)
-    z._children_list = []
-    sdAdd_autoclean(z, _my_cvReleaseMemStorage)
-    parent._children_list.append(z)
-    return z
-
-# Releases memory storage
-cvReleaseMemStorage = cvFree
+    return deref(_cvCreateChildMemStorage(parent), parent)
 
 # Clears memory storage
 cvClearMemStorage = cfunc('cvClearMemStorage', _cxDLL, None,
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage 
 )
-cvClearMemStorage.__doc__ = """void cvClearMemStorage(CvMemStorage* storage)
+cvClearMemStorage.__doc__ = """void cvClearMemStorage(CvMemStorage storage)
 
 Clears memory storage
 """
 
 # Saves memory storage position
 cvSaveMemStoragePos = cfunc('cvSaveMemStoragePos', _cxDLL, None,
-    ('storage', CvMemStorage_p, 1), # const CvMemStorage* storage
-    ('pos', CvMemStoragePos_p, 1), # CvMemStoragePos* pos 
+    ('storage', CvMemStorage_r, 1), # const CvMemStorage* storage
+    ('pos', CvMemStoragePos_r, 1), # CvMemStoragePos* pos 
 )
-cvSaveMemStoragePos.__doc__ = """void cvSaveMemStoragePos(const CvMemStorage* storage, CvMemStoragePos* pos)
+cvSaveMemStoragePos.__doc__ = """void cvSaveMemStoragePos(const CvMemStorage storage, CvMemStoragePos pos)
 
 Saves memory storage position
 """
 
 # Restores memory storage position
 cvRestoreMemStoragePos = cfunc('cvRestoreMemStoragePos', _cxDLL, None,
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
-    ('pos', CvMemStoragePos_p, 1), # CvMemStoragePos* pos 
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
+    ('pos', CvMemStoragePos_r, 1), # CvMemStoragePos* pos 
 )
-cvRestoreMemStoragePos.__doc__ = """void cvRestoreMemStoragePos(CvMemStorage* storage, CvMemStoragePos* pos)
+cvRestoreMemStoragePos.__doc__ = """void cvRestoreMemStoragePos(CvMemStorage storage, CvMemStoragePos pos)
 
 Restores memory storage position
 """
 
 # Allocates memory buffer in the storage
 cvMemStorageAlloc = cfunc('cvMemStorageAlloc', _cxDLL, c_void_p,
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('size', c_ulong, 1), # size_t size 
 )
-cvMemStorageAlloc.__doc__ = """void* cvMemStorageAlloc(CvMemStorage* storage, size_t size)
+cvMemStorageAlloc.__doc__ = """void* cvMemStorageAlloc(CvMemStorage storage, size_t size)
 
 Allocates memory buffer in the storage
 """
 
 # Allocates text string in the storage
 cvMemStorageAllocString = cfunc('cvMemStorageAllocString', _cxDLL, CvString,
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('ptr', c_char_p, 1), # const char* ptr
     ('len', c_int, 1), # int len
 )
-cvMemStorageAllocString.__doc__ = """CvString cvMemStorageAllocString(CvMemStorage* storage, const char* ptr, int len=-1)
+cvMemStorageAllocString.__doc__ = """CvString cvMemStorageAllocString(CvMemStorage storage, const char* ptr, int len=-1)
 
 Allocates text string in the storage
 """
@@ -3860,9 +3841,9 @@ cvCreateSeq = cfunc('cvCreateSeq', _cxDLL, CvSeq_p,
     ('seq_flags', c_int, 1), # int seq_flags
     ('header_size', c_int, 1), # int header_size
     ('elem_size', c_int, 1), # int elem_size
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage 
 )
-cvCreateSeq.__doc__ = """CvSeq* cvCreateSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage)
+cvCreateSeq.__doc__ = """CvSeq* cvCreateSeq(int seq_flags, int header_size, int elem_size, CvMemStorage storage)
 
 Creates sequence
 """
@@ -4020,12 +4001,12 @@ _cvStartWriteSeq = cfunc('cvStartWriteSeq', _cxDLL, None,
     ('seq_flags', c_int, 1), # int seq_flags
     ('header_size', c_int, 1), # int header_size
     ('elem_size', c_int, 1), # int elem_size
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('writer', CvSeqWriter_r, 1), # CvSeqWriter* writer 
 )
 
 def cvStartWriteSeq(seq_flags, header_size, elem_size, storage):
-    """CvSeqWriter cvStartWriteSeq(int seq_flags, int header_size, int elem_size, CvMemStorage* storage, CvSeqWriter* writer)
+    """CvSeqWriter cvStartWriteSeq(int seq_flags, int header_size, int elem_size, CvMemStorage storage)
 
     Creates new sequence and initializes writer for it
     [ctypes-opencv] *creates* and initializes the writer instead
@@ -4121,17 +4102,17 @@ Constructs sequence from array
 cvSeqSlice = cfunc('cvSeqSlice', _cxDLL, CvSeq_p,
     ('seq', CvSeq_p, 1), # const CvSeq* seq
     ('slice', CvSlice, 1), # CvSlice slice
-    ('storage', CvMemStorage_p, 1, None), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1, None), # CvMemStorage* storage
     ('copy_data', c_int, 1, 0), # int copy_data
 )
-cvSeqSlice.__doc__ = """CvSeq* cvSeqSlice(const CvSeq* seq, CvSlice slice,                   CvMemStorage* storage=NULL, int copy_data=0)
+cvSeqSlice.__doc__ = """CvSeq* cvSeqSlice(const CvSeq* seq, CvSlice slice, CvMemStorage storage=NULL, int copy_data=0)
 
 Makes separate header for the sequence slice
 """
 
 # Creates a copy of sequence
 def cvCloneSeq(seq, storage=None):
-    """CvSeq* cvCloneSeq( const CvSeq* seq, CvMemStorage* storage=NULL )
+    """CvSeq* cvCloneSeq( const CvSeq* seq, CvMemStorage storage=NULL )
 
     Creates a copy of sequence
     """
@@ -4201,12 +4182,12 @@ Reverses the order of sequence elements
 # Splits sequence into equivalency classes
 cvSeqPartition = cfunc('cvSeqPartition', _cxDLL, c_int,
     ('seq', CvSeq_p, 1), # const CvSeq* seq
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('labels', POINTER(CvSeq_p), 1), # CvSeq** labels
     ('is_equal', CvCmpFunc, 1), # CvCmpFunc is_equal
     ('userdata', c_void_p, 1), # void* userdata 
 )
-cvSeqPartition.__doc__ = """int cvSeqPartition(const CvSeq* seq, CvMemStorage* storage, CvSeq** labels, CvCmpFunc is_equal, void* userdata)
+cvSeqPartition.__doc__ = """int cvSeqPartition(const CvSeq* seq, CvMemStorage storage, CvSeq** labels, CvCmpFunc is_equal, void* userdata)
 
 Splits sequence into equivalency classes
 """
@@ -4222,9 +4203,9 @@ cvCreateSet = cfunc('cvCreateSet', _cxDLL, CvSet_p,
     ('set_flags', c_int, 1), # int set_flags
     ('header_size', c_int, 1), # int header_size
     ('elem_size', c_int, 1), # int elem_size
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage 
 )
-cvCreateSet.__doc__ = """CvSet* cvCreateSet(int set_flags, int header_size, int elem_size, CvMemStorage* storage)
+cvCreateSet.__doc__ = """CvSet* cvCreateSet(int set_flags, int header_size, int elem_size, CvMemStorage storage)
 
 Creates empty set
 """
@@ -4314,9 +4295,9 @@ cvCreateGraph = cfunc('cvCreateGraph', _cxDLL, CvGraph_p,
     ('header_size', c_int, 1), # int header_size
     ('vtx_size', c_int, 1), # int vtx_size
     ('edge_size', c_int, 1), # int edge_size
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage 
 )
-cvCreateGraph.__doc__ = """CvGraph* cvCreateGraph(int graph_flags, int header_size, int vtx_size, int edge_size, CvMemStorage* storage)
+cvCreateGraph.__doc__ = """CvGraph* cvCreateGraph(int graph_flags, int header_size, int vtx_size, int edge_size, CvMemStorage storage)
 
 Creates empty graph
 """
@@ -4534,9 +4515,9 @@ Clears graph
 # Clone graph
 cvCloneGraph = cfunc('cvCloneGraph', _cxDLL, CvGraph_p,
     ('graph', CvGraph_p, 1), # const CvGraph* graph
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage 
 )
-cvCloneGraph.__doc__ = """CvGraph* cvCloneGraph(const CvGraph* graph, CvMemStorage* storage)
+cvCloneGraph.__doc__ = """CvGraph* cvCloneGraph(const CvGraph* graph, CvMemStorage storage)
 
 Clone graph
 """
@@ -4626,9 +4607,9 @@ Returns the currently observed node and moves iterator toward the previous node
 cvTreeToNodeSeq = cfunc('cvTreeToNodeSeq', _cxDLL, CvSeq_p,
     ('first', c_void_p, 1), # const void* first
     ('header_size', c_int, 1), # int header_size
-    ('storage', CvMemStorage_p, 1), # CvMemStorage* storage 
+    ('storage', CvMemStorage_r, 1), # CvMemStorage* storage 
 )
-cvTreeToNodeSeq.__doc__ = """CvSeq* cvTreeToNodeSeq(const void* first, int header_size, CvMemStorage* storage)
+cvTreeToNodeSeq.__doc__ = """CvSeq* cvTreeToNodeSeq(const void* first, int header_size, CvMemStorage storage)
 
 Gathers all node pointers to the single sequence
 """
@@ -4978,7 +4959,7 @@ Approximates elliptic arc with polyline
 # Opens file storage for reading or writing data
 _cvOpenFileStorage = cfunc('cvOpenFileStorage', _cxDLL, CvFileStorage_p,
     ('filename', c_char_p, 1), # const char* filename
-    ('memstorage', CvMemStorage_p, 1), # CvMemStorage* memstorage
+    ('memstorage', CvMemStorage_r, 1), # CvMemStorage* memstorage
     ('flags', c_int, 1), # int flags 
 )
 
@@ -5405,11 +5386,11 @@ Saves object to file
 # Loads object from file
 cvLoad = cfunc('cvLoad', _cxDLL, c_void_p,
     ('filename', c_char_p, 1), # const char* filename
-    ('memstorage', CvMemStorage_p, 1, None), # CvMemStorage* memstorage
+    ('memstorage', CvMemStorage_r, 1, None), # CvMemStorage* memstorage
     ('name', c_char_p, 1, None), # const char* name
     ('real_name', POINTER(c_char_p), 1, None), # const char** real_name
 )
-cvLoad.__doc__ = """void* cvLoad(const char* filename, CvMemStorage* memstorage=NULL, const char* name=NULL, const char** real_name=NULL)
+cvLoad.__doc__ = """void* cvLoad(const char* filename, CvMemStorage memstorage=NULL, const char* name=NULL, const char** real_name=NULL)
 
 Loads object from file
 """
