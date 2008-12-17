@@ -1180,11 +1180,14 @@ class CvHistogram(_Structure):
                 ('thresh', (c_float*2)*CV_MAX_DIM), # for uniform histograms
                 ('thresh2', POINTER(c_float_p)), # for non-uniform histograms
                 ('mat', CvMatND)] # embedded matrix header for array histograms
-CvHistogram_p = POINTER(CvHistogram)
                 
-# Minh-Tri's hacks
-sdHack_contents_getattr(CvHistogram_p)
-sdHack_del(CvHistogram_p)
+    def __del__(self):
+        if self._owner is True:
+            _cvReleaseHist(pointer(self))
+        
+CvHistogram_p = POINTER(CvHistogram)
+CvHistogram_r = ByRefArg(CvHistogram)
+                
 
 #-----------------------------------------------------------------------------
 # CvRect
@@ -4736,7 +4739,7 @@ def cvFillPoly(img, pts, color, line_type=8, shift=0):
 # Fills convex polygon
 _cvFillConvexPoly = cfunc('cvFillConvexPoly', _cxDLL, None,
     ('img', CvArr_p, 1), # CvArr* img
-    ('pts', CvPoint_p, 1), # CvPoint* pts
+    ('pts', ListPOINTER(CvPoint), 1), # CvPoint* pts
     ('npts', c_int, 1), # int npts
     ('color', CvScalar, 1), # CvScalar color
     ('line_type', c_int, 1, 8), # int line_type
@@ -4748,11 +4751,7 @@ def cvFillConvexPoly(img, pts, color, line_type=8, shift=0):
 
     Fills convex polygon
     """
-    npts = len(pts)
-    pts2 = (CvPoint*npts)()
-    for i in xrange(npts):
-        pts2[i] = pts[i]
-    _cvFillConvexPoly(img, pts2, npts, color, line_type, shift)
+    _cvFillConvexPoly(img, pts, len(pts), color, line_type, shift)
 
 # Draws simple or thick polygons
 _cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,

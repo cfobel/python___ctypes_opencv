@@ -1296,6 +1296,7 @@ Inpaints the selected region in the image
 #-----------------------------------------------------------------------------
 
 
+# Releases histogram
 _cvReleaseHist = cfunc('cvReleaseHist', _cvDLL, None,
     ('hist', ByRefArg(CvHistogram_p), 1), # CvHistogram** hist 
 )
@@ -1310,39 +1311,37 @@ _cvCreateHist = cfunc('cvCreateHist', _cvDLL, CvHistogram_p,
 
 # Creates histogram
 def cvCreateHist(sizes, hist_type, ranges=None, uniform=1):
-    """CvHistogram* cvCreateHist(list_or_tuple_of_int sizes, int type, list_of_list_of_float ranges (default=None), int uniform=1)
+    """CvHistogram cvCreateHist(list_or_tuple_of_int sizes, int type, list_of_list_of_float ranges (default=None), int uniform=1)
 
     Creates histogram
     """
-    z = _cvCreateHist(len(sizes), sizes, hist_type, ranges, uniform)
-    sdAdd_autoclean(z, _cvReleaseHist)
+    z = deref(_cvCreateHist(len(sizes), sizes, hist_type, ranges, uniform))
+    if z is not None:
+        z._owner = True
     return z
-
-# Releases histogram
-cvReleaseHist = cvFree
 
 # Sets bounds of histogram bins
 cvSetHistBinRanges = cfunc('cvSetHistBinRanges', _cvDLL, None,
-    ('hist', CvHistogram_p, 1), # CvHistogram* hist
+    ('hist', CvHistogram_r, 1), # CvHistogram* hist
     ('ranges', ListPOINTER2(c_float), 1), # float** ranges
     ('uniform', c_int, 1, 1), # int uniform
 )
-cvSetHistBinRanges.__doc__ = """void cvSetHistBinRanges(CvHistogram* hist, float** ranges, int uniform=1)
+cvSetHistBinRanges.__doc__ = """void cvSetHistBinRanges(CvHistogram hist, float** ranges, int uniform=1)
 
 Sets bounds of histogram bins
 """
 
 # Clears histogram
 cvClearHist = cfunc('cvClearHist', _cvDLL, None,
-    ('hist', CvHistogram_p, 1), # CvHistogram* hist 
+    ('hist', CvHistogram_r, 1), # CvHistogram* hist 
 )
-cvClearHist.__doc__ = """void cvClearHist(CvHistogram* hist)
+cvClearHist.__doc__ = """void cvClearHist(CvHistogram hist)
 
 Clears histogram
 """
 
 # Makes a histogram out of array
-cvMakeHistHeaderForArray = cfunc('cvMakeHistHeaderForArray', _cvDLL, CvHistogram_p,
+_cvMakeHistHeaderForArray = cfunc('cvMakeHistHeaderForArray', _cvDLL, CvHistogram_p,
     ('dims', c_int, 1), # int dims
     ('sizes', c_int_p, 1), # int* sizes
     ('hist', CvHistogram_p, 1), # CvHistogram* hist
@@ -1350,7 +1349,13 @@ cvMakeHistHeaderForArray = cfunc('cvMakeHistHeaderForArray', _cvDLL, CvHistogram
     ('ranges', ListPOINTER2(c_float), 1, None), # float** ranges
     ('uniform', c_int, 1, 1), # int uniform
 )
-cvMakeHistHeaderForArray.__doc__ = """CvHistogram* cvMakeHistHeaderForArray(int dims, int* sizes, CvHistogram* hist, float* data, float** ranges=NULL, int uniform=1)
+
+def cvMakeHistHeaderForArray(dims, sizes, data, ranges=None, uniform=1):
+    if z is not None:
+        z._owner = True
+    return z
+
+.__doc__ = """CvHistogram* cvMakeHistHeaderForArray(int dims, int* sizes, CvHistogram* hist, float* data, float** ranges=NULL, int uniform=1)
 
 Makes a histogram out of array
 """
@@ -2175,11 +2180,11 @@ CV_ARRAY = 2
 # Changes contour position to minimize its energy
 _cvSnakeImage = cfunc('cvSnakeImage', _cvDLL, None,
     ('image', IplImage_p, 1), # const IplImage* image
-    ('points', CvPoint_p, 1), # CvPoint* points
+    ('points', ListPOINTER(CvPoint), 1), # CvPoint* points
     ('length', c_int, 1), # int length
-    ('alpha', c_float_p, 1), # float* alpha
-    ('beta', c_float_p, 1), # float* beta
-    ('gamma', c_float_p, 1), # float* gamma
+    ('alpha', ListPOINTER(c_float), 1), # float* alpha
+    ('beta', ListPOINTER(c_float), 1), # float* beta
+    ('gamma', ListPOINTER(c_float), 1), # float* gamma
     ('coeff_usage', c_int, 1), # int coeff_usage
     ('win', CvSize, 1), # CvSize win
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
@@ -2191,19 +2196,7 @@ def cvSnakeImage(image, points, alpha, beta, gamma, coeff_usage, win, criteria, 
 
     Changes contour position to minimize its energy
     """
-    npts = len(points)
-    
-    pts2 = (CvPoint*npts)()
-    alpha2 = (c_float*npts)()
-    beta2 = (c_float*npts)()
-    gamma2 = (c_float*npts)()
-    for i in xrange(npts):
-        pts2[i] = points[i]
-        alpha2[i] = alpha[i]
-        beta2[i] = beta[i]
-        gamma2[i] = gamma[i]
-            
-    _cvSnakeImage(image, pts2, alpha2, beta2, gamma2, coeff_usage, win, criteria, calc_gradient)
+    _cvSnakeImage(image, points, len(points), alpha, beta, gamma, coeff_usage, win, criteria, calc_gradient)
 
 
 #-----------------------------------------------------------------------------
