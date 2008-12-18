@@ -1420,7 +1420,7 @@ def cvGetMinMaxHistValue(hist):
 
 # Finds minimum and maximum histogram bins and their indices
 def cvGetMinMaxHistValueAndIdx(hist):
-    """(float min_value, float max_value, int min_idx, int max_idx) = cvGetMinMaxHistValue(const CvHistogram hist)
+    """(float min_value, float max_value, int min_idx, int max_idx) = cvGetMinMaxHistValueAndIdx(const CvHistogram hist)
 
     Finds minimum and maximum histogram bins and their indices
     """

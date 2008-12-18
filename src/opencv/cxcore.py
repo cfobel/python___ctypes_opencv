@@ -4180,15 +4180,29 @@ Creates empty set
 """
 
 # Occupies a node in the set
-cvSetAdd = cfunc('cvSetAdd', _cxDLL, c_int,
+_cvSetAdd = cfunc('cvSetAdd', _cxDLL, c_int,
     ('set_header', CvSet_p, 1), # CvSet* set_header
     ('elem', CvSetElem_r, 1, None), # CvSetElem* elem
     ('inserted_elem', ByRefArg(CvSetElem_p), 1, None), # CvSetElem** inserted_elem
 )
-cvSetAdd.__doc__ = """int cvSetAdd(CvSet* set_header, CvSetElem elem=None, CvSetElem* inserted_elem=None)
 
-Occupies a node in the set
-"""
+# Occupies a node in the set
+def cvSetAdd(set_header, elem=None):
+    """int cvSetAdd(CvSet* set_header, CvSetElem elem=None)
+
+    Occupies a node in the set
+    """
+    return _cvSetAdd(set_header, elem=elem)
+
+# Occupies a node in the set, return the index and a reference to the inserted node
+def cvSetAdd_ReturnRef(set_header, elem=None):
+    """(int, CvSetElem inserted_elem) = cvSetAdd_ReturnRef(CvSet* set_header, CvSetElem elem=None)
+
+    Occupies a node in the set, return the index and a reference to the inserted node
+    """
+    z = CvSetElem_p()
+    i = _cvSetAdd(set_header, elem=elem, inserted_elem=z)
+    return (i, deref(z, set_header))
 
 # Adds element to set (fast variant)
 def cvSetNew(set_header):
@@ -4272,15 +4286,29 @@ Creates empty graph
 """
 
 # Adds vertex to graph
-cvGraphAddVtx = cfunc('cvGraphAddVtx', _cxDLL, c_int,
+_cvGraphAddVtx = cfunc('cvGraphAddVtx', _cxDLL, c_int,
     ('graph', CvGraph_p, 1), # CvGraph* graph
     ('vtx', CvGraphVtx_r, 1, None), # const CvGraphVtx* vtx
     ('inserted_vtx', ByRefArg(CvGraphVtx_p), 1, None), # CvGraphVtx** inserted_vtx
 )
-cvGraphAddVtx.__doc__ = """int cvGraphAddVtx(CvGraph* graph, const CvGraphVtx vtx=None, CvGraphVtx* inserted_vtx=None)
 
-Adds vertex to graph
-"""
+# Adds vertex to graph
+def cvGraphAddVtx(graph, vtx=None):
+    """int cvGraphAddVtx(CvGraph* graph, const CvGraphVtx vtx=None)
+
+    Adds vertex to graph
+    """
+    return _cvGraphAddVtx(graph, vtx=vtx)
+
+# Adds vertex to graph, returning the index of and a reference to the inserted vertex
+def cvGraphAddVtx_ReturnRef(graph, vtx=None):
+    """(int, CvGraphVtx inserted_vtx) = cvGraphAddVtx_ReturnRef(CvGraph* graph, const CvGraphVtx vtx=None)
+
+    Adds vertex to graph, returning the index of and a reference to the inserted vertex
+    """
+    z = CvGraphVtx_p()
+    i = _cvGraphAddVtx(graph, vtx=vtx, inserted_vtx=z)
+    return (i, deref(z, graph))
 
 # Removes vertex from graph
 cvGraphRemoveVtx = cfunc('cvGraphRemoveVtx', _cxDLL, c_int,
@@ -4303,30 +4331,58 @@ Removes vertex from graph
 """
 
 # Adds edge to graph
-cvGraphAddEdge = cfunc('cvGraphAddEdge', _cxDLL, c_int,
+_cvGraphAddEdge = cfunc('cvGraphAddEdge', _cxDLL, c_int,
     ('graph', CvGraph_p, 1), # CvGraph* graph
     ('start_idx', c_int, 1), # int start_idx
     ('end_idx', c_int, 1), # int end_idx
     ('edge', CvGraphEdge_r, 1, None), # const CvGraphEdge* edge
     ('inserted_edge', ByRefArg(CvGraphEdge_p), 1, None), # CvGraphEdge** inserted_edge
 )
-cvGraphAddEdge.__doc__ = """int cvGraphAddEdge(CvGraph* graph, int start_idx, int end_idx, const CvGraphEdge edge=None, CvGraphEdge* inserted_edge=None)
-
-Adds edge to graph
-"""
 
 # Adds edge to graph
-cvGraphAddEdgeByPtr = cfunc('cvGraphAddEdgeByPtr', _cxDLL, c_int,
+def cvGraphAddEdge(graph, start_idx, end_idx, edge=None):
+    """int cvGraphAddEdge(CvGraph* graph, int start_idx, int end_idx, const CvGraphEdge edge=None)
+
+    Adds edge to graph
+    """
+    return _cvGraphAddEdge(graph, start_idx, end_idx, edge=edge)
+
+# Adds edge to graph, returning the index of and a reference to the inserted edge
+def cvGraphAddEdge_ReturnRef(graph, start_idx, end_idx, edge=None):
+    """(int, CvGraphEdge inserted_edge) = cvGraphAddEdge_ReturnRef(CvGraph* graph, int start_idx, int end_idx, const CvGraphEdge edge=None)
+
+    Adds edge to graph, returning the index of and a reference to the inserted edge
+    """
+    z = CvGraphEdge_p()
+    i = _cvGraphAddEdge(graph, start_idx, end_idx, edge=edge, inserted_edge=z)
+    return (i, deref(z, graph))
+
+# Adds edge to graph by pointer
+_cvGraphAddEdgeByPtr = cfunc('cvGraphAddEdgeByPtr', _cxDLL, c_int,
     ('graph', CvGraph_p, 1), # CvGraph* graph
     ('start_vtx', CvGraphVtx_r, 1), # CvGraphVtx* start_vtx
     ('end_vtx', CvGraphVtx_r, 1), # CvGraphVtx* end_vtx
     ('edge', CvGraphEdge_r, 1, None), # const CvGraphEdge* edge
     ('inserted_edge', ByRefArg(CvGraphEdge_p), 1, None), # CvGraphEdge** inserted_edge
 )
-cvGraphAddEdgeByPtr.__doc__ = """int cvGraphAddEdgeByPtr(CvGraph* graph, CvGraphVtx start_vtx, CvGraphVtx end_vtx, const CvGraphEdge edge=None, CvGraphEdge* inserted_edge=None)
 
-Adds edge to graph
-"""
+# Adds edge to graph by pointer
+def cvGraphAddEdgeByPtr(graph, start_vtx, end_vtx, edge=None):
+    """int cvGraphAddEdgeByPtr(CvGraph* graph, CvGraphVtx start_vtx, CvGraphVtx end_vtx, const CvGraphEdge edge=None)
+
+    Adds edge to graph by pointer
+    """
+    return _cvGraphAddEdgeByPtr(graph, start_vtx, end_vtx, edge=edge)
+
+# Adds edge to graph by pointer, returning the index of and a reference to the inserted edge
+def cvGraphAddEdgeByPtr_ReturnRef(graph, start_vtx, end_vtx, edge=None):
+    """(int, CvGraphEdge inserted_edge) = cvGraphAddEdgeByPtr_ReturnRef(CvGraph* graph, CvGraphVtx start_vtx, CvGraphVtx end_vtx, const CvGraphEdge edge=None)
+
+    Adds edge to graph by pointer, returning the index of and a reference to the inserted edge
+    """
+    z = CvGraphEdge_p()
+    i = _cvGraphAddEdgeByPtr(graph, start_vtx, end_vtx, edge=edge, inserted_edge=z)
+    return (i, deref(z, graph))
 
 # Removes edge from graph
 cvGraphRemoveEdge = cfunc('cvGraphRemoveEdge', _cxDLL, None,
