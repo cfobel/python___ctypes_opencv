@@ -1402,18 +1402,31 @@ def cvMakeHistHeaderForArray(sizes, data, ranges=None, uniform=1):
 
 
 # Finds minimum and maximum histogram bins
-cvGetMinMaxHistValue = cfunc('cvGetMinMaxHistValue', _cvDLL, None,
+_cvGetMinMaxHistValue = cfunc('cvGetMinMaxHistValue', _cvDLL, None,
     ('hist', CvHistogram_r, 1), # const CvHistogram* hist
     ('min_value', c_float_p, 2), # float* min_value
     ('max_value', c_float_p, 2), # float* max_value
-    ('min_idx', c_int_p, 1, None), # int* min_idx
-    ('max_idx', c_int_p, 1, None), # int* max_idx
+    ('min_idx', ByRefArg(c_int), 1, None), # int* min_idx
+    ('max_idx', ByRefArg(c_int), 1, None), # int* max_idx
 )
-cvGetMinMaxHistValue.__doc__ = """float min_value, max_value = cvGetMinMaxHistValue(const CvHistogram hist, int* min_idx=NULL, int* max_idx=NULL)
+
+# Finds minimum and maximum histogram bins
+def cvGetMinMaxHistValue(hist):
+    """float min_value, max_value = cvGetMinMaxHistValue(const CvHistogram hist)
 
     Finds minimum and maximum histogram bins
-    [ctypes-opencv] Note that both min_value and max_value are returned.
     """
+    return _cvGetMinMaxHistValue(hist)
+
+# Finds minimum and maximum histogram bins and their indices
+def cvGetMinMaxHistValueAndIdx(hist):
+    """(float min_value, float max_value, int min_idx, int max_idx) = cvGetMinMaxHistValue(const CvHistogram hist)
+
+    Finds minimum and maximum histogram bins and their indices
+    """
+    min_idx = c_int()
+    max_idx = c_int()
+    return _cvGetMinMaxHistValue(hist, min_idx=min_idx, max_idx=max_idx)+(min_idx.value, max_idx.value)
 
 # Normalizes histogram
 cvNormalizeHist = cfunc('cvNormalizeHist', _cvDLL, None,
