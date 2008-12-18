@@ -99,7 +99,7 @@ min_val,max_val,min_loc,max_loc = cvMinMaxLoc(img)
         atypes.append(arg[1])
         aflags.append((arg[2], arg[0]) + arg[3:])
     return CFUNCTYPE(result, *atypes)((name, dll), tuple(aflags))
-
+    
 # hack the ctypes.Structure class to include printing the fields
 class _Structure(Structure):
     def __repr__(self):
@@ -668,7 +668,7 @@ def cvCeil(val): # here, this function is not correct
 
 CvRNG = c_uint64
 CvRNG_p = POINTER(CvRNG)
-CvRNG_r = ByRefARg(CvRNG)
+CvRNG_r = ByRefArg(CvRNG)
 
 def cvRNG(seed=-1):
     """CvRNG cvRNG( int64 seed = CV_DEFAULT(-1))
@@ -3560,28 +3560,32 @@ Calculates average (mean) of array elements
 """
 
 # Finds global minimum and maximum in array or subarray
-## cvMinMaxLoc = _cxDLL.cvMinMaxLoc
-## cvMinMaxLoc.restype = None # void
-## cvMinMaxLoc.argtypes = [
-##     c_void_p, # const CvArr* arr
-##     c_void_p, # double* min_val
-##     c_void_p, # double* max_val
-##     c_void_p, # CvPoint* min_loc=NULL
-##     c_void_p, # CvPoint* max_loc=NULL
-##     c_void_p # const CvArr* mask=NULL
-##     ]
-
-cvMinMaxLoc = cfunc('cvMinMaxLoc', _cxDLL, None,
-                    ('image', IplImage_p, 1),
+_cvMinMaxLoc = cfunc('cvMinMaxLoc', _cxDLL, None,
+                    ('arr', CvArr_p, 1),
                     ('min_val', c_double_p, 2),
                     ('max_val', c_double_p, 2),
-                    ('min_loc', CvPoint_p, 1, None),
-                    ('max_loc', CvPoint_p, 1, None),
+                    ('min_loc', CvPoint_r, 1, None),
+                    ('max_loc', CvPoint_r, 1, None),
                     ('mask', IplImage_p, 1, None))
-cvMinMaxLoc.__doc__ = """void cvMinMaxLoc(const CvArr* arr, double* min_val, double* max_val, CvPoint* min_loc=NULL, CvPoint* max_loc=NULL, const CvArr* mask=NULL)
 
-Finds global minimum and maximum in array or subarray
-"""
+                    
+# Finds global minimum and maximum in array or subarray
+def cvMinMax(arr, mask=None):
+    """(double min_val, double max_val) = cvMinMax(const CvArr* arr, const CvArr* mask=NULL)
+
+    Finds global minimum and maximum in array or subarray
+    """
+    return _cvMinMaxLoc(arr, mask=mask)
+
+# Finds global minimum and maximum in array or subarray
+def cvMinMaxLoc(arr, mask=None):
+    """(double min_val, double max_val, CvPoint min_loc, CvPoint max_loc) = cvMinMaxLoc(const CvArr* arr, const CvArr* mask=NULL)
+
+    Finds global minimum and maximum in array or subarray, and their locations
+    """
+    min_loc = CvPoint()
+    max_loc = CvPoint()
+    return _cvMinMaxLoc(arr, min_loc=min_loc, max_loc=max_loc, mask=mask)+(min_loc, max_loc)
 
 CV_C = 1
 CV_L1 = 2
