@@ -3,6 +3,7 @@
 print "OpenCV Python version of contours"
 
 # import the necessary things for OpenCV
+from ctypes import sizeof
 from opencv import cv
 from opencv import highgui
 
@@ -114,13 +115,13 @@ if __name__ == '__main__':
     # find the contours
     nb_contours, contours = cv.cvFindContours (image,
                                                storage,
-                                               cv.sizeof_CvContour,
+                                               sizeof(cv.CvContour),
                                                cv.CV_RETR_TREE,
                                                cv.CV_CHAIN_APPROX_SIMPLE,
                                                cv.cvPoint (0,0))
 
     # comment this out if you do not want approximation
-    contours = cv.cvApproxPoly (contours, cv.sizeof_CvContour,
+    contours = cv.cvApproxPoly (contours, sizeof(cv.CvContour),
                                 storage,
                                 cv.CV_POLY_APPROX_DP, 3, 1)
     

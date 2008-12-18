@@ -13,7 +13,7 @@ Python implementation by: Roman Stanchak
 
 import sys
 
-from ctypes import c_int
+from ctypes import c_int, sizeof
 from opencv import cv
 from opencv import highgui
 
@@ -40,7 +40,7 @@ def process_image( slider_pos ):
     # Find all contours.
     nb_contours, cont = cv.cvFindContours (image02,
             stor,
-            cv.sizeof_CvContour,
+            sizeof(cv.CvContour),
             cv.CV_RETR_LIST,
             cv.CV_CHAIN_APPROX_NONE,
             cv.cvPoint (0,0))

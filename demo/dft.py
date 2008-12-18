@@ -100,7 +100,7 @@ if __name__ == "__main__":
     # the image center
     cvShiftDFT( image_Re, image_Re );
 
-    min, max = cvMinMaxLoc(image_Re);
+    min, max = cvMinMax(image_Re);
     cvScale(image_Re, image_Re, 1.0/(max-min), 1.0*(-min)/(max-min));
     cvShowImage("magnitude", image_Re);
 

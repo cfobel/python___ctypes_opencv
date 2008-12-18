@@ -148,7 +148,7 @@ if __name__ == '__main__':
         cv.cvCalcHist ([hue_roi], hist, 0, mask_roi)
 
         # extract the min and max value of the histogram
-        min_val, max_val = cv.cvGetMinMaxHistValue (hist, None, None)
+        min_val, max_val = cv.cvGetMinMaxHistValue(hist)
 
         # compute the scale factor
         if max_val > 0:

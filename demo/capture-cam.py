@@ -99,10 +99,3 @@ if __name__ == '__main__':
         if k == '\x1b':
             # user has press the ESC key, so exit
             break
-
-    highgui.cvReleaseVideoWriter(writer)
-    del(writer)
-    # end working with the writer
-    # not working at this time... Need to implement some typemaps...
-    # but exiting without calling it is OK in this simple application
-    #highgui.cvReleaseVideoWriter (writer)

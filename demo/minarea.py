@@ -1,6 +1,6 @@
 #!/usr/bin/python 
 
-from ctypes import c_void_p, addressof
+from ctypes import c_void_p, addressof, sizeof
 from opencv.cv import *
 from opencv.highgui import *
 from random import randint
@@ -29,7 +29,7 @@ def minarea_array(img, count):
 
     
 def minarea_seq(img, count, storage):
-    ptseq = cvCreateSeq( CV_SEQ_KIND_GENERIC | CV_32SC2, sizeof_CvContour, sizeof_CvPoint, storage )
+    ptseq = cvCreateSeq( CV_SEQ_KIND_GENERIC | CV_32SC2, sizeof(CvContour), sizeof(CvPoint), storage )
     for i in range(count):
         pt0 = cvPoint( randint(img.width/4, img.width*3/4),
                        randint(img.height/4, img.height*3/4) )
