@@ -114,10 +114,10 @@ _cvCreateTrackbar = cfunc('cvCreateTrackbar', _hgDLL, c_int,
     ('window_name', c_char_p, 1), # const char* window_name
     ('value', ByRefArg(c_int), 1), # int* value
     ('count', c_int, 1), # int count
-    ('on_change', CallableToFunc(CvTrackbarCallback), 1), # CvTrackbarCallback on_change 
+    ('on_change', CallableToFunc(CvTrackbarCallback), 1, 0), # CvTrackbarCallback on_change 
 )
 
-def cvCreateTrackbar(trackbar_name, window_name, value, count, on_change):
+def cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=0):
     """int cvCreateTrackbar( const char* trackbar_name, const char* window_name, c_int_or_int value, int count, CvTrackbarCallback on_change )
 
     Creates the trackbar and attaches it to the specified window
@@ -125,7 +125,7 @@ def cvCreateTrackbar(trackbar_name, window_name, value, count, on_change):
     """
     if not isinstance(value, c_int):
         value = c_int(value)
-    return _cvCreateTrackbar(trackbar_name, window_name, value, count, on_change)
+    return _cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=on_change)
 
 # Retrieves trackbar position
 cvGetTrackbarPos = cfunc('cvGetTrackbarPos', _hgDLL, c_int,
@@ -224,7 +224,7 @@ def cvLoadImage(filename, iscolor=1):
 
     Loads an image from file
     """
-    z = deref(_cvLoadImage(filename, iscolor))
+    z = pointee(_cvLoadImage(filename, iscolor))
     if z is not None:
         z._owner = 2 # both header and data
     return z
@@ -288,7 +288,7 @@ def cvCreateFileCapture(filename):
     Initializes capturing video from file
     [ctypes-opencv] returns None if no capture is created
     """
-    return deref(_cvCreateFileCapture(filename))
+    return pointee(_cvCreateFileCapture(filename))
 
 cvCaptureFromFile = cvCreateFileCapture
 cvCaptureFromAVI = cvCaptureFromFile
@@ -304,7 +304,7 @@ def cvCreateCameraCapture(index):
     Initializes capturing video from camera
     [ctypes-opencv] returns None if no capture is created
     """
-    return deref(_cvCreateCameraCapture(index))
+    return pointee(_cvCreateCameraCapture(index))
     
 cvCaptureFromCAM = cvCreateCameraCapture
 
@@ -327,7 +327,7 @@ def cvRetrieveFrame(capture):
 
     Gets the image grabbed with cvGrabFrame
     """
-    z = deref(_cvRetrieveFrame(capture), capture)
+    z = pointee(_cvRetrieveFrame(capture), capture)
     if z is not None:
         z._owner = 0 # capture owns it
     return z
@@ -342,7 +342,7 @@ def cvQueryFrame(capture):
 
     Grabs and returns a frame from camera or file
     """
-    z = deref(_cvQueryFrame(capture), capture)
+    z = pointee(_cvQueryFrame(capture), capture)
     if z is not None:
         z._owner = 0 # capture owns it
     return z
@@ -418,7 +418,7 @@ def cvCreateVideoWriter(filename, fourcc, fps, frame_size, is_color=1):
     Creates video file writer
     [ctypes-opencv] returns None if no writer is created
     """
-    return deref(_cvCreateVideoWriter(filename, fourcc, fps, frame_size, is_color))
+    return pointee(_cvCreateVideoWriter(filename, fourcc, fps, frame_size, is_color))
 
 cvCreateAVIWriter = cvCreateVideoWriter
 

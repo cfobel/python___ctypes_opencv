@@ -1,14 +1,3 @@
-restructure ctypes-opencv so that it can be distributed/installed using distutils, done
-
-rowrange and colrange? done
-
-CvSeq and CvSet with array indexing, array slicing?
-
 To provide an interface for machine learning classes. Atm, it's pretty tough.
-
-
-
-got CvMat and CvSeq and co left
-and then testing
 
 TODO: wrap properly cvProjectPoints2(), cvFindHomography(), and cvCalibrateCamera2(), cvFindExtrinsicCameraParams2(), cvRodrigues2(), cvInitUndistortMap(), cvFindChessboardCorners(), cvFindFundamentalMat()

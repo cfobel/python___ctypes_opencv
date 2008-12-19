@@ -3,6 +3,7 @@
 import sys
 
 # import the necessary things for OpenCV
+from ctypes import cast
 from opencv import cv
 from opencv import highgui
 
@@ -143,21 +144,23 @@ if __name__ == '__main__':
         # select the rectangle of interest in the hue/mask arrays
         hue_roi = cv.cvGetSubRect (hue, selection)
         mask_roi = cv.cvGetSubRect (mask, selection)
-
+        
         # it's time to compute the histogram
         cv.cvCalcHist ([hue_roi], hist, 0, mask_roi)
 
         # extract the min and max value of the histogram
         min_val, max_val = cv.cvGetMinMaxHistValue(hist)
-
+        
         # compute the scale factor
         if max_val > 0:
             scale = 255. / max_val
         else:
             scale = 0.
+            
+        hbins = hist.bins[0]
 
         # scale the histograms
-        cv.cvConvertScale (hist.bins, hist.bins, scale, 0)
+        cv.cvConvertScale (hbins, hbins, scale, 0)
 
         # clear the histogram image
         cv.cvSetZero (histimg)
@@ -169,7 +172,7 @@ if __name__ == '__main__':
             # for all the bins
 
             # get the value, and scale to the size of the hist image
-            val = cv.cvRound (cv.cvGetReal1D (hist.bins, i)
+            val = cv.cvRound (cv.cvGetReal1D (hbins, i)
                               * histimg.height / 255)
 
             # compute the color

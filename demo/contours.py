@@ -3,7 +3,7 @@
 print "OpenCV Python version of contours"
 
 # import the necessary things for OpenCV
-from ctypes import sizeof
+from ctypes import sizeof, c_int
 from opencv import cv
 from opencv import highgui
 
@@ -23,29 +23,32 @@ contours_image = cv.cvCreateImage (cv.cvSize (_SIZE, _SIZE), 8, 3)
 # the callback on the trackbar, to set the level of contours we want
 # to display
 def on_trackbar (position):
+    pass
+    # print "position=", position
+    # print "type(position)=", type(position)
 
     # compute the real level of display, given the current position
-    levels = position - 3
+    # levels = position - 3
 
     # initialisation
-    _contours = contours
+    # _contours = contours
     
-    if levels <= 0:
+    # if levels <= 0:
         # zero or negative value
         # => get to the nearest face to make it look more funny
-        _contours = contours.h_next.h_next.h_next
+        # _contours = contours.h_next[0].h_next[0].h_next[0]
         
     # first, clear the image where we will draw contours
-    cv.cvSetZero (contours_image)
+    # cv.cvSetZero (contours_image)
     
     # draw contours in red and green
-    cv.cvDrawContours (contours_image, _contours,
-                       _red, _green,
-                       levels, 3, cv.CV_AA,
-                       cv.cvPoint (0, 0))
+    # cv.cvDrawContours (contours_image, _contours,
+                       # _red, _green,
+                       # levels, 3, cv.CV_AA,
+                       # cv.cvPoint (0, 0))
 
     # finally, show the image
-    highgui.cvShowImage ("contours", contours_image)
+    # highgui.cvShowImage ("contours", contours_image)
 
 if __name__ == '__main__':
 
@@ -129,7 +132,8 @@ if __name__ == '__main__':
     highgui.cvNamedWindow ("contours", 1)
 
     # create the trackbar, to enable the change of the displayed level
-    highgui.cvCreateTrackbar ("levels+3", "contours", 3, 7, on_trackbar)
+    zzz = c_int(3)
+    highgui.cvCreateTrackbar ("levels+3", "contours", zzz, 7)
 
     # call one time the callback, so we will have the 1st display done
     on_trackbar (_DEFAULT_LEVEL)

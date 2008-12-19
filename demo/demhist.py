@@ -64,7 +64,8 @@ def update_brightcont():
     cvCalcHist( [dst_image], hist, 0, None );
     cvZero( dst_image );
     min_value, max_value = cvGetMinMaxHistValue( hist );
-    cvScale( hist.bins, hist.bins, float(hist_image.height)/max_value, 0 );
+    hbins = hist.bins[0]
+    cvScale( hbins, hbins, float(hist_image.height)/max_value, 0 );
     #cvNormalizeHist( hist, 1000 );
 
     cvSet( hist_image, cvScalarAll(255));
@@ -72,7 +73,7 @@ def update_brightcont():
 
     for i in range(hist_size):
         cvRectangle( hist_image, cvPoint(i*bin_w, hist_image.height),
-                     cvPoint((i+1)*bin_w, hist_image.height - cvRound(cvGetReal1D(hist.bins,i))),
+                     cvPoint((i+1)*bin_w, hist_image.height - cvRound(cvGetReal1D(hbins,i))),
                      cvScalarAll(0), -1, 8, 0 );
    
     cvShowImage( "histogram", hist_image );

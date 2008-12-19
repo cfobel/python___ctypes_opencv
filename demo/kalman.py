@@ -31,13 +31,13 @@ if __name__ == "__main__":
 
     while True:
         cvRandArr( rng, state, CV_RAND_NORMAL, cvRealScalar(0), cvRealScalar(0.1) );
-        
-        kalman.transition_matrix[:] = A;
-        cvSetIdentity( kalman.measurement_matrix, cvRealScalar(1) );
-        cvSetIdentity( kalman.process_noise_cov, cvRealScalar(1e-5) );
-        cvSetIdentity( kalman.measurement_noise_cov, cvRealScalar(1e-1) );
-        cvSetIdentity( kalman.error_cov_post, cvRealScalar(1));
-        cvRandArr( rng, kalman.state_post, CV_RAND_NORMAL, cvRealScalar(0), cvRealScalar(0.1) );
+
+        kalman.transition_matrix[0][:] = A;
+        cvSetIdentity( kalman.measurement_matrix[0], cvRealScalar(1) );
+        cvSetIdentity( kalman.process_noise_cov[0], cvRealScalar(1e-5) );
+        cvSetIdentity( kalman.measurement_noise_cov[0], cvRealScalar(1e-1) );
+        cvSetIdentity( kalman.error_cov_post[0], cvRealScalar(1));
+        cvRandArr( rng, kalman.state_post[0], CV_RAND_NORMAL, cvRealScalar(0), cvRealScalar(0.1) );
         
         while True:
             def calc_point(angle):
@@ -52,10 +52,10 @@ if __name__ == "__main__":
             predict_pt = calc_point(predict_angle);
 
             cvRandArr( rng, measurement, CV_RAND_NORMAL, cvRealScalar(0),
-                       cvRealScalar(sqrt(kalman.measurement_noise_cov[0,0])) );
+                       cvRealScalar(sqrt(kalman.measurement_noise_cov[0][0,0])) );
 
             # generate measurement 
-            cvMatMulAdd( kalman.measurement_matrix, state, measurement, measurement );
+            cvMatMulAdd( kalman.measurement_matrix[0], state, measurement, measurement );
 
             measurement_angle = measurement[0,0];
             measurement_pt = calc_point(measurement_angle);
@@ -77,8 +77,8 @@ if __name__ == "__main__":
             cvKalmanCorrect( kalman, measurement );
 
             cvRandArr( rng, process_noise, CV_RAND_NORMAL, cvRealScalar(0),
-                       cvRealScalar(sqrt(kalman.process_noise_cov[0,0])));
-            cvMatMulAdd( kalman.transition_matrix, state, process_noise, state );
+                       cvRealScalar(sqrt(kalman.process_noise_cov[0][0,0])));
+            cvMatMulAdd( kalman.transition_matrix[0], state, process_noise, state );
 
             cvShowImage( "Kalman", img );
             code = cvWaitKey( 100 );

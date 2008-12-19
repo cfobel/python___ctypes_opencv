@@ -32,10 +32,11 @@ def draw_subdiv_edge( img, edge, color ):
 
 def draw_subdiv( img, subdiv, delaunay_color, voronoi_color ):
     
-    total = subdiv.edges.total;
-    elem_size = subdiv.edges.elem_size;
+    sedges = subdiv.edges[0]
+    total = sedges.total;
+    elem_size = sedges.elem_size;
     
-    for edge in subdiv.edges.asarrayptr(CvSubdiv2DEdge):
+    for edge in sedges.asarrayptr(CvSubdiv2DEdge):
         edge_rot = cvSubdiv2DRotateEdge( edge, 1 )
 
         if( CV_IS_SET_ELEM( edge.value )):
@@ -87,12 +88,13 @@ def draw_subdiv_facet( img, edge ):
         draw_subdiv_point( img, pt.pt, CV_RGB(0,0,0));
 
 def paint_voronoi( subdiv, img ):
-    total = subdiv.edges.total;
-    elem_size = subdiv.edges.elem_size;
+    sedges = subdiv.edges[0]
+    total = sedges.total;
+    elem_size = sedges.elem_size;
 
     cvCalcSubdivVoronoi2D( subdiv );
 
-    for edge in subdiv.edges.asarrayptr(CvSubdiv2DEdge):
+    for edge in sedges.asarrayptr(CvSubdiv2DEdge):
     
         if( CV_IS_SET_ELEM( c_void_p(edge.value) )):
             # left
