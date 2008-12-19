@@ -400,24 +400,24 @@ CV_MAX_SOBEL_KSIZE = 7
 
 # Calculates first, second, third or mixed image derivatives using extended Sobel operator
 cvSobel = cfunc('cvSobel', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('xorder', c_int, 1), # int xorder
     ('yorder', c_int, 1), # int yorder
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
-cvSobel.__doc__ = """void cvSobel(const CvArr* src, CvArr* dst, int xorder, int yorder, int aperture_size=3)
+cvSobel.__doc__ = """void cvSobel(const CvArr src, CvArr dst, int xorder, int yorder, int aperture_size=3)
 
 Calculates first, second, third or mixed image derivatives using extended Sobel operator
 """
 
 # Calculates Laplacian of the image
 cvLaplace = cfunc('cvLaplace', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
-cvLaplace.__doc__ = """void cvLaplace(const CvArr* src, CvArr* dst, int aperture_size=3)
+cvLaplace.__doc__ = """void cvLaplace(const CvArr src, CvArr dst, int aperture_size=3)
 
 Calculates Laplacian of the image
 """
@@ -426,68 +426,68 @@ CV_CANNY_L2_GRADIENT = 1 << 31
 
 # Implements Canny algorithm for edge detection
 cvCanny = cfunc('cvCanny', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('edges', CvArr_p, 1), # CvArr* edges
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('edges', CvArr_r, 1), # CvArr* edges
     ('threshold1', c_double, 1), # double threshold1
     ('threshold2', c_double, 1), # double threshold2
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
-cvCanny.__doc__ = """void cvCanny(const CvArr* image, CvArr* edges, double threshold1, double threshold2, int aperture_size=3)
+cvCanny.__doc__ = """void cvCanny(const CvArr image, CvArr edges, double threshold1, double threshold2, int aperture_size=3)
 
 Implements Canny algorithm for edge detection
 """
 
 # Calculates feature map for corner detection
 cvPreCornerDetect = cfunc('cvPreCornerDetect', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('corners', CvArr_p, 1), # CvArr* corners
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('corners', CvArr_r, 1), # CvArr* corners
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
-cvPreCornerDetect.__doc__ = """void cvPreCornerDetect(const CvArr* image, CvArr* corners, int aperture_size=3)
+cvPreCornerDetect.__doc__ = """void cvPreCornerDetect(const CvArr image, CvArr corners, int aperture_size=3)
 
 Calculates feature map for corner detection
 """
 
 # Calculates eigenvalues and eigenvectors of image blocks for corner detection
 cvCornerEigenValsAndVecs = cfunc('cvCornerEigenValsAndVecs', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('eigenvv', CvArr_p, 1), # CvArr* eigenvv
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('eigenvv', CvArr_r, 1), # CvArr* eigenvv
     ('block_size', c_int, 1), # int block_size
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
-cvCornerEigenValsAndVecs.__doc__ = """void cvCornerEigenValsAndVecs(const CvArr* image, CvArr* eigenvv, int block_size, int aperture_size=3)
+cvCornerEigenValsAndVecs.__doc__ = """void cvCornerEigenValsAndVecs(const CvArr image, CvArr eigenvv, int block_size, int aperture_size=3)
 
 Calculates eigenvalues and eigenvectors of image blocks for corner detection
 """
 
 # Calculates minimal eigenvalue of gradient matrices for corner detection
 cvCornerMinEigenVal = cfunc('cvCornerMinEigenVal', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('eigenval', CvArr_p, 1), # CvArr* eigenval
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('eigenval', CvArr_r, 1), # CvArr* eigenval
     ('block_size', c_int, 1), # int block_size
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
-cvCornerMinEigenVal.__doc__ = """void cvCornerMinEigenVal(const CvArr* image, CvArr* eigenval, int block_size, int aperture_size=3)
+cvCornerMinEigenVal.__doc__ = """void cvCornerMinEigenVal(const CvArr image, CvArr eigenval, int block_size, int aperture_size=3)
 
 Calculates minimal eigenvalue of gradient matrices for corner detection
 """
 
 # Harris edge detector
 cvCornerHarris = cfunc('cvCornerHarris', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('harris_responce', CvArr_p, 1), # CvArr* harris_responce
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('harris_responce', CvArr_r, 1), # CvArr* harris_responce
     ('block_size', c_int, 1), # int block_size
     ('aperture_size', c_int, 1, 3), # int aperture_size
     ('k', c_double, 1, 0), # double k
 )
-cvCornerHarris.__doc__ = """void cvCornerHarris(const CvArr* image, CvArr* harris_responce, int block_size, int aperture_size=3, double k=0.04)
+cvCornerHarris.__doc__ = """void cvCornerHarris(const CvArr image, CvArr harris_responce, int block_size, int aperture_size=3, double k=0.04)
 
 Harris edge detector
 """
 
 # Refines corner locations
 _cvFindCornerSubPix = cfunc('cvFindCornerSubPix', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
+    ('image', CvArr_r, 1), # const CvArr* image
     ('corners', c_void_p, 1), # CvPoint2D32f* corners
     ('count', c_int, 1), # int count
     ('win', CvSize, 1), # CvSize win
@@ -496,7 +496,7 @@ _cvFindCornerSubPix = cfunc('cvFindCornerSubPix', _cvDLL, None,
 )
 
 def cvFindCornerSubPix(image, corners, win, zero_zone, criteria):
-    """list_or_tuple_of_CvPoint2D32f cvFindCornerSubPix(const CvArr* image, list_or_tuple_of_CvPoint2D32f corners, CvSize win, CvSize zero_zone, CvTermCriteria criteria)
+    """list_or_tuple_of_CvPoint2D32f cvFindCornerSubPix(const CvArr image, list_or_tuple_of_CvPoint2D32f corners, CvSize win, CvSize zero_zone, CvTermCriteria criteria)
 
     Refines corner locations
     [ctypes-opencv] Parameter 'corners' is returned with points updated.
@@ -513,21 +513,21 @@ def cvFindCornerSubPix(image, corners, win, zero_zone, criteria):
 
 # Determines strong corners on image
 _cvGoodFeaturesToTrack = cfunc('cvGoodFeaturesToTrack', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('eig_image', CvArr_p, 1), # CvArr* eig_image
-    ('temp_image', CvArr_p, 1), # CvArr* temp_image
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('eig_image', CvArr_r, 1), # CvArr* eig_image
+    ('temp_image', CvArr_r, 1), # CvArr* temp_image
     ('corners', c_void_p, 1), # CvPoint2D32f* corners
     ('corner_count', ByRefArg(c_int), 1), # int* corner_count
     ('quality_level', c_double, 1), # double quality_level
     ('min_distance', c_double, 1), # double min_distance
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
     ('block_size', c_int, 1, 3), # int block_size
     ('use_harris', c_int, 1, 0), # int use_harris
     ('k', c_double, 1, 0), # double k
 )
 
 def cvGoodFeaturesToTrack(image, eig_image, temp_image, max_corner_count, quality_level, min_distance, mask=None, block_size=3, use_harris=0, k=0):
-    """list_of_CvPoint2D32f cvGoodFeaturesToTrack(const CvArr* image, CvArr* eig_image, CvArr* temp_image, int max_corner_count, double quality_level, double min_distance, const CvArr* mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
+    """list_of_CvPoint2D32f cvGoodFeaturesToTrack(const CvArr image, CvArr eig_image, CvArr temp_image, int max_corner_count, double quality_level, double min_distance, const CvArr mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
 
     Determines strong corners on image
     [ctypes-opencv] 'max_corner_count' is the maximum number of corners to detect
@@ -549,35 +549,35 @@ def cvGoodFeaturesToTrack(image, eig_image, temp_image, max_corner_count, qualit
 
 # Reads raster line to buffer
 cvSampleLine = cfunc('cvSampleLine', _cvDLL, c_int,
-    ('image', CvArr_p, 1), # const CvArr* image
+    ('image', CvArr_r, 1), # const CvArr* image
     ('pt1', CvPoint, 1), # CvPoint pt1
     ('pt2', CvPoint, 1), # CvPoint pt2
     ('buffer', c_void_p, 1), # void* buffer
     ('connectivity', c_int, 1, 8), # int connectivity
 )
-cvSampleLine.__doc__ = """int cvSampleLine(const CvArr* image, CvPoint pt1, CvPoint pt2, void* buffer, int connectivity=8)
+cvSampleLine.__doc__ = """int cvSampleLine(const CvArr image, CvPoint pt1, CvPoint pt2, void* buffer, int connectivity=8)
 
 Reads raster line to buffer
 """
 
 # Retrieves pixel rectangle from image with sub-pixel accuracy
 cvGetRectSubPix = cfunc('cvGetRectSubPix', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('center', CvPoint2D32f, 1), # CvPoint2D32f center 
 )
-cvGetRectSubPix.__doc__ = """void cvGetRectSubPix(const CvArr* src, CvArr* dst, CvPoint2D32f center)
+cvGetRectSubPix.__doc__ = """void cvGetRectSubPix(const CvArr src, CvArr dst, CvPoint2D32f center)
 
 Retrieves pixel rectangle from image with sub-pixel accuracy
 """
 
 # Retrieves pixel quadrangle from image with sub-pixel accuracy
 cvGetQuadrangleSubPix = cfunc('cvGetQuadrangleSubPix', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('map_matrix', CvMat_p, 1), # const CvMat* map_matrix 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('map_matrix', CvMat_r, 1), # const CvMat* map_matrix 
 )
-cvGetQuadrangleSubPix.__doc__ = """void cvGetQuadrangleSubPix(const CvArr* src, CvArr* dst, const CvMat* map_matrix)
+cvGetQuadrangleSubPix.__doc__ = """void cvGetQuadrangleSubPix(const CvArr src, CvArr dst, const CvMat map_matrix)
 
 Retrieves pixel quadrangle from image with sub-pixel accuracy
 """
@@ -592,11 +592,11 @@ CV_INTER_AREA = 3 #resampling using pixel area relation. It is preferred method 
 
 # Resizes image
 cvResize = cfunc('cvResize', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('interpolation', c_int, 1), # int interpolation
 )
-cvResize.__doc__ = """void cvResize(const CvArr* src, CvArr* dst, int interpolation=CV_INTER_LINEAR)
+cvResize.__doc__ = """void cvResize(const CvArr src, CvArr dst, int interpolation=CV_INTER_LINEAR)
 
 Resizes image
 """
@@ -606,87 +606,105 @@ CV_WARP_INVERSE_MAP = 16
 
 # Applies affine transformation to the image
 cvWarpAffine = cfunc('cvWarpAffine', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('map_matrix', CvMat_p, 1), # const CvMat* map_matrix
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('map_matrix', CvMat_r, 1), # const CvMat* map_matrix
     ('flags', c_int, 1), # int flags
     ('fillval', CvScalar, 1), # CvScalar fillval
 )
-cvWarpAffine.__doc__ = """void cvWarpAffine(const CvArr* src, CvArr* dst, const CvMat* map_matrix, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
+cvWarpAffine.__doc__ = """void cvWarpAffine(const CvArr src, CvArr dst, const CvMat map_matrix, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
 
 Applies affine transformation to the image
 """
 
 # Calculates affine transform from 3 corresponding points
-cvGetAffineTransform = cfunc('cvGetAffineTransform', _cvDLL, CvMat_p,
+_cvGetAffineTransform = cfunc('cvGetAffineTransform', _cvDLL, CvMat_p,
     ('src', CvPoint2D32f_r, 1), # const CvPoint2D32f* src
     ('dst', CvPoint2D32f_r, 1), # const CvPoint2D32f* dst
-    ('map_matrix', CvMat_p, 1), # CvMat* map_matrix
+    ('map_matrix', CvMat_r, 1), # CvMat* map_matrix
 )
-cvGetAffineTransform.__doc__ = """CvMat* cvGetAffineTransform(const CvPoint2D32f src, const CvPoint2D32f dst, CvMat* map_matrix)
 
-Calculates affine transform from 3 corresponding points
-"""
+def cvGetAffineTransform(src, dst):
+    """CvMat cvGetAffineTransform(const CvPoint2D32f src, const CvPoint2D32f dst)
+
+    Calculates affine transform from 3 corresponding points
+    [ctypes-opencv] a new 2x3 matrix is created
+    """
+    z = cvCreateMat(2, 3, CV_64FC1)
+    _cvGetAffineTransform(src, dst, z)
+    return z
 
 # Calculates affine matrix of 2d rotation
 cv2DRotationMatrix = cfunc('cv2DRotationMatrix', _cvDLL, CvMat_p,
     ('center', CvPoint2D32f, 1), # CvPoint2D32f center
     ('angle', c_double, 1), # double angle
     ('scale', c_double, 1), # double scale
-    ('map_matrix', CvMat_p, 1), # CvMat* map_matrix 
+    ('map_matrix', CvMat_r, 1), # CvMat* map_matrix 
 )
-cv2DRotationMatrix.__doc__ = """CvMat* cv2DRotationMatrix(CvPoint2D32f center, double angle, double scale, CvMat* map_matrix)
 
-Calculates affine matrix of 2d rotation
-"""
+def cv2DRotationMatrix(center, angle, scale):
+    """CvMat cv2DRotationMatrix(CvPoint2D32f center, double angle, double scale)
+
+    Calculates affine matrix of 2d rotation
+    [ctypes-opencv] a new 2x3 matrix is created
+    """
+    z = cvCreateMat(2, 3, CV_64FC1)
+    _cv2DRotationMatrix(center, angle, scale, z)
+    return z
 
 # Applies perspective transformation to the image
 cvWarpPerspective = cfunc('cvWarpPerspective', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('map_matrix', CvMat_p, 1), # const CvMat* map_matrix
-    ('flags', c_int, 1), # int flags
-    ('fillval', CvScalar, 1), # CvScalar fillval
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('map_matrix', CvMat_r, 1), # const CvMat* map_matrix
+    ('flags', c_int, 1, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS), # int flags
+    ('fillval', CvScalar, 1, cvScalarAll(0)), # CvScalar fillval
 )
-cvWarpPerspective.__doc__ = """void cvWarpPerspective(const CvArr* src, CvArr* dst, const CvMat* map_matrix, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
+cvWarpPerspective.__doc__ = """void cvWarpPerspective(const CvArr src, CvArr dst, const CvMat map_matrix, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
 
 Applies perspective transformation to the image
 """
 
 # Calculates perspective transform from 4 corresponding points
-cvGetPerspectiveTransform = cfunc('cvGetPerspectiveTransform', _cvDLL, CvMat_p,
+_cvGetPerspectiveTransform = cfunc('cvGetPerspectiveTransform', _cvDLL, CvMat_p,
     ('src', CvPoint2D32f_r, 1), # const CvPoint2D32f* src
     ('dst', CvPoint2D32f_r, 1), # const CvPoint2D32f* dst
-    ('map_matrix', CvMat_p, 1), # CvMat* map_matrix 
+    ('map_matrix', CvMat_r, 1), # CvMat* map_matrix 
 )
-cvGetPerspectiveTransform.__doc__ = """CvMat* cvGetPerspectiveTransform(const CvPoint2D32f src, const CvPoint2D32f dst, CvMat* map_matrix)
 
-Calculates perspective transform from 4 corresponding points
-"""
+def cvGetPerspectiveTransform(src, dst):
+    """CvMat cvGetPerspectiveTransform(const CvPoint2D32f src, const CvPoint2D32f dst)
+
+    Calculates perspective transform from 4 corresponding points
+    [ctypes-opencv] a new 3x3 matrix is created
+    """
+    z = cvCreateMat(3, 3, CV_64FC1)
+    _cvGetPerspectiveTransform(src, dst, z)
+    return z
 
 # Applies generic geometrical transformation to the image
 cvRemap = cfunc('cvRemap', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mapx', CvArr_p, 1), # const CvArr* mapx
-    ('mapy', CvArr_p, 1), # const CvArr* mapy
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mapx', CvArr_r, 1), # const CvArr* mapx
+    ('mapy', CvArr_r, 1), # const CvArr* mapy
     ('flags', c_int, 1), # int flags
     ('fillval', CvScalar, 1), # CvScalar fillval
 )
-cvRemap.__doc__ = """void cvRemap(const CvArr* src, CvArr* dst, const CvArr* mapx, const CvArr* mapy, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
+cvRemap.__doc__ = """void cvRemap(const CvArr src, CvArr dst, const CvArr mapx, const CvArr mapy, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
 
 Applies generic geometrical transformation to the image
 """
 
 # Remaps image to log-polar space
 cvLogPolar = cfunc('cvLogPolar', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('center', CvPoint2D32f, 1), # CvPoint2D32f center
     ('M', c_double, 1), # double M
     ('flags', c_int, 1), # int flags
 )
-cvLogPolar.__doc__ = """void cvLogPolar(const CvArr* src, CvArr* dst, CvPoint2D32f center, double M, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS)
+cvLogPolar.__doc__ = """void cvLogPolar(const CvArr src, CvArr dst, CvPoint2D32f center, double M, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS)
 
 Remaps image to log-polar space
 """
@@ -753,24 +771,24 @@ def cvCreateStructuringElementEx(cols, rows, anchor_x, anchor_y, shape, values=N
 
 # Erodes image by using arbitrary structuring element
 cvErode = cfunc('cvErode', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('element', IplConvKernel_r, 1, None), # IplConvKernel* element
     ('iterations', c_int, 1, 1), # int iterations
 )
-cvErode.__doc__ = """void cvErode(const CvArr* src, CvArr* dst, IplConvKernel element=NULL, int iterations=1)
+cvErode.__doc__ = """void cvErode(const CvArr src, CvArr dst, IplConvKernel element=NULL, int iterations=1)
 
 Erodes image by using arbitrary structuring element
 """
 
 # Dilates image by using arbitrary structuring element
 cvDilate = cfunc('cvDilate', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('element', IplConvKernel_r, 1, None), # IplConvKernel* element
     ('iterations', c_int, 1, 1), # int iterations
 )
-cvDilate.__doc__ = """void cvDilate(const CvArr* src, CvArr* dst, IplConvKernel element=NULL, int iterations=1)
+cvDilate.__doc__ = """void cvDilate(const CvArr src, CvArr dst, IplConvKernel element=NULL, int iterations=1)
 
 Dilates image by using arbitrary structuring element
 """
@@ -783,14 +801,14 @@ CV_MOP_BLACKHAT = 6
 
 # Performs advanced morphological transformations
 cvMorphologyEx = cfunc('cvMorphologyEx', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('temp', CvArr_p, 1), # CvArr* temp
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('temp', CvArr_r, 1), # CvArr* temp
     ('element', IplConvKernel_r, 1), # IplConvKernel* element
     ('operation', c_int, 1), # int operation
     ('iterations', c_int, 1, 1), # int iterations
 )
-cvMorphologyEx.__doc__ = """void cvMorphologyEx(const CvArr* src, CvArr* dst, CvArr* temp, IplConvKernel element, int operation, int iterations=1)
+cvMorphologyEx.__doc__ = """void cvMorphologyEx(const CvArr src, CvArr dst, CvArr temp, IplConvKernel element, int operation, int iterations=1)
 
 Performs advanced morphological transformations
 """
@@ -809,51 +827,51 @@ CV_BILATERAL = 4
 
 # Smooths the image in one of several ways
 cvSmooth = cfunc('cvSmooth', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('smoothtype', c_int, 1), # int smoothtype
     ('param1', c_int, 1, 3), # int param1
     ('param2', c_int, 1, 0), # int param2
     ('param3', c_double, 1, 0), # double param3
 )
-cvSmooth.__doc__ = """void cvSmooth(const CvArr* src, CvArr* dst, int smoothtype=CV_GAUSSIAN, int param1=3, int param2=0, double param3=0)
+cvSmooth.__doc__ = """void cvSmooth(const CvArr src, CvArr dst, int smoothtype=CV_GAUSSIAN, int param1=3, int param2=0, double param3=0)
 
 Smooths the image in one of several ways
 """
 
 # Convolves image with the kernel
 cvFilter2D = cfunc('cvFilter2D', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('kernel', CvMat_p, 1), # const CvMat* kernel
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('kernel', CvMat_r, 1), # const CvMat* kernel
     ('anchor', CvPoint, 1), # CvPoint anchor
 )
-cvFilter2D.__doc__ = """void cvFilter2D(const CvArr* src, CvArr* dst, const CvMat* kernel, CvPoint anchor=cvPoint(-1, -1)
+cvFilter2D.__doc__ = """void cvFilter2D(const CvArr src, CvArr dst, const CvMat kernel, CvPoint anchor=cvPoint(-1, -1)
 
 Convolves image with the kernel
 """
 
 # Copies image and makes border around it
 cvCopyMakeBorder = cfunc('cvCopyMakeBorder', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('offset', CvPoint, 1), # CvPoint offset
     ('bordertype', c_int, 1), # int bordertype
     ('value', CvScalar, 1), # CvScalar value
 )
-cvCopyMakeBorder.__doc__ = """void cvCopyMakeBorder(const CvArr* src, CvArr* dst, CvPoint offset, int bordertype, CvScalar value=cvScalarAll(0)
+cvCopyMakeBorder.__doc__ = """void cvCopyMakeBorder(const CvArr src, CvArr dst, CvPoint offset, int bordertype, CvScalar value=cvScalarAll(0)
 
 Copies image and makes border around it
 """
 
 # Calculates integral images
 cvIntegral = cfunc('cvIntegral', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('sum', CvArr_p, 1), # CvArr* sum
-    ('sqsum', CvArr_p, 1, None), # CvArr* sqsum
-    ('tilted_sum', CvArr_p, 1, None), # CvArr* tilted_sum
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('sum', CvArr_r, 1), # CvArr* sum
+    ('sqsum', CvArr_r, 1, None), # CvArr* sqsum
+    ('tilted_sum', CvArr_r, 1, None), # CvArr* tilted_sum
 )
-cvIntegral.__doc__ = """void cvIntegral(const CvArr* image, CvArr* sum, CvArr* sqsum=NULL, CvArr* tilted_sum=NULL)
+cvIntegral.__doc__ = """void cvIntegral(const CvArr image, CvArr sum, CvArr sqsum=NULL, CvArr tilted_sum=NULL)
 
 Calculates integral images
 """
@@ -955,11 +973,11 @@ CV_COLORCVT_MAX = 100
 
 # Converts image from one color space to another
 cvCvtColor = cfunc('cvCvtColor', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('code', c_int, 1), # int code 
 )
-cvCvtColor.__doc__ = """void cvCvtColor(const CvArr* src, CvArr* dst, int code)
+cvCvtColor.__doc__ = """void cvCvtColor(const CvArr src, CvArr dst, int code)
 
 Converts image from one color space to another
 """
@@ -974,13 +992,13 @@ CV_THRESH_OTSU = 8        # use Otsu algorithm to choose the optimal threshold v
 
 # Applies fixed-level threshold to array elements
 cvThreshold = cfunc('cvThreshold', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('threshold', c_double, 1), # double threshold
     ('max_value', c_double, 1), # double max_value
     ('threshold_type', c_int, 1), # int threshold_type 
 )
-cvThreshold.__doc__ = """void cvThreshold(const CvArr* src, CvArr* dst, double threshold, double max_value, int threshold_type)
+cvThreshold.__doc__ = """void cvThreshold(const CvArr src, CvArr dst, double threshold, double max_value, int threshold_type)
 
 Applies fixed-level threshold to array elements
 """
@@ -990,15 +1008,15 @@ CV_ADAPTIVE_THRESH_GAUSSIAN_C = 1
 
 # Applies adaptive threshold to array
 cvAdaptiveThreshold = cfunc('cvAdaptiveThreshold', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('max_value', c_double, 1), # double max_value
     ('adaptive_method', c_int, 1), # int adaptive_method
     ('threshold_type', c_int, 1), # int threshold_type
     ('block_size', c_int, 1, 3), # int block_size
     ('param1', c_double, 1, 5), # double param1
 )
-cvAdaptiveThreshold.__doc__ = """void cvAdaptiveThreshold(const CvArr* src, CvArr* dst, double max_value, int adaptive_method=CV_ADAPTIVE_THRESH_MEAN_C, int threshold_type=CV_THRESH_BINARY, int block_size=3, double param1=5)
+cvAdaptiveThreshold.__doc__ = """void cvAdaptiveThreshold(const CvArr src, CvArr dst, double max_value, int adaptive_method=CV_ADAPTIVE_THRESH_MEAN_C, int threshold_type=CV_THRESH_BINARY, int block_size=3, double param1=5)
 
 Applies adaptive threshold to array
 """
@@ -1011,22 +1029,22 @@ Applies adaptive threshold to array
 
 # Downsamples image
 cvPyrDown = cfunc('cvPyrDown', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('filter', c_int, 1), # int filter
 )
-cvPyrDown.__doc__ = """void cvPyrDown(const CvArr* src, CvArr* dst, int filter=CV_GAUSSIAN_5x5)
+cvPyrDown.__doc__ = """void cvPyrDown(const CvArr src, CvArr dst, int filter=CV_GAUSSIAN_5x5)
 
 Downsamples image
 """
 
 # Upsamples image
 cvPyrUp = cfunc('cvPyrUp', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('filter', c_int, 1), # int filter
 )
-cvPyrUp.__doc__ = """void cvPyrUp(const CvArr* src, CvArr* dst, int filter=CV_GAUSSIAN_5x5)
+cvPyrUp.__doc__ = """void cvPyrUp(const CvArr src, CvArr dst, int filter=CV_GAUSSIAN_5x5)
 
 Upsamples image
 """
@@ -1040,16 +1058,16 @@ Upsamples image
 
 # Fills a connected component with given color
 cvFloodFill = cfunc('cvFloodFill', _cvDLL, None,
-    ('image', CvArr_p, 1), # CvArr* image
+    ('image', CvArr_r, 1), # CvArr* image
     ('seed_point', CvPoint, 1), # CvPoint seed_point
     ('new_val', CvScalar, 1), # CvScalar new_val
     ('lo_diff', CvScalar, 1), # CvScalar lo_diff
     ('up_diff', CvScalar, 1), # CvScalar up_diff
     ('comp', CvConnectedComp_r, 1, None), # CvConnectedComp* comp
     ('flags', c_int, 1, 4), # int flags
-    ('mask', CvArr_p, 1, None), # CvArr* mask
+    ('mask', CvArr_r, 1, None), # CvArr* mask
 )
-cvFloodFill.__doc__ = """void cvFloodFill(CvArr* image, CvPoint seed_point, CvScalar new_val, CvScalar lo_diff=cvScalarAll(0), CvScalar up_diff=cvScalarAll(0), CvConnectedComp comp=None, int flags=4, CvArr* mask=NULL)
+cvFloodFill.__doc__ = """void cvFloodFill(CvArr image, CvPoint seed_point, CvScalar new_val, CvScalar lo_diff=cvScalarAll(0), CvScalar up_diff=cvScalarAll(0), CvConnectedComp comp=None, int flags=4, CvArr mask=NULL)
 
 Fills a connected component with given color
 """
@@ -1059,7 +1077,7 @@ CV_FLOODFILL_MASK_ONLY = 1 << 17
 
 # Finds contours in binary image
 _cvFindContours = cfunc('cvFindContours', _cvDLL, c_int,
-    ('image', CvArr_p, 1), # CvArr* image
+    ('image', CvArr_r, 1), # CvArr* image
     ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('first_contour', POINTER(CvSeq_p), 1), # CvSeq** first_contour
     ('header_size', c_int, 1, sizeof(CvContour)), # int header_size
@@ -1070,7 +1088,7 @@ _cvFindContours = cfunc('cvFindContours', _cvDLL, c_int,
 
 # Finds contours in binary image
 def cvFindContours(image, storage, header_size=sizeof(CvContour), mode=CV_RETR_LIST, method=CV_CHAIN_APPROX_SIMPLE, offset=cvPoint(0,0)):
-    """(int ncontours, CvSeq* first_contour) = cvFindContours(CvArr* image, CvMemStorage storage, int header_size=sizeof(CvContour), int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
+    """(int ncontours, CvSeq* first_contour) = cvFindContours(CvArr image, CvMemStorage storage, int header_size=sizeof(CvContour), int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
 
     Finds contours in binary image
     """
@@ -1080,7 +1098,7 @@ def cvFindContours(image, storage, header_size=sizeof(CvContour), mode=CV_RETR_L
 
 # Initializes contour scanning process
 _cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
-    ('image', CvArr_p, 1), # CvArr* image
+    ('image', CvArr_r, 1), # CvArr* image
     ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('header_size', c_int, 1, sizeof(CvContour)), # int header_size
     ('mode', c_int, 1, CV_RETR_LIST), # int mode
@@ -1089,7 +1107,7 @@ _cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
 )
 
 def cvStartFindContours(image, storage, header_size=sizeof(CvContour), mode=CV_RETR_LIST, method=CV_CHAIN_APPROX_SIMPLE, offset=CvPoint(0,0)):
-    """CvContourScanner cvStartFindContours(CvArr* image, CvMemStorage storage, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
+    """CvContourScanner cvStartFindContours(CvArr image, CvMemStorage storage, int header_size=sizeofCvContour, int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
 
     Initializes contour scanning process
     """
@@ -1133,8 +1151,8 @@ Finishes scanning process
 
 # Implements image segmentation by pyramids
 _cvPyrSegmentation = cfunc('cvPyrSegmentation', _cvDLL, None,
-    ('src', IplImage_p, 1), # IplImage* src
-    ('dst', IplImage_p, 1), # IplImage* dst
+    ('src', CvArr_r, 1), # CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('comp', ByRefArg(CvSeq_p), 1), # CvSeq** comp
     ('level', c_int, 1), # int level
@@ -1143,7 +1161,7 @@ _cvPyrSegmentation = cfunc('cvPyrSegmentation', _cvDLL, None,
 )
 
 def cvPyrSegmentation(src, dst, storage, level, threshold1, threshold2):
-    """CvSeq* cvPyrSegmentation(IplImage* src, IplImage* dst, CvMemStorage storage, int level, double threshold1, double threshold2)
+    """CvSeq* cvPyrSegmentation(CvArr src, CvArr dst, CvMemStorage storage, int level, double threshold1, double threshold2)
 
     Implements image segmentation by pyramids
     """
@@ -1155,24 +1173,24 @@ _default_cvTermCriteria = cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 5, 1)
 
 # Does meanshift image segmentation
 cvPyrMeanShiftFiltering = cfunc('cvPyrMeanShiftFiltering', _cvDLL, None,
-    ('src', IplImage_p, 1), # IplImage* src
-    ('dst', IplImage_p, 1), # IplImage* dst
+    ('src', CvArr_r, 1), # CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('sp', c_double, 1), # double sp
     ('sr', c_double, 1), # double sr
     ('max_level', c_int, 1, 1), # int max_level=1
     ('termcrit', CvTermCriteria, 1, _default_cvTermCriteria), # CvTermCriteria termcrit=cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,5,1)
 )
-cvPyrMeanShiftFiltering.__doc__ = """void cvPyrMeanShiftFiltering( const CvArr* src, CvArr* dst, double sp, double sr, int max_level=1, CvTermCriteria termcrit=cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,5,1))
+cvPyrMeanShiftFiltering.__doc__ = """void cvPyrMeanShiftFiltering( const CvArr src, CvArr dst, double sp, double sr, int max_level=1, CvTermCriteria termcrit=cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,5,1))
 
 Does meanshift image segmentation
 """
 
 # Does watershed segmentation
 cvWatershed = cfunc('cvWatershed', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('markers', CvArr_p, 1), # CvArr* markers
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('markers', CvArr_r, 1), # CvArr* markers
 )
-cvWatershed.__doc__ = """void cvWatershed( const CvArr* image, CvArr* markers )
+cvWatershed.__doc__ = """void cvWatershed( const CvArr image, CvArr markers )
 
 Does watershed segmentation
 """    
@@ -1185,11 +1203,11 @@ Does watershed segmentation
 
 # Calculates all moments up to third order of a polygon or rasterized shape
 cvMoments = cfunc('cvMoments', _cvDLL, None,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('moments', CvMoments_r, 1), # CvMoments* moments
     ('binary', c_int, 1, 0), # int binary
 )
-cvMoments.__doc__ = """void cvMoments(const CvArr* arr, CvMoments moments, int binary=0)
+cvMoments.__doc__ = """void cvMoments(const CvArr arr, CvMoments moments, int binary=0)
 
 Calculates all moments up to third order of a polygon or rasterized shape
 """
@@ -1250,7 +1268,7 @@ CV_HOUGH_GRADIENT = 3
 
 # Finds lines in binary image using Hough transform
 cvHoughLines2 = cfunc('cvHoughLines2', _cvDLL, CvSeq_p,
-    ('image', CvArr_p, 1), # CvArr* image
+    ('image', CvArr_r, 1), # CvArr* image
     ('line_storage', ByRefArg(CvMemStorage), 1), # void* line_storage
     ('method', c_int, 1), # int method
     ('rho', c_double, 1), # double rho
@@ -1259,14 +1277,14 @@ cvHoughLines2 = cfunc('cvHoughLines2', _cvDLL, CvSeq_p,
     ('param1', c_double, 1, 0), # double param1
     ('param2', c_double, 1, 0), # double param2
 )
-cvHoughLines2.__doc__ = """CvSeq* cvHoughLines2(CvArr* image, CvMemStorage_or_CvMat line_storage, int method, double rho, double theta, int threshold, double param1=0, double param2=0)
+cvHoughLines2.__doc__ = """CvSeq* cvHoughLines2(CvArr image, CvMemStorage_or_CvMat line_storage, int method, double rho, double theta, int threshold, double param1=0, double param2=0)
 
 Finds lines in binary image using Hough transform
 """
 
 # Finds circles in grayscale image using Hough transform
 cvHoughCircles = cfunc('cvHoughCircles', _cvDLL, CvSeq_p,
-    ('image', CvArr_p, 1), # CvArr* image
+    ('image', CvArr_r, 1), # CvArr* image
     ('circle_storage', c_void_p, 1), # void* circle_storage
     ('method', c_int, 1), # int method
     ('dp', c_double, 1), # double dp
@@ -1274,7 +1292,7 @@ cvHoughCircles = cfunc('cvHoughCircles', _cvDLL, CvSeq_p,
     ('param1', c_double, 1, 100), # double param1
     ('param2', c_double, 1, 100), # double param2
 )
-cvHoughCircles.__doc__ = """CvSeq* cvHoughCircles(CvArr* image, void* circle_storage, int method, double dp, double min_dist, double param1=100, double param2=100)
+cvHoughCircles.__doc__ = """CvSeq* cvHoughCircles(CvArr image, void* circle_storage, int method, double dp, double min_dist, double param1=100, double param2=100)
 
 Finds circles in grayscale image using Hough transform
 """
@@ -1285,14 +1303,14 @@ CV_DIST_MASK_PRECISE = 0
 
 # Calculates distance to closest zero pixel for all non-zero pixels of source image
 cvDistTransform = cfunc('cvDistTransform', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('distance_type', c_int, 1), # int distance_type
     ('mask_size', c_int, 1, 3), # int mask_size
     ('mask', c_float_p, 1, None), # const float* mask
-    ('labels', CvArr_p, 1, None), # CvArr* labels
+    ('labels', CvArr_r, 1, None), # CvArr* labels
 )
-cvDistTransform.__doc__ = """void cvDistTransform(const CvArr* src, CvArr* dst, int distance_type=CV_DIST_L2, int mask_size=3, const float* mask=NULL, CvArr* labels=NULL)
+cvDistTransform.__doc__ = """void cvDistTransform(const CvArr src, CvArr dst, int distance_type=CV_DIST_L2, int mask_size=3, const float* mask=NULL, CvArr labels=NULL)
 
 Calculates distance to closest zero pixel for all non-zero pixels of source image
 """
@@ -1302,13 +1320,13 @@ CV_INPAINT_TELEA = 1
 
 # Inpaints the selected region in the image
 cvInpaint = cfunc('cvInpaint', _cvDLL,  None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('mask', CvArr_p, 1), # const CvArr* mask
-    ('dst', CvArr_p, 1), # const CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('mask', CvArr_r, 1), # const CvArr* mask
+    ('dst', CvArr_r, 1), # const CvArr* dst
     ('flags', c_int, 1), # int flags
     ('inpaintRadius', c_double, 1), # double inpaintRadius
 )
-cvInpaint.__doc__ = """void cvInpaint( const CvArr* src, const CvArr* mask, CvArr* dst, int flags, double inpaintRadius )
+cvInpaint.__doc__ = """void cvInpaint( const CvArr src, const CvArr mask, CvArr dst, int flags, double inpaintRadius )
 
 Inpaints the selected region in the image
 """
@@ -1464,12 +1482,12 @@ cvCompareHist.__doc__ = """double cvCompareHist(const CvHistogram hist1, const C
 Compares two dense histograms
 """
 
+# Copies histogram
 _cvCopyHist = cfunc('cvCopyHist', _cvDLL, None,
     ('src', CvHistogram_r, 1), # const CvHistogram* src
-    ('dst', ByRefArg(CvHistogram_p), 1, CvHistogram_p()), # CvHistogram** dst 
+    ('dst', ByRefArg(CvHistogram_p), 1, None), # CvHistogram** dst 
 )
 
-# Copies histogram
 def cvCopyHist(src, dst=None):
     """CvHistogram cvCopyHist(const CvHistogram src, CvHistogram dst=None)
 
@@ -1486,12 +1504,12 @@ def cvCopyHist(src, dst=None):
     
 # Calculate the histogram
 cvCalcHist = cfunc('cvCalcArrHist', _cvDLL, None,
-    ('image', FlexibleListPOINTER(IplImage_p), 1), # IplImage** image
+    ('image', ListByRef(), 1), # CvArr** image
     ('hist', CvHistogram_r, 1), # CvHistogram* hist
     ('accumulate', c_int, 1, 0), # int accumulate
-    ('mask', CvArr_p, 1, None), # CvArr* mask
+    ('mask', CvArr_r, 1, None), # CvArr* mask
 )
-cvCalcHist.__doc = """void cvCalcHist( CvArr** arr, CvHistogram hist, int accumulate=0, const CvArr* mask=NULL )
+cvCalcHist.__doc = """void cvCalcHist( list_or_tuple_of_CvArr arr, CvHistogram hist, int accumulate=0, const CvArr mask=NULL )
 
 Calculates array histogram
 """
@@ -1500,25 +1518,25 @@ cvCalcArrHist = cvCalcHist
 
 # Calculates back projection
 cvCalcBackProject = cfunc('cvCalcArrBackProject', _cvDLL, None,
-    ('image', ListPOINTER(IplImage_p), 1), # IplImage** image
-    ('back_project', IplImage_p, 1), # IplImage* back_project
-    ('hist', CvHistogram_p, 1), # CvHistogram* hist
+    ('image', ListByRef(), 1), # CvArr** image
+    ('back_project', CvArr_r, 1), # CvArr* back_project
+    ('hist', CvHistogram_r, 1), # CvHistogram* hist
 )
-cvCalcBackProject.__doc = """void cvCalcBackProject( CvArr** image, CvArr* dst, const CvHistogram* hist )
+cvCalcBackProject.__doc = """void cvCalcBackProject( list_or_tuple_of_CvArr image, CvArr back_project, const CvHistogram hist )
 
 Calculates back projection
 """
 
 # Calculates back projection
 cvCalcBackProjectPatch = cfunc('cvCalcArrBackProjectPatch', _cvDLL, None,
-    ('image', ListPOINTER(IplImage_p), 1), # IplImage** image
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('image', ListByRef(), 1), # CvArr** image
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('range', CvSize, 1), # CvSize range
-    ('hist', CvHistogram_p, 1), # CvHistogram* hist
+    ('hist', CvHistogram_r, 1), # CvHistogram* hist
     ('method', c_int, 1), # int method
     ('factor', c_double, 1), # double factor
 )
-cvCalcBackProjectPatch.__doc = """void cvCalcBackProjectPatch( CvArr** image, CvArr* dst, CvSize range, CvHistogram* hist, int method, double factor )
+cvCalcBackProjectPatch.__doc = """void cvCalcBackProjectPatch( list_or_tuple_of_CvArr image, CvArr dst, CvSize range, CvHistogram hist, int method, double factor )
 
 Calculates back projection
 """
@@ -1527,12 +1545,12 @@ cvCalcArrBackProjectPatch = cvCalcBackProjectPatch
 
 # Divides one histogram by another
 cvCalcProbDensity = cfunc('cvCalcProbDensity', _cvDLL, None,
-    ('hist1', CvHistogram_p, 1), # const CvHistogram* hist1
-    ('hist2', CvHistogram_p, 1), # const CvHistogram* hist2
-    ('dst_hist', CvHistogram_p, 1), # CvHistogram* dst_hist
+    ('hist1', CvHistogram_r, 1), # const CvHistogram* hist1
+    ('hist2', CvHistogram_r, 1), # const CvHistogram* hist2
+    ('dst_hist', CvHistogram_r, 1), # CvHistogram* dst_hist
     ('scale', c_double, 1, 255), # double scale
 )
-cvCalcProbDensity.__doc__ = """void cvCalcProbDensity(const CvHistogram* hist1, const CvHistogram* hist2, CvHistogram* dst_hist, double scale=255)
+cvCalcProbDensity.__doc__ = """void cvCalcProbDensity(const CvHistogram hist1, const CvHistogram hist2, CvHistogram dst_hist, double scale=255)
 
 Divides one histogram by another
 """
@@ -1551,10 +1569,10 @@ def cvQueryHistValue_3D(hist, i1, i2, i3):
 
 # Equalizes histogram of grayscale image
 cvEqualizeHist = cfunc('cvEqualizeHist', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvEqualizeHist.__doc__ = """void cvEqualizeHist(const CvArr* src, CvArr* dst)
+cvEqualizeHist.__doc__ = """void cvEqualizeHist(const CvArr src, CvArr dst)
 
 Equalizes histogram of grayscale image
 """
@@ -1586,12 +1604,12 @@ CV_TM_CCOEFF_NORMED = 5
 
 # Compares template against overlapped image regions
 cvMatchTemplate = cfunc('cvMatchTemplate', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('templ', CvArr_p, 1), # const CvArr* templ
-    ('result', CvArr_p, 1), # CvArr* result
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('templ', CvArr_r, 1), # const CvArr* templ
+    ('result', CvArr_r, 1), # CvArr* result
     ('method', c_int, 1), # int method 
 )
-cvMatchTemplate.__doc__ = """void cvMatchTemplate(const CvArr* image, const CvArr* templ, CvArr* result, int method)
+cvMatchTemplate.__doc__ = """void cvMatchTemplate(const CvArr image, const CvArr templ, CvArr result, int method)
 
 Compares template against overlapped image regions
 """
@@ -1616,16 +1634,16 @@ Compares two shapes
 """
 
 cvCalcEMD2 = cfunc('cvCalcEMD2', _cvDLL, c_float,
-    ('signature1', CvArr_p, 1), # const CvArr* signature1
-    ('signature2', CvArr_p, 1), # const CvArr* signature2
+    ('signature1', CvArr_r, 1), # const CvArr* signature1
+    ('signature2', CvArr_r, 1), # const CvArr* signature2
     ('distance_type', c_int, 1), # int distance_type
     ('distance_func', CvDistanceFunction, 1, None), # CvDistanceFunction distance_func
     ('cost_matrix', c_void_p, 1, None), # const CvArr* cost_matrix
-    ('flow', CvArr_p, 1, None), # CvArr* flow
+    ('flow', CvArr_r, 1, None), # CvArr* flow
     ('lower_bound', c_float_p, 1, None), # float* lower_bound
     ('userdata', c_void_p, 1, None), # void* userdata
 )
-cvCalcEMD2.__doc__ = """float cvCalcEMD2( const CvArr* signature1, const CvArr* signature2, int distance_type, CvDistanceFunction distance_func=NULL, const CvArr* cost_matrix=NULL, CvArr* flow=NULL, float* lower_bound=NULL, void* userdata=NULL )
+cvCalcEMD2.__doc__ = """float cvCalcEMD2( const CvArr signature1, const CvArr signature2, int distance_type, CvDistanceFunction distance_func=NULL, const CvArr cost_matrix=NULL, CvArr flow=NULL, float* lower_bound=NULL, void* userdata=NULL )
 
 Computes earth mover distance between two weighted point sets (called signatures)
 """
@@ -1711,20 +1729,20 @@ Finds high-curvature points of the contour
 
 # Calculates up-right bounding rectangle of point set
 cvBoundingRect = cfunc('cvBoundingRect', _cvDLL, CvRect,
-    ('points', CvArr_p, 1), # CvArr* points
+    ('points', CvArr_r, 1), # CvArr* points
     ('update', c_int, 1, 0), # int update
 )
-cvBoundingRect.__doc__ = """CvRect cvBoundingRect(CvArr* points, int update=0)
+cvBoundingRect.__doc__ = """CvRect cvBoundingRect(CvArr points, int update=0)
 
 Calculates up-right bounding rectangle of point set
 """
 
 # Calculates area of the whole contour or contour section
 cvContourArea = cfunc('cvContourArea', _cvDLL, c_double,
-    ('contour', CvArr_p, 1), # const CvArr* contour
+    ('contour', CvArr_r, 1), # const CvArr* contour
     ('slice', CvSlice, 1, CV_WHOLE_SEQ), # CvSlice slice
 )
-cvContourArea.__doc__ = """double cvContourArea(const CvArr* contour, CvSlice slice=CV_WHOLE_SEQ)
+cvContourArea.__doc__ = """double cvContourArea(const CvArr contour, CvSlice slice=CV_WHOLE_SEQ)
 
 Calculates area of the whole contour or contour section
 """
@@ -1797,11 +1815,11 @@ Finds bounding rectangle for two given rectangles
 # Initializes point sequence header from a point vector
 cvPointSeqFromMat = cfunc('cvPointSeqFromMat', _cvDLL, CvSeq_p,
     ('seq_kind', c_int, 1), # int seq_kind
-    ('mat', CvArr_p, 1), # const CvArr* mat
+    ('mat', CvArr_r, 1), # const CvArr* mat
     ('contour_header', CvContour_p, 1), # CvContour* contour_header
     ('block', CvSeqBlock_r, 1), # CvSeqBlock* block 
 )
-cvPointSeqFromMat.__doc__ = """CvSeq* cvPointSeqFromMat(int seq_kind, const CvArr* mat, CvContour* contour_header, CvSeqBlock block)
+cvPointSeqFromMat.__doc__ = """CvSeq* cvPointSeqFromMat(int seq_kind, const CvArr mat, CvContour* contour_header, CvSeqBlock block)
 
 Initializes point sequence header from a point vector
 """
@@ -1823,31 +1841,31 @@ def cvBoxPoints(box):
 
 # Fits ellipse to set of 2D points
 cvFitEllipse2 = cfunc('cvFitEllipse2', _cvDLL, CvBox2D,
-    ('points', CvArr_p, 1), # const CvArr* points 
+    ('points', CvArr_r, 1), # const CvArr* points 
 )
-cvFitEllipse2.__doc__ = """CvBox2D cvFitEllipse2(const CvArr* points)
+cvFitEllipse2.__doc__ = """CvBox2D cvFitEllipse2(const CvArr points)
 
 Fits ellipse to set of 2D points
 """
 
 # Fits line to 2D or 3D point set
 cvFitLine = cfunc('cvFitLine', _cvDLL, None,
-    ('points', CvArr_p, 1), # const CvArr* points
+    ('points', CvArr_r, 1), # const CvArr* points
     ('dist_type', c_int, 1), # int dist_type
     ('param', c_double, 1), # double param
     ('reps', c_double, 1), # double reps
     ('aeps', c_double, 1), # double aeps
     ('line', c_float_p, 1), # float* line 
 )
-cvFitLine.__doc__ = """void cvFitLine(const CvArr* points, int dist_type, double param, double reps, double aeps, float* line)
+cvFitLine.__doc__ = """void cvFitLine(const CvArr points, int dist_type, double param, double reps, double aeps, float* line)
 
 Fits line to 2D or 3D point set
 """
 
 # Finds convex hull of point set
 _cvConvexHull2 = cfunc('cvConvexHull2', _cvDLL, CvSeq_p,
-    ('input', CvArr_p, 1), # const CvArr* input
-    ('hull_storage', c_void_p, 1, None), # void* hull_storage
+    ('input', CvArr_r, 1), # const CvArr* input
+    ('hull_storage', CvArr_r, 1, None), # void* hull_storage
     ('orientation', c_int, 1, CV_CLOCKWISE), # int orientation
     ('return_points', c_int, 1, 0), # int return_points
 )
@@ -1863,62 +1881,58 @@ def cvConvexHull2(input, orientation=CV_CLOCKWISE, return_points=0):
     point_mat = cvCreateMatFromCvPointList(input)
     _cvConvexHull2(point_mat, hull_mat, orientation, return_points)
     
-    hull = []
-    for i in xrange(hull_mat.contents.cols):
-        hull.append(hull_mat[0,i])
-        
-    return hull
+    return [hull_mat[0,i] for i in xrange(hull_mat.cols)]
 
 # Tests contour convex
 cvCheckContourConvexity = cfunc('cvCheckContourConvexity', _cvDLL, c_int,
-    ('contour', CvArr_p, 1), # const CvArr* contour 
+    ('contour', CvArr_r, 1), # const CvArr* contour 
 )
-cvCheckContourConvexity.__doc__ = """int cvCheckContourConvexity(const CvArr* contour)
+cvCheckContourConvexity.__doc__ = """int cvCheckContourConvexity(const CvArr contour)
 
 Tests contour convex
 """
 
 # Finds convexity defects of contour
 cvConvexityDefects = cfunc('cvConvexityDefects', _cvDLL, CvSeq_p,
-    ('contour', CvArr_p, 1), # const CvArr* contour
-    ('convexhull', CvArr_p, 1), # const CvArr* convexhull
+    ('contour', CvArr_r, 1), # const CvArr* contour
+    ('convexhull', CvArr_r, 1), # const CvArr* convexhull
     ('storage', CvMemStorage_r, 1, None), # CvMemStorage* storage
 )
-cvConvexityDefects.__doc__ = """CvSeq* cvConvexityDefects(const CvArr* contour, const CvArr* convexhull, CvMemStorage storage=NULL)
+cvConvexityDefects.__doc__ = """CvSeq* cvConvexityDefects(const CvArr contour, const CvArr convexhull, CvMemStorage storage=NULL)
 
 Finds convexity defects of contour
 """
 
 # Point in contour test
 cvPointPolygonTest = cfunc('cvPointPolygonTest', _cvDLL, c_double,
-    ('contour', CvArr_p, 1), # const CvArr* contour
+    ('contour', CvArr_r, 1), # const CvArr* contour
     ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
     ('measure_dist', c_int, 1), # int measure_dist 
 )
-cvPointPolygonTest.__doc__ = """double cvPointPolygonTest(const CvArr* contour, CvPoint2D32f pt, int measure_dist)
+cvPointPolygonTest.__doc__ = """double cvPointPolygonTest(const CvArr contour, CvPoint2D32f pt, int measure_dist)
 
 Point in contour test
 """
 
 # Finds circumscribed rectangle of minimal area for given 2D point set
 cvMinAreaRect2 = cfunc('cvMinAreaRect2', _cvDLL, CvBox2D,
-    ('points', CvArr_p, 1), # const CvArr* points
+    ('points', CvArr_r, 1), # const CvArr* points
     ('storage', CvMemStorage_r, 1, None), # CvMemStorage* storage
 )
-cvMinAreaRect2.__doc__ = """CvBox2D cvMinAreaRect2(const CvArr* points, CvMemStorage storage=NULL)
+cvMinAreaRect2.__doc__ = """CvBox2D cvMinAreaRect2(const CvArr points, CvMemStorage storage=NULL)
 
 Finds circumscribed rectangle of minimal area for given 2D point set
 """
 
 # Finds circumscribed circle of minimal area for given 2D point set
 _cvMinEnclosingCircle = cfunc('cvMinEnclosingCircle', _cvDLL, c_int,
-    ('points', CvArr_p, 1), # const CvArr* points
+    ('points', CvArr_r, 1), # const CvArr* points
     ('center', ByRefArg(CvPoint2D32f), 1), # CvPoint2D32f* center
     ('radius', ByRefArg(c_float), 1), # float* radius 
 )
 
 def cvMinEnclosingCircle(points):
-    """(int success, CvPoint2D32f center, float radius) = cvMinEnclosingCircle(const CvArr* points)
+    """(int success, CvPoint2D32f center, float radius) = cvMinEnclosingCircle(const CvArr points)
 
     Finds circumscribed circle of minimal area for given 2D point set
     """
@@ -1930,9 +1944,9 @@ def cvMinEnclosingCircle(points):
 # Calculates pair-wise geometrical histogram for contour
 cvCalcPGH = cfunc('cvCalcPGH', _cvDLL, None,
     ('contour', CvSeq_p, 1), # const CvSeq* contour
-    ('hist', CvHistogram_p, 1), # CvHistogram* hist 
+    ('hist', CvHistogram_r, 1), # CvHistogram* hist 
 )
-cvCalcPGH.__doc__ = """void cvCalcPGH(const CvSeq* contour, CvHistogram* hist)
+cvCalcPGH.__doc__ = """void cvCalcPGH(const CvSeq* contour, CvHistogram hist)
 
 Calculates pair-wise geometrical histogram for contour
 """
@@ -2096,46 +2110,46 @@ Removes all virtual points
 
 # Adds frame to accumulator
 cvAcc = cfunc('cvAcc', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('sum', CvArr_p, 1), # CvArr* sum
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('sum', CvArr_r, 1), # CvArr* sum
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvAcc.__doc__ = """void cvAcc(const CvArr* image, CvArr* sum, const CvArr* mask=NULL)
+cvAcc.__doc__ = """void cvAcc(const CvArr image, CvArr sum, const CvArr mask=NULL)
 
 Adds frame to accumulator
 """
 
 # Adds the square of source image to accumulator
 cvSquareAcc = cfunc('cvSquareAcc', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('sqsum', CvArr_p, 1), # CvArr* sqsum
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('sqsum', CvArr_r, 1), # CvArr* sqsum
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvSquareAcc.__doc__ = """void cvSquareAcc(const CvArr* image, CvArr* sqsum, const CvArr* mask=NULL)
+cvSquareAcc.__doc__ = """void cvSquareAcc(const CvArr image, CvArr sqsum, const CvArr mask=NULL)
 
 Adds the square of source image to accumulator
 """
 
 # Adds product of two input images to accumulator
 cvMultiplyAcc = cfunc('cvMultiplyAcc', _cvDLL, None,
-    ('image1', CvArr_p, 1), # const CvArr* image1
-    ('image2', CvArr_p, 1), # const CvArr* image2
-    ('acc', CvArr_p, 1), # CvArr* acc
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('image1', CvArr_r, 1), # const CvArr* image1
+    ('image2', CvArr_r, 1), # const CvArr* image2
+    ('acc', CvArr_r, 1), # CvArr* acc
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvMultiplyAcc.__doc__ = """void cvMultiplyAcc(const CvArr* image1, const CvArr* image2, CvArr* acc, const CvArr* mask=NULL)
+cvMultiplyAcc.__doc__ = """void cvMultiplyAcc(const CvArr image1, const CvArr image2, CvArr acc, const CvArr mask=NULL)
 
 Adds product of two input images to accumulator
 """
 
 # Updates running average
 cvRunningAvg = cfunc('cvRunningAvg', _cvDLL, None,
-    ('image', CvArr_p, 1), # const CvArr* image
-    ('acc', CvArr_p, 1), # CvArr* acc
+    ('image', CvArr_r, 1), # const CvArr* image
+    ('acc', CvArr_r, 1), # CvArr* acc
     ('alpha', c_double, 1), # double alpha
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvRunningAvg.__doc__ = """void cvRunningAvg(const CvArr* image, CvArr* acc, double alpha, const CvArr* mask=NULL)
+cvRunningAvg.__doc__ = """void cvRunningAvg(const CvArr image, CvArr acc, double alpha, const CvArr mask=NULL)
 
 Updates running average
 """
@@ -2148,52 +2162,52 @@ Updates running average
 
 # Updates motion history image by moving silhouette
 cvUpdateMotionHistory = cfunc('cvUpdateMotionHistory', _cvDLL, None,
-    ('silhouette', CvArr_p, 1), # const CvArr* silhouette
-    ('mhi', CvArr_p, 1), # CvArr* mhi
+    ('silhouette', CvArr_r, 1), # const CvArr* silhouette
+    ('mhi', CvArr_r, 1), # CvArr* mhi
     ('timestamp', c_double, 1), # double timestamp
     ('duration', c_double, 1), # double duration 
 )
-cvUpdateMotionHistory.__doc__ = """void cvUpdateMotionHistory(const CvArr* silhouette, CvArr* mhi, double timestamp, double duration)
+cvUpdateMotionHistory.__doc__ = """void cvUpdateMotionHistory(const CvArr silhouette, CvArr mhi, double timestamp, double duration)
 
 Updates motion history image by moving silhouette
 """
 
 # Calculates gradient orientation of motion history image
 cvCalcMotionGradient = cfunc('cvCalcMotionGradient', _cvDLL, None,
-    ('mhi', CvArr_p, 1), # const CvArr* mhi
-    ('mask', CvArr_p, 1), # CvArr* mask
-    ('orientation', CvArr_p, 1), # CvArr* orientation
+    ('mhi', CvArr_r, 1), # const CvArr* mhi
+    ('mask', CvArr_r, 1), # CvArr* mask
+    ('orientation', CvArr_r, 1), # CvArr* orientation
     ('delta1', c_double, 1), # double delta1
     ('delta2', c_double, 1), # double delta2
     ('aperture_size', c_int, 1, 3), # int aperture_size
 )
-cvCalcMotionGradient.__doc__ = """void cvCalcMotionGradient(const CvArr* mhi, CvArr* mask, CvArr* orientation, double delta1, double delta2, int aperture_size=3)
+cvCalcMotionGradient.__doc__ = """void cvCalcMotionGradient(const CvArr mhi, CvArr mask, CvArr orientation, double delta1, double delta2, int aperture_size=3)
 
 Calculates gradient orientation of motion history image
 """
 
 # Calculates global motion orientation of some selected region
 cvCalcGlobalOrientation = cfunc('cvCalcGlobalOrientation', _cvDLL, c_double,
-    ('orientation', CvArr_p, 1), # const CvArr* orientation
-    ('mask', CvArr_p, 1), # const CvArr* mask
-    ('mhi', CvArr_p, 1), # const CvArr* mhi
+    ('orientation', CvArr_r, 1), # const CvArr* orientation
+    ('mask', CvArr_r, 1), # const CvArr* mask
+    ('mhi', CvArr_r, 1), # const CvArr* mhi
     ('timestamp', c_double, 1), # double timestamp
     ('duration', c_double, 1), # double duration 
 )
-cvCalcGlobalOrientation.__doc__ = """double cvCalcGlobalOrientation(const CvArr* orientation, const CvArr* mask, const CvArr* mhi, double timestamp, double duration)
+cvCalcGlobalOrientation.__doc__ = """double cvCalcGlobalOrientation(const CvArr orientation, const CvArr mask, const CvArr mhi, double timestamp, double duration)
 
 Calculates global motion orientation of some selected region
 """
 
 # Segments whole motion into separate moving parts
 cvSegmentMotion = cfunc('cvSegmentMotion', _cvDLL, CvSeq_p,
-    ('mhi', CvArr_p, 1), # const CvArr* mhi
-    ('seg_mask', CvArr_p, 1), # CvArr* seg_mask
+    ('mhi', CvArr_r, 1), # const CvArr* mhi
+    ('seg_mask', CvArr_r, 1), # CvArr* seg_mask
     ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('timestamp', c_double, 1), # double timestamp
     ('seg_thresh', c_double, 1), # double seg_thresh 
 )
-cvSegmentMotion.__doc__ = """CvSeq* cvSegmentMotion(const CvArr* mhi, CvArr* seg_mask, CvMemStorage storage, double timestamp, double seg_thresh)
+cvSegmentMotion.__doc__ = """CvSeq* cvSegmentMotion(const CvArr mhi, CvArr seg_mask, CvMemStorage storage, double timestamp, double seg_thresh)
 
 Segments whole motion into separate moving parts
 """
@@ -2206,25 +2220,25 @@ Segments whole motion into separate moving parts
 
 # Finds object center on back projection
 cvMeanShift = cfunc('cvMeanShift', _cvDLL, c_int,
-    ('prob_image', CvArr_p, 1), # const CvArr* prob_image
+    ('prob_image', CvArr_r, 1), # const CvArr* prob_image
     ('window', CvRect, 1), # CvRect window
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
     ('comp', CvConnectedComp_r, 1), # CvConnectedComp* comp 
 )
-cvMeanShift.__doc__ = """int cvMeanShift(const CvArr* prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp)
+cvMeanShift.__doc__ = """int cvMeanShift(const CvArr prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp)
 
 Finds object center on back projection
 """
 
 # Finds object center, size, and orientation
 cvCamShift = cfunc('cvCamShift', _cvDLL, c_int,
-    ('prob_image', CvArr_p, 1), # const CvArr* prob_image
+    ('prob_image', CvArr_r, 1), # const CvArr* prob_image
     ('window', CvRect, 1), # CvRect window
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
     ('comp', CvConnectedComp_r, 1), # CvConnectedComp* comp
     ('box', CvBox2D_p, 1), # CvBox2D* box
 )
-cvCamShift.__doc__ = """int cvCamShift(const CvArr* prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp, CvBox2D* box=NULL)
+cvCamShift.__doc__ = """int cvCamShift(const CvArr prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp, CvBox2D* box=NULL)
 
 Finds object center, size, and orientation
 """
@@ -2234,7 +2248,7 @@ CV_ARRAY = 2
 
 # Changes contour position to minimize its energy
 _cvSnakeImage = cfunc('cvSnakeImage', _cvDLL, None,
-    ('image', IplImage_p, 1), # const IplImage* image
+    ('image', CvArr_r, 1), # const CvArr* image
     ('points', ListPOINTER(CvPoint), 1), # CvPoint* points
     ('length', c_int, 1), # int length
     ('alpha', ListPOINTER(c_float), 1), # float* alpha
@@ -2247,7 +2261,7 @@ _cvSnakeImage = cfunc('cvSnakeImage', _cvDLL, None,
 )
 
 def cvSnakeImage(image, points, alpha, beta, gamma, coeff_usage, win, criteria, calc_gradient=1):
-    """void cvSnakeImage(const IplImage* image, list_or_tuple_of_CvPoint points, list_or_tuple_of_float alpha, list_or_tuple_of_float beta, list_or_tuple_of_float gamma, int coeff_usage, CvSize win, CvTermCriteria criteria, int calc_gradient=1)
+    """void cvSnakeImage(const CvArr image, list_or_tuple_of_CvPoint points, list_or_tuple_of_float alpha, list_or_tuple_of_float beta, list_or_tuple_of_float gamma, int coeff_usage, CvSize win, CvTermCriteria criteria, int calc_gradient=1)
 
     Changes contour position to minimize its energy
     """
@@ -2265,54 +2279,54 @@ CV_LKFLOW_INITIAL_GUESSES = 4
 
 # Calculates optical flow for two images
 cvCalcOpticalFlowHS = cfunc('cvCalcOpticalFlowHS', _cvDLL, None,
-    ('prev', CvArr_p, 1), # const CvArr* prev
-    ('curr', CvArr_p, 1), # const CvArr* curr
+    ('prev', CvArr_r, 1), # const CvArr* prev
+    ('curr', CvArr_r, 1), # const CvArr* curr
     ('use_previous', c_int, 1), # int use_previous
-    ('velx', CvArr_p, 1), # CvArr* velx
-    ('vely', CvArr_p, 1), # CvArr* vely
+    ('velx', CvArr_r, 1), # CvArr* velx
+    ('vely', CvArr_r, 1), # CvArr* vely
     ('lambda', c_double, 1), # double lambda
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria 
 )
-cvCalcOpticalFlowHS.__doc__ = """void cvCalcOpticalFlowHS(const CvArr* prev, const CvArr* curr, int use_previous, CvArr* velx, CvArr* vely, double lambda, CvTermCriteria criteria)
+cvCalcOpticalFlowHS.__doc__ = """void cvCalcOpticalFlowHS(const CvArr prev, const CvArr curr, int use_previous, CvArr velx, CvArr vely, double lambda, CvTermCriteria criteria)
 
 Calculates optical flow for two images
 """
 
 # Calculates optical flow for two images
 cvCalcOpticalFlowLK = cfunc('cvCalcOpticalFlowLK', _cvDLL, None,
-    ('prev', CvArr_p, 1), # const CvArr* prev
-    ('curr', CvArr_p, 1), # const CvArr* curr
+    ('prev', CvArr_r, 1), # const CvArr* prev
+    ('curr', CvArr_r, 1), # const CvArr* curr
     ('win_size', CvSize, 1), # CvSize win_size
-    ('velx', CvArr_p, 1), # CvArr* velx
-    ('vely', CvArr_p, 1), # CvArr* vely 
+    ('velx', CvArr_r, 1), # CvArr* velx
+    ('vely', CvArr_r, 1), # CvArr* vely 
 )
-cvCalcOpticalFlowLK.__doc__ = """void cvCalcOpticalFlowLK(const CvArr* prev, const CvArr* curr, CvSize win_size, CvArr* velx, CvArr* vely)
+cvCalcOpticalFlowLK.__doc__ = """void cvCalcOpticalFlowLK(const CvArr prev, const CvArr curr, CvSize win_size, CvArr velx, CvArr vely)
 
 Calculates optical flow for two images
 """
 
 # Calculates optical flow for two images by block matching method
 cvCalcOpticalFlowBM = cfunc('cvCalcOpticalFlowBM', _cvDLL, None,
-    ('prev', CvArr_p, 1), # const CvArr* prev
-    ('curr', CvArr_p, 1), # const CvArr* curr
+    ('prev', CvArr_r, 1), # const CvArr* prev
+    ('curr', CvArr_r, 1), # const CvArr* curr
     ('block_size', CvSize, 1), # CvSize block_size
     ('shift_size', CvSize, 1), # CvSize shift_size
     ('max_range', CvSize, 1), # CvSize max_range
     ('use_previous', c_int, 1), # int use_previous
-    ('velx', CvArr_p, 1), # CvArr* velx
-    ('vely', CvArr_p, 1), # CvArr* vely 
+    ('velx', CvArr_r, 1), # CvArr* velx
+    ('vely', CvArr_r, 1), # CvArr* vely 
 )
-cvCalcOpticalFlowBM.__doc__ = """void cvCalcOpticalFlowBM(const CvArr* prev, const CvArr* curr, CvSize block_size, CvSize shift_size, CvSize max_range, int use_previous, CvArr* velx, CvArr* vely)
+cvCalcOpticalFlowBM.__doc__ = """void cvCalcOpticalFlowBM(const CvArr prev, const CvArr curr, CvSize block_size, CvSize shift_size, CvSize max_range, int use_previous, CvArr velx, CvArr vely)
 
 Calculates optical flow for two images by block matching method
 """
 
 # Calculates optical flow for a sparse feature set using iterative Lucas-Kanade method in   pyramids
 _cvCalcOpticalFlowPyrLK = cfunc('cvCalcOpticalFlowPyrLK', _cvDLL, None,
-    ('prev', CvArr_p, 1), # const CvArr* prev
-    ('curr', CvArr_p, 1), # const CvArr* curr
-    ('prev_pyr', CvArr_p, 1), # CvArr* prev_pyr
-    ('curr_pyr', CvArr_p, 1), # CvArr* curr_pyr
+    ('prev', CvArr_r, 1), # const CvArr* prev
+    ('curr', CvArr_r, 1), # const CvArr* curr
+    ('prev_pyr', CvArr_r, 1), # CvArr* prev_pyr
+    ('curr_pyr', CvArr_r, 1), # CvArr* curr_pyr
     ('prev_features', c_void_p, 1), # const CvPoint2D32f* prev_features
     ('curr_features', c_void_p, 1), # CvPoint2D32f* curr_features
     ('count', c_int, 1), # int count
@@ -2325,7 +2339,7 @@ _cvCalcOpticalFlowPyrLK = cfunc('cvCalcOpticalFlowPyrLK', _cvDLL, None,
 )
 
 def cvCalcOpticalFlowPyrLK(prev, curr, prev_pyr, curr_pyr, pref_features, win_size, level, track_error, criteria, flags):
-    """(curr_features, status) = cvCalcOpticalFlowPyrLK(const CvArr* prev, const CvArr* curr, CvArr* prev_pyr, CvArr* curr_pyr, const CvPoint2D32f* prev_features, CvSize win_size, int level, float* track_error, CvTermCriteria criteria, int flags)
+    """(curr_features, status) = cvCalcOpticalFlowPyrLK(const CvArr prev, const CvArr curr, CvArr prev_pyr, CvArr curr_pyr, const CvPoint2D32f* prev_features, CvSize win_size, int level, float* track_error, CvTermCriteria criteria, int flags)
 
     Calculates optical flow for a sparse feature set using iterative Lucas-Kanade method in pyramids
     [ctypes-opencv] The number of features to be tracked is len(pref_features). 
@@ -2365,29 +2379,35 @@ def cvCreateKalman(dynam_params, measure_params, control_params=0):
     Allocates Kalman filter structure
     [ctypes-opencv] returns None if no CvKalman is created
     """
-    return deref(_cvCreateKalman(dynam_params, measure_params, control_params))
+    return deref(_cvCreateKalman(dynam_params, measure_params, control_params=control_params))
 
 # Estimates subsequent model state
-cvKalmanPredict = cfunc('cvKalmanPredict', _cvDLL, CvMat_p,
+_cvKalmanPredict = cfunc('cvKalmanPredict', _cvDLL, CvMat_p,
     ('kalman', CvKalman_r, 1), # CvKalman* kalman
-    ('control', CvMat_p, 1, None), # const CvMat* control
+    ('control', CvMat_r, 1, None), # const CvMat* control
 )
-cvKalmanPredict.__doc__ = """const CvMat* cvKalmanPredict(CvKalman kalman, const CvMat* control=NULL)
 
-Estimates subsequent model state
-"""
+def cvKalmanPredict(kalman, control=None):
+    """const CvMat cvKalmanPredict(CvKalman kalman, const CvMat control=NULL)
+
+    Estimates subsequent model state
+    """
+    return deref(_cvKalmanPredict(kalman, control=control), kalman)
 
 cvKalmanUpdateByTime = cvKalmanPredict
 
 # Adjusts model state
-cvKalmanCorrect = cfunc('cvKalmanCorrect', _cvDLL, CvMat_p,
+_cvKalmanCorrect = cfunc('cvKalmanCorrect', _cvDLL, CvMat_p,
     ('kalman', CvKalman_r, 1), # CvKalman* kalman
-    ('measurement', CvMat_p, 1), # const CvMat* measurement 
+    ('measurement', CvMat_r, 1), # const CvMat* measurement 
 )
-cvKalmanCorrect.__doc__ = """const CvMat* cvKalmanCorrect(CvKalman kalman, const CvMat* measurement)
 
-Adjusts model state
-"""
+def cvKalmanCorrect(kalman, measurement):
+    """const CvMat cvKalmanCorrect(CvKalman kalman, const CvMat measurement)
+
+    Adjusts model state
+    """
+    return deref(_cvKalmanCorrect(kalman, measurement), kalman)
 
 cvKalmanUpdateByMeasurement = cvKalmanCorrect
 
@@ -2414,10 +2434,10 @@ def cvCreateConDensation(dynam_params, measure_params, sample_count):
 # Initializes sample set for ConDensation algorithm
 cvConDensInitSampleSet = cfunc('cvConDensInitSampleSet', _cvDLL, None,
     ('condens', CvConDensation_r, 1), # CvConDensation* condens
-    ('lower_bound', CvMat_p, 1), # CvMat* lower_bound
-    ('upper_bound', CvMat_p, 1), # CvMat* upper_bound 
+    ('lower_bound', CvMat_r, 1), # CvMat* lower_bound
+    ('upper_bound', CvMat_r, 1), # CvMat* upper_bound 
 )
-cvConDensInitSampleSet.__doc__ = """void cvConDensInitSampleSet(CvConDensation condens, CvMat* lower_bound, CvMat* upper_bound)
+cvConDensInitSampleSet.__doc__ = """void cvConDensInitSampleSet(CvConDensation condens, CvMat lower_bound, CvMat upper_bound)
 
 Initializes sample set for ConDensation algorithm
 """
@@ -2462,7 +2482,7 @@ CV_HAAR_SCALE_IMAGE = 2
 
 # Detects objects in the image
 cvHaarDetectObjects = cfunc('cvHaarDetectObjects', _cvDLL, CvSeq_p,
-    ('image', CvArr_p, 1), # const CvArr* image
+    ('image', CvArr_r, 1), # const CvArr* image
     ('cascade', CvHaarClassifierCascade_r, 1), # CvHaarClassifierCascade* cascade
     ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('scale_factor', c_double, 1, 1), # double scale_factor
@@ -2470,7 +2490,7 @@ cvHaarDetectObjects = cfunc('cvHaarDetectObjects', _cvDLL, CvSeq_p,
     ('flags', c_int, 1, 0), # int flags
     ('min_size', CvSize, 1), # CvSize min_size
 )
-cvHaarDetectObjects.__doc__ = """CvSeq* cvHaarDetectObjects(const CvArr* image, CvHaarClassifierCascade cascade, CvMemStorage storage, double scale_factor=1.1, int min_neighbors=3, int flags=0, CvSize min_size=cvSize(0, 0)
+cvHaarDetectObjects.__doc__ = """CvSeq* cvHaarDetectObjects(const CvArr image, CvHaarClassifierCascade cascade, CvMemStorage storage, double scale_factor=1.1, int min_neighbors=3, int flags=0, CvSize min_size=cvSize(0, 0)
 
 Detects objects in the image
 """
@@ -2487,12 +2507,12 @@ cvHaarDetectObjects.errcheck = ChangeCvSeqToCvRect
 # Assigns images to the hidden cascade
 cvSetImagesForHaarClassifierCascade = cfunc('cvSetImagesForHaarClassifierCascade', _cvDLL, None,
     ('cascade', CvHaarClassifierCascade_r, 1), # CvHaarClassifierCascade* cascade
-    ('sum', CvArr_p, 1), # const CvArr* sum
-    ('sqsum', CvArr_p, 1), # const CvArr* sqsum
-    ('tilted_sum', CvArr_p, 1), # const CvArr* tilted_sum
+    ('sum', CvArr_r, 1), # const CvArr* sum
+    ('sqsum', CvArr_r, 1), # const CvArr* sqsum
+    ('tilted_sum', CvArr_r, 1), # const CvArr* tilted_sum
     ('scale', c_double, 1), # double scale 
 )
-cvSetImagesForHaarClassifierCascade.__doc__ = """void cvSetImagesForHaarClassifierCascade(CvHaarClassifierCascade cascade, const CvArr* sum, const CvArr* sqsum, const CvArr* tilted_sum, double scale)
+cvSetImagesForHaarClassifierCascade.__doc__ = """void cvSetImagesForHaarClassifierCascade(CvHaarClassifierCascade cascade, const CvArr sum, const CvArr sqsum, const CvArr tilted_sum, double scale)
 
 Assigns images to the hidden cascade
 """
@@ -2514,51 +2534,101 @@ Runs cascade of boosted classifier at given image location
 #-----------------------------------------------------------------------------
 
 
+if _cvver == 110:
+    # Projects 3D points to image plane
+    cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
+        ('object_points', CvMat_r, 1), # const CvMat* object_points
+        ('rotation_vector', CvMat_r, 1), # const CvMat* rotation_vector
+        ('translation_vector', CvMat_r, 1), # const CvMat* translation_vector
+        ('intrinsic_matrix', CvMat_r, 1), # const CvMat* intrinsic_matrix
+        ('distortion_coeffs', CvMat_r, 1), # const CvMat* distortion_coeffs
+        ('image_points', CvMat_p, 1), # CvMat* image_points
+        ('dpdrot', CvMat_p, 1, None), # CvMat* dpdrot
+        ('dpdt', CvMat_p, 1, None), # CvMat* dpdt
+        ('dpdf', CvMat_p, 1, None), # CvMat* dpdf
+        ('dpdc', CvMat_p, 1, None), # CvMat* dpdc
+        ('dpddist', CvMat_p, 1, None), # CvMat* dpddist
+        ('aspect_ratio', c_double, 1, 0), # double aspect_ratio
+    )
+    cvProjectPoints2.__doc__ = """void cvProjectPoints2(const CvMat object_points, const CvMat rotation_vector, const CvMat translation_vector, const CvMat intrinsic_matrix, const CvMat distortion_coeffs, CvMat* image_points, CvMat* dpdrot=NULL, CvMat* dpdt=NULL, CvMat* dpdf=NULL, CvMat* dpdc=NULL, CvMat* dpddist=NULL, double aspect_ratio=0)
+
+    Projects 3D points to image plane
+    """
+
+    # Finds perspective transformation between two planes
+    CV_LMEDS = 4
+    CV_RANSAC = 8    
+
+    _cvFindHomography = cfunc('cvFindHomography', _cvDLL, None,
+        ('src_points', CvMat_r, 1), # const CvMat* src_points
+        ('dst_points', CvMat_r, 1), # const CvMat* dst_points
+        ('homography', CvMat_r, 1), # CvMat* homography 
+        ('method', c_int, 1, 0), # int method
+        ('ransacReprojThreshold', c_double, 1, 0), # double ransacReprojThreshold
+        ('mask', CvMat_p, 1, None), # CvMat* mask
+    )
+
+    def cvFindHomography(src_points, dst_points, method=0, ransacReprojThreshold=0, mask=None):
+        """CvMat cvFindHomography(const CvMat src_points, const CvMat dst_points, int method=0, double ransacReprojThreshold=0, CvMat_p mask=None)
+
+        Finds perspective transformation between two planes
+        [ctypes-opencv] a 3x3 matrix is created
+        """
+        z = cvCreateMat(3, 3, CV_64FC1)
+        _cvFindHomoGraphy(src_points, dst_points, z, method=method, ransacReprojThreshold=ransacReprojThreshold, mask=mask)
+        return z
+        
+    CV_CALIB_FIX_K1 = 32
+    CV_CALIB_FIX_K2 = 64
+    CV_CALIB_FIX_K3 = 128
+
+elif _cvver == 100:
+    # Projects 3D points to image plane
+    cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
+        ('object_points', CvMat_r, 1), # const CvMat* object_points
+        ('rotation_vector', CvMat_r, 1), # const CvMat* rotation_vector
+        ('translation_vector', CvMat_r, 1), # const CvMat* translation_vector
+        ('intrinsic_matrix', CvMat_r, 1), # const CvMat* intrinsic_matrix
+        ('distortion_coeffs', CvMat_r, 1), # const CvMat* distortion_coeffs
+        ('image_points', CvMat_p, 1), # CvMat* image_points
+        ('dpdrot', CvMat_p, 1, None), # CvMat* dpdrot
+        ('dpdt', CvMat_p, 1, None), # CvMat* dpdt
+        ('dpdf', CvMat_p, 1, None), # CvMat* dpdf
+        ('dpdc', CvMat_p, 1, None), # CvMat* dpdc
+        ('dpddist', CvMat_p, 1, None), # CvMat* dpddist
+    )
+    cvProjectPoints2.__doc__ = """void cvProjectPoints2(const CvMat object_points, const CvMat rotation_vector, const CvMat translation_vector, const CvMat intrinsic_matrix, const CvMat distortion_coeffs, CvMat* image_points, CvMat* dpdrot=NULL, CvMat* dpdt=NULL, CvMat* dpdf=NULL, CvMat* dpdc=NULL, CvMat* dpddist=NULL)
+
+    Projects 3D points to image plane
+    """
+
+    # Finds perspective transformation between two planes
+    _cvFindHomography = cfunc('cvFindHomography', _cvDLL, None,
+        ('src_points', CvMat_r, 1), # const CvMat* src_points
+        ('dst_points', CvMat_r, 1), # const CvMat* dst_points
+        ('homography', CvMat_r, 1), # CvMat* homography 
+    )
+
+    def cvFindHomography(src_points, dst_points):
+        """CvMat cvFindHomography(const CvMat src_points, const CvMat dst_points)
+
+        Finds perspective transformation between two planes
+        [ctypes-opencv] a 3x3 matrix is created
+        """
+        z = cvCreateMat(3, 3, CV_64FC1)
+        _cvFindHomoGraphy(src_points, dst_points, z)
+        return z
+
 CV_CALIB_USE_INTRINSIC_GUESS = 1
 CV_CALIB_FIX_ASPECT_RATIO = 2
 CV_CALIB_FIX_PRINCIPAL_POINT = 4
 CV_CALIB_ZERO_TANGENT_DIST = 8
-CV_CALIB_CB_ADAPTIVE_THRESH = 1
-CV_CALIB_CB_NORMALIZE_IMAGE = 2
-CV_CALIB_CB_FILTER_QUADS = 4
-
-
-
-# Projects 3D points to image plane
-cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
-    ('object_points', CvMat_p, 1), # const CvMat* object_points
-    ('rotation_vector', CvMat_p, 1), # const CvMat* rotation_vector
-    ('translation_vector', CvMat_p, 1), # const CvMat* translation_vector
-    ('intrinsic_matrix', CvMat_p, 1), # const CvMat* intrinsic_matrix
-    ('distortion_coeffs', CvMat_p, 1), # const CvMat* distortion_coeffs
-    ('image_points', CvMat_p, 1), # CvMat* image_points
-    ('dpdrot', CvMat_p, 1, None), # CvMat* dpdrot
-    ('dpdt', CvMat_p, 1, None), # CvMat* dpdt
-    ('dpdf', CvMat_p, 1, None), # CvMat* dpdf
-    ('dpdc', CvMat_p, 1, None), # CvMat* dpdc
-    ('dpddist', CvMat_p, 1, None), # CvMat* dpddist
-)
-cvProjectPoints2.__doc__ = """void cvProjectPoints2(const CvMat* object_points, const CvMat* rotation_vector, const CvMat* translation_vector, const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs, CvMat* image_points, CvMat* dpdrot=NULL, CvMat* dpdt=NULL, CvMat* dpdf=NULL, CvMat* dpdc=NULL, CvMat* dpddist=NULL)
-
-Projects 3D points to image plane
-"""
-
-# Finds perspective transformation between two planes
-cvFindHomography = cfunc('cvFindHomography', _cvDLL, None,
-    ('src_points', CvMat_p, 1), # const CvMat* src_points
-    ('dst_points', CvMat_p, 1), # const CvMat* dst_points
-    ('homography', CvMat_p, 1), # CvMat* homography 
-)
-cvFindHomography.__doc__ = """void cvFindHomography(const CvMat* src_points, const CvMat* dst_points, CvMat* homography)
-
-Finds perspective transformation between two planes
-"""
 
 # Finds intrinsic and extrinsic camera parameters using calibration pattern
 cvCalibrateCamera2 = cfunc('cvCalibrateCamera2', _cvDLL, None,
-    ('object_points', CvMat_p, 1), # const CvMat* object_points
-    ('image_points', CvMat_p, 1), # const CvMat* image_points
-    ('point_counts', CvMat_p, 1), # const CvMat* point_counts
+    ('object_points', CvMat_r, 1), # const CvMat* object_points
+    ('image_points', CvMat_r, 1), # const CvMat* image_points
+    ('point_counts', CvMat_r, 1), # const CvMat* point_counts
     ('image_size', CvSize, 1), # CvSize image_size
     ('intrinsic_matrix', CvMat_p, 1), # CvMat* intrinsic_matrix
     ('distortion_coeffs', CvMat_p, 1), # CvMat* distortion_coeffs
@@ -2566,62 +2636,66 @@ cvCalibrateCamera2 = cfunc('cvCalibrateCamera2', _cvDLL, None,
     ('translation_vectors', CvMat_p, 1, None), # CvMat* translation_vectors
     ('flags', c_int, 1, 0), # int flags
 )
-cvCalibrateCamera2.__doc__ = """void cvCalibrateCamera2(const CvMat* object_points, const CvMat* image_points, const CvMat* point_counts, CvSize image_size, CvMat* intrinsic_matrix, CvMat* distortion_coeffs, CvMat* rotation_vectors=NULL, CvMat* translation_vectors=NULL, int flags=0)
+cvCalibrateCamera2.__doc__ = """void cvCalibrateCamera2(const CvMat object_points, const CvMat image_points, const CvMat point_counts, CvSize image_size, CvMat* intrinsic_matrix, CvMat* distortion_coeffs, CvMat* rotation_vectors=NULL, CvMat* translation_vectors=NULL, int flags=0)
 
 Finds intrinsic and extrinsic camera parameters using calibration pattern
 """
 
 # Finds extrinsic camera parameters for particular view
 cvFindExtrinsicCameraParams2 = cfunc('cvFindExtrinsicCameraParams2', _cvDLL, None,
-    ('object_points', CvMat_p, 1), # const CvMat* object_points
-    ('image_points', CvMat_p, 1), # const CvMat* image_points
-    ('intrinsic_matrix', CvMat_p, 1), # const CvMat* intrinsic_matrix
-    ('distortion_coeffs', CvMat_p, 1), # const CvMat* distortion_coeffs
+    ('object_points', CvMat_r, 1), # const CvMat* object_points
+    ('image_points', CvMat_r, 1), # const CvMat* image_points
+    ('intrinsic_matrix', CvMat_r, 1), # const CvMat* intrinsic_matrix
+    ('distortion_coeffs', CvMat_r, 1), # const CvMat* distortion_coeffs
     ('rotation_vector', CvMat_p, 1), # CvMat* rotation_vector
     ('translation_vector', CvMat_p, 1), # CvMat* translation_vector 
 )
-cvFindExtrinsicCameraParams2.__doc__ = """void cvFindExtrinsicCameraParams2(const CvMat* object_points, const CvMat* image_points, const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs, CvMat* rotation_vector, CvMat* translation_vector)
+cvFindExtrinsicCameraParams2.__doc__ = """void cvFindExtrinsicCameraParams2(const CvMat object_points, const CvMat image_points, const CvMat intrinsic_matrix, const CvMat distortion_coeffs, CvMat* rotation_vector, CvMat* translation_vector)
 
 Finds extrinsic camera parameters for particular view
 """
 
 # Converts rotation matrix to rotation vector or vice versa
 cvRodrigues2 = cfunc('cvRodrigues2', _cvDLL, c_int,
-    ('src', CvMat_p, 1), # const CvMat* src
+    ('src', CvMat_r, 1), # const CvMat* src
     ('dst', CvMat_p, 1), # CvMat* dst
-    ('jacobian', CvMat_p, 1, 0), # CvMat* jacobian
+    ('jacobian', CvMat_p, 1, None), # CvMat* jacobian
 )
-cvRodrigues2.__doc__ = """int cvRodrigues2(const CvMat* src, CvMat* dst, CvMat* jacobian=0)
+cvRodrigues2.__doc__ = """int cvRodrigues2(const CvMat src, CvMat* dst, CvMat* jacobian=0)
 
 Converts rotation matrix to rotation vector or vice versa
 """
 
 # Transforms image to compensate lens distortion
 cvUndistort2 = cfunc('cvUndistort2', _cvDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('intrinsic_matrix', CvMat_p, 1), # const CvMat* intrinsic_matrix
-    ('distortion_coeffs', CvMat_p, 1), # const CvMat* distortion_coeffs 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('intrinsic_matrix', CvMat_r, 1), # const CvMat* intrinsic_matrix
+    ('distortion_coeffs', CvMat_r, 1), # const CvMat* distortion_coeffs 
 )
-cvUndistort2.__doc__ = """void cvUndistort2(const CvArr* src, CvArr* dst, const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs)
+cvUndistort2.__doc__ = """void cvUndistort2(const CvArr src, CvArr dst, const CvMat intrinsic_matrix, const CvMat distortion_coeffs)
 
 Transforms image to compensate lens distortion
 """
 
 # Computes undistorion map
 cvInitUndistortMap = cfunc('cvInitUndistortMap', _cvDLL, None,
-    ('intrinsic_matrix', CvMat_p, 1), # const CvMat* intrinsic_matrix
-    ('distortion_coeffs', CvMat_p, 1), # const CvMat* distortion_coeffs
-    ('mapx', CvArr_p, 1), # CvArr* mapx
-    ('mapy', CvArr_p, 1), # CvArr* mapy 
+    ('intrinsic_matrix', CvMat_r, 1), # const CvMat* intrinsic_matrix
+    ('distortion_coeffs', CvMat_r, 1), # const CvMat* distortion_coeffs
+    ('mapx', CvArr_r, 1), # CvArr* mapx
+    ('mapy', CvArr_r, 1), # CvArr* mapy 
 )
-cvInitUndistortMap.__doc__ = """void cvInitUndistortMap(const CvMat* intrinsic_matrix, const CvMat* distortion_coeffs, CvArr* mapx, CvArr* mapy)
+cvInitUndistortMap.__doc__ = """void cvInitUndistortMap(const CvMat intrinsic_matrix, const CvMat distortion_coeffs, CvArr mapx, CvArr mapy)
 
 Computes undistorion map
 """
 
+CV_CALIB_CB_ADAPTIVE_THRESH = 1
+CV_CALIB_CB_NORMALIZE_IMAGE = 2
+CV_CALIB_CB_FILTER_QUADS = 4
+
 _cvFindChessboardCorners = cfunc('cvFindChessboardCorners', _cvDLL, c_int,
-    ('image', c_void_p, 1), # const void* image
+    ('image', CvArr_r, 1), # const void* image
     ('pattern_size', CvSize, 1), # CvSize pattern_size
     ('corners', CvPoint2D32f_p, 1), # CvPoint2D32f* corners
     ('corner_count', c_int_p, 1, None), # int* corner_count
@@ -2630,7 +2704,7 @@ _cvFindChessboardCorners = cfunc('cvFindChessboardCorners', _cvDLL, c_int,
 
 # Finds positions of internal corners of the chessboard
 def cvFindChessboardCorners(image, pattern_size, flags=CV_CALIB_CB_ADAPTIVE_THRESH):
-    """ctypes_array_of_CvPoint2D32f cvFindChessboardCorners(const void* image, CvSize pattern_size, int flags=CV_CALIB_CB_ADAPTIVE_THRESH)
+    """ctypes_array_of_CvPoint2D32f cvFindChessboardCorners(const CvArr image, CvSize pattern_size, int flags=CV_CALIB_CB_ADAPTIVE_THRESH)
 
     Finds positions of internal corners of the chessboard
     """
@@ -2649,7 +2723,7 @@ def cvFindChessboardCorners(image, pattern_size, flags=CV_CALIB_CB_ADAPTIVE_THRE
     return corners
     
 _cvDrawChessboardCorners = cfunc('cvDrawChessboardCorners', _cvDLL, None,
-    ('image', CvArr_p, 1), # CvArr* image
+    ('image', CvArr_r, 1), # CvArr* image
     ('pattern_size', CvSize, 1), # CvSize pattern_size
     ('corners', CvPoint2D32f_p, 1), # CvPoint2D32f* corners
     ('count', c_int, 1), # int count
@@ -2658,7 +2732,7 @@ _cvDrawChessboardCorners = cfunc('cvDrawChessboardCorners', _cvDLL, None,
 
 # Renders the detected chessboard corners
 def cvDrawChessboardCorners(image, pattern_size, corners):
-    """void cvDrawChessboardCorners(CvArr* image, CvSize pattern_size, ctypes_array_of_CvPoint2D32f corners)
+    """void cvDrawChessboardCorners(CvArr image, CvSize pattern_size, ctypes_array_of_CvPoint2D32f corners)
 
     Renders the detected chessboard corners
     """
@@ -2735,36 +2809,60 @@ Calculates homography matrix for oblong planar object (e.g. arm)
 #-----------------------------------------------------------------------------
 
 
-CV_FM_7POINT = 1
-CV_FM_8POINT = 2
-CV_FM_LMEDS_ONLY = 4
-CV_FM_RANSAC_ONLY = 8
-CV_FM_LMEDS = CV_FM_LMEDS_ONLY + CV_FM_8POINT
-CV_FM_RANSAC = CV_FM_RANSAC_ONLY + CV_FM_8POINT
+if _cvver == 110:
+    CV_FM_7POINT = 1
+    CV_FM_8POINT = 2
+    CV_FM_LMEDS_ONLY = CV_LMEDS
+    CV_FM_RANSAC_ONLY = CV_RANSAC
+    CV_FM_LMEDS = CV_LMEDS
+    CV_FM_RANSAC = CV_RANSAC
 
-# Calculates fundamental matrix from corresponding points in two images
-cvFindFundamentalMat = cfunc('cvFindFundamentalMat', _cvDLL, c_int,
-    ('points1', CvMat_p, 1), # const CvMat* points1
-    ('points2', CvMat_p, 1), # const CvMat* points2
-    ('fundamental_matrix', CvMat_p, 1), # CvMat* fundamental_matrix
-    ('method', c_int, 1), # int method
-    ('param1', c_double, 1, 1), # double param1
-    ('param2', c_double, 1, 0), # double param2
-    ('status', CvMat_p, 1, None), # CvMat* status
-)
-cvFindFundamentalMat.__doc__ = """int cvFindFundamentalMat(const CvMat* points1, const CvMat* points2, CvMat* fundamental_matrix, int method=CV_FM_RANSAC, double param1=1., double param2=0.99, CvMat* status=NUL)
+    # Calculates fundamental matrix from corresponding points in two images
+    cvFindFundamentalMat = cfunc('cvFindFundamentalMat', _cvDLL, c_int,
+        ('points1', CvMat_r, 1), # const CvMat* points1
+        ('points2', CvMat_r, 1), # const CvMat* points2
+        ('fundamental_matrix', CvMat_p, 1), # CvMat* fundamental_matrix
+        ('method', c_int, 1), # int method
+        ('param1', c_double, 1, 3), # double param1
+        ('param2', c_double, 1, 0), # double param2
+        ('status', CvMat_p, 1, None), # CvMat* status
+    )
+    cvFindFundamentalMat.__doc__ = """int cvFindFundamentalMat(const CvMat points1, const CvMat points2, CvMat* fundamental_matrix, int method=CV_FM_RANSAC, double param1=1., double param2=0.99, CvMat* status=NUL)
 
-Calculates fundamental matrix from corresponding points in two images
-"""
+    Calculates fundamental matrix from corresponding points in two images
+    """
+
+elif _cvver == 100:
+    CV_FM_7POINT = 1
+    CV_FM_8POINT = 2
+    CV_FM_LMEDS_ONLY = 4
+    CV_FM_RANSAC_ONLY = 8
+    CV_FM_LMEDS = CV_FM_LMEDS_ONLY + CV_FM_8POINT
+    CV_FM_RANSAC = CV_FM_RANSAC_ONLY + CV_FM_8POINT
+
+    # Calculates fundamental matrix from corresponding points in two images
+    cvFindFundamentalMat = cfunc('cvFindFundamentalMat', _cvDLL, c_int,
+        ('points1', CvMat_r, 1), # const CvMat* points1
+        ('points2', CvMat_r, 1), # const CvMat* points2
+        ('fundamental_matrix', CvMat_p, 1), # CvMat* fundamental_matrix
+        ('method', c_int, 1), # int method
+        ('param1', c_double, 1, 1), # double param1
+        ('param2', c_double, 1, 0), # double param2
+        ('status', CvMat_p, 1, None), # CvMat* status
+    )
+    cvFindFundamentalMat.__doc__ = """int cvFindFundamentalMat(const CvMat points1, const CvMat points2, CvMat* fundamental_matrix, int method=CV_FM_RANSAC, double param1=1., double param2=0.99, CvMat* status=NUL)
+
+    Calculates fundamental matrix from corresponding points in two images
+    """
 
 # For points in one image of stereo pair computes the corresponding epilines in the other image
 cvComputeCorrespondEpilines = cfunc('cvComputeCorrespondEpilines', _cvDLL, None,
-    ('points', CvMat_p, 1), # const CvMat* points
+    ('points', CvMat_r, 1), # const CvMat* points
     ('which_image', c_int, 1), # int which_image
-    ('fundamental_matrix', CvMat_p, 1), # const CvMat* fundamental_matrix
-    ('correspondent_lines', CvMat_p, 1), # CvMat* correspondent_lines
+    ('fundamental_matrix', CvMat_r, 1), # const CvMat* fundamental_matrix
+    ('correspondent_lines', CvMat_r, 1), # CvMat* correspondent_lines
 )
-cvComputeCorrespondEpilines.__doc__ = """void cvComputeCorrespondEpilines(const CvMat* points, int which_image, const CvMat* fundamental_matrix, CvMat* correspondent_line)
+cvComputeCorrespondEpilines.__doc__ = """void cvComputeCorrespondEpilines(const CvMat points, int which_image, const CvMat fundamental_matrix, CvMat correspondent_line)
 
 For points in one image of stereo pair computes the corresponding epilines in the other image
 """
@@ -2772,10 +2870,10 @@ For points in one image of stereo pair computes the corresponding epilines in th
 # Convert points to/from homogeneous coordinates
 if _cvver == 110:
     cvConvertPointsHomogeneous = cfunc('cvConvertPointsHomogeneous', _cvDLL, None,
-        ('src', CvMat_p, 1), # const CvMat* src
-        ('dst', CvMat_p, 1), # CvMat* dst 
+        ('src', CvMat_r, 1), # const CvMat* src
+        ('dst', CvMat_r, 1), # CvMat* dst 
     )
-    cvConvertPointsHomogeneous.__doc__ = """void cvConvertPointsHomogeneous(const CvMat* src, CvMat* dst)
+    cvConvertPointsHomogeneous.__doc__ = """void cvConvertPointsHomogeneous(const CvMat src, CvMat dst)
 
     Convert points to/from homogeneous coordinates
     """
@@ -2783,10 +2881,10 @@ if _cvver == 110:
     cvConvertPointsHomogenious = cvConvertPointsHomogeneous
 elif _cvver == 100:
     cvConvertPointsHomogenious = cfunc('cvConvertPointsHomogenious', _cvDLL, None,
-        ('src', CvMat_p, 1), # const CvMat* src
-        ('dst', CvMat_p, 1), # CvMat* dst 
+        ('src', CvMat_r, 1), # const CvMat* src
+        ('dst', CvMat_r, 1), # CvMat* dst 
     )
-    cvConvertPointsHomogenious.__doc__ = """void cvConvertPointsHomogeneous(const CvMat* src, CvMat* dst)
+    cvConvertPointsHomogenious.__doc__ = """void cvConvertPointsHomogeneous(const CvMat src, CvMat dst)
 
     Convert points to/from homogeneous coordinates
     """

@@ -8,3 +8,7 @@ To provide an interface for machine learning classes. Atm, it's pretty tough.
 
 
 
+got CvMat and CvSeq and co left
+and then testing
+
+TODO: wrap properly cvProjectPoints2(), cvFindHomography(), and cvCalibrateCamera2(), cvFindExtrinsicCameraParams2(), cvRodrigues2(), cvInitUndistortMap(), cvFindChessboardCorners(), cvFindFundamentalMat()

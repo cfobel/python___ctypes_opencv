@@ -97,9 +97,9 @@ Gets window name by handle
 # Shows the image in the specified window
 cvShowImage = cfunc('cvShowImage', _hgDLL, None,
     ('name', c_char_p, 1), # const char* name
-    ('image', CvArr_p, 1), # const CvArr* image 
+    ('image', CvArr_r, 1), # const CvArr* image 
 )
-cvShowImage.__doc__ = """void cvShowImage(const char* name, const CvArr* image)
+cvShowImage.__doc__ = """void cvShowImage(const char* name, const CvArr image)
 
 Shows the image in the specified window
 """
@@ -213,33 +213,28 @@ CV_LOAD_IMAGE_ANYDEPTH  =  2 # any depth, if specified on its own gray by itself
 CV_LOAD_IMAGE_ANYCOLOR  =  4
 
 
-# ------ List of methods not to be called by a user ------
-
 # Loads an image from file
 _cvLoadImage = cfunc('cvLoadImage', _hgDLL, IplImage_p,
     ('filename', c_char_p, 1), # const char* filename
     ('iscolor', c_int, 1, 1), # int iscolor
 )
 
-# ------ List of methods a user should call ------
-
-
-# Loads an image from file
 def cvLoadImage(filename, iscolor=1):
-    """IplImage* cvLoadImage(const char* filename, int iscolor=1)
+    """IplImage cvLoadImage(const char* filename, int iscolor=1)
 
     Loads an image from file
     """
-    z = _cvLoadImage(filename, iscolor)
-    sdAdd_autoclean(z, _cvReleaseImage)
+    z = deref(_cvLoadImage(filename, iscolor))
+    if z is not None:
+        z._owner = 2 # both header and data
     return z
 
 # Saves an image to the file
 cvSaveImage = cfunc('cvSaveImage', _hgDLL, c_int,
     ('filename', c_char_p, 1), # const char* filename
-    ('image', CvArr_p, 1), # const CvArr* image 
+    ('image', CvArr_r, 1), # const CvArr* image 
 )
-cvSaveImage.__doc__ = """int cvSaveImage(const char* filename, const CvArr* image)
+cvSaveImage.__doc__ = """int cvSaveImage(const char* filename, const CvArr image)
 
 Saves an image to the file
 """
@@ -293,8 +288,7 @@ def cvCreateFileCapture(filename):
     Initializes capturing video from file
     [ctypes-opencv] returns None if no capture is created
     """
-    z = _cvCreateFileCapture(filename)
-    return z.content if bool(z) else None
+    return deref(_cvCreateFileCapture(filename))
 
 cvCaptureFromFile = cvCreateFileCapture
 cvCaptureFromAVI = cvCaptureFromFile
@@ -310,8 +304,7 @@ def cvCreateCameraCapture(index):
     Initializes capturing video from camera
     [ctypes-opencv] returns None if no capture is created
     """
-    z = _cvCreateCameraCapture(index)
-    return z.contents if bool(z) else None
+    return deref(_cvCreateCameraCapture(index))
     
 cvCaptureFromCAM = cvCreateCameraCapture
 
@@ -325,27 +318,34 @@ Grabs frame from camera or file
 """
 
 # Gets the image grabbed with cvGrabFrame
-cvRetrieveFrame = cfunc('cvRetrieveFrame', _hgDLL, IplImage_p,
+_cvRetrieveFrame = cfunc('cvRetrieveFrame', _hgDLL, IplImage_p,
     ('capture', CvCapture_r, 1), # CvCapture* capture 
 )
-cvRetrieveFrame.__doc__ = """IplImage* cvRetrieveFrame(CvCapture capture)
 
-Gets the image grabbed with cvGrabFrame
-"""
+def cvRetrieveFrame(capture):
+    """IplImage cvRetrieveFrame(CvCapture capture)
+
+    Gets the image grabbed with cvGrabFrame
+    """
+    z = deref(_cvRetrieveFrame(capture), capture)
+    if z is not None:
+        z._owner = 0 # capture owns it
+    return z
 
 # Grabs and returns a frame from camera or file
-cvQueryFrame = cfunc('cvQueryFrame', _hgDLL, IplImage_p,
+_cvQueryFrame = cfunc('cvQueryFrame', _hgDLL, IplImage_p,
     ('capture', CvCapture_r, 1), # CvCapture* capture 
 )
-cvQueryFrame.__doc__ = """IplImage* cvQueryFrame(CvCapture capture)
 
-Grabs and returns a frame from camera or file
-"""
+def cvQueryFrame(capture):
+    """IplImage cvQueryFrame(CvCapture capture)
 
-def CheckNonNull(result, func, args):
-    if not result:
-        raise RuntimeError, 'QueryFrame failed'
-    return args
+    Grabs and returns a frame from camera or file
+    """
+    z = deref(_cvQueryFrame(capture), capture)
+    if z is not None:
+        z._owner = 0 # capture owns it
+    return z
 
 CV_CAP_PROP_POS_MSEC      = 0
 CV_CAP_PROP_POS_FRAMES    = 1
@@ -418,17 +418,16 @@ def cvCreateVideoWriter(filename, fourcc, fps, frame_size, is_color=1):
     Creates video file writer
     [ctypes-opencv] returns None if no writer is created
     """
-    z = _cvCreateVideoWriter(filename, fourcc, fps, frame_size, is_color)
-    return z.contents if bool(z) else None
+    return deref(_cvCreateVideoWriter(filename, fourcc, fps, frame_size, is_color))
 
 cvCreateAVIWriter = cvCreateVideoWriter
 
 # Writes a frame to video file
 cvWriteFrame = cfunc('cvWriteFrame', _hgDLL, c_int,
     ('writer', CvVideoWriter_r, 1), # CvVideoWriter* writer
-    ('image', IplImage_p, 1), # const IplImage* image 
+    ('image', IplImage_r, 1), # const IplImage* image 
 )
-cvWriteFrame.__doc__ = """int cvWriteFrame(CvVideoWriter writer, const IplImage* image)
+cvWriteFrame.__doc__ = """int cvWriteFrame(CvVideoWriter writer, const IplImage image)
 
 Writes a frame to video file
 """
@@ -456,11 +455,11 @@ CV_CVTIMG_SWAP_RB = 2
 
 # Converts one image to another with optional vertical flip
 cvConvertImage = cfunc('cvConvertImage', _hgDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('flags', c_int, 1, 0), # int flags
 )
-cvConvertImage.__doc__ = """void cvConvertImage(const CvArr* src, CvArr* dst, int flags=0)
+cvConvertImage.__doc__ = """void cvConvertImage(const CvArr src, CvArr dst, int flags=0)
 
 Converts one image to another with optional vertical flip
 """

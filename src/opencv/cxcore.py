@@ -127,15 +127,11 @@ class ListPOINTER(object):
         if isinstance(param, (list,tuple)):
             return (self.etype * len(param))(*param)
 
-class FlexibleListPOINTER(object):
-    '''Just like a POINTER but accept a list of ctype as an argument, with element type determined from the first element'''
-    def __init__(self, etype):
-        self.etype = etype
-
+class ListByRef(object):
+    '''An argument that converts a list/tuple of ctype elements into a pointer to an array of pointers to the elements'''
     def from_param(self, param):
         if isinstance(param, (list,tuple)):
-            etype = type(param[0]) if param else self.etype
-            return (etype * len(param))(*param)
+            return (c_int*len(param))(*(addressof(x) for x in param))
 
 class ListPOINTER2(object):
     '''Just like POINTER(POINTER(ctype)) but accept a list of lists of ctype'''
@@ -214,240 +210,6 @@ else:
 # Begin of Minh-Tri's hacks
 #=============================================================================
 
-
-#-----------------------------------------------------------------------------
-# A hack in OpenCV's IplImage_p
-#-----------------------------------------------------------------------------
-# allows to access pixels directly using image indexing with 2 parameters (row then column)
-# while disabling ctypes' array indexing
-# and ctypes' array slicing,  to avoid confusion
-# If you want image slicing, convert the image into a CvMat.
-# e.g.: let img be an instance of IplImage_p
-# img[3,4] means the pixel located at row 3, column 4 (zero-based) in the image
-#    a pixel can be a CvScalar or a number variable, depending on its type specified by img.depth
-# img[3:4] is *invalid*
-# img[3] is *invalid*
-def sdHack_iplimage(cls):
-    depth2ctype = {
-        IPL_DEPTH_8U: c_uint8,
-        IPL_DEPTH_8S: c_int8,
-        IPL_DEPTH_16U: c_uint16,
-        IPL_DEPTH_16S: c_int16,
-        IPL_DEPTH_32S: c_int32,
-        IPL_DEPTH_32F: c_float,
-        IPL_DEPTH_64F: c_double,
-    }
-    
-    def slicing_disabled(self, *args):
-        raise KeyError("Slicing for IplImage_p is disabled.")
-    
-    def get_pixel(self, key):
-        if not isinstance(key, tuple) or len(key) != 2 or not isinstance(key[0], int) or not isinstance(key[1], int):
-            raise KeyError("Key (%s) is not a tuple of 2 integers." % str(key))
-        
-        h = self.contents.height
-        y = key[0]
-        if not 0 <= y < h:
-            raise IndexError("Row %d is not in [0,%d)" % (y, h))
-
-        w = self.contents.width
-        x = key[1]
-        if not 0 <= x < w:
-            raise IndexError("Column %d is not in [0,%d)" % (x, w))
-
-        d = self.contents.depth
-        if d < 0:
-            d += 0x100000000
-        datatype = depth2ctype[d]*self.contents.nChannels
-        return datatype.from_address(addressof(self.contents.imageData.contents)+self.contents.widthStep*y+x*sizeof(datatype))
-
-    def my__getitem__(self, key):
-        pixel = get_pixel(self, key)
-        return pixel if len(pixel) > 1 else pixel[0]
-        
-    def my__setitem__(self, key, value):
-        pixel = get_pixel(self, key)
-
-        if isinstance(value, CvScalar):
-            for i in xrange(len(pixel)):
-                pixel[i] = value.val[i]
-        elif getattr(value, '__getitem__', None) is not None:
-            for i in xrange(len(pixel)):
-                pixel[i] = value[i]
-        else:
-            pixel[0] = value
-        
-    cls.__getitem__ = my__getitem__
-    cls.__setitem__ = my__setitem__
-    cls.__getslice__ = slicing_disabled
-    cls.__setslice__ = slicing_disabled
-    
-
-#-----------------------------------------------------------------------------
-# A hack in OpenCV's CvMat_p
-#-----------------------------------------------------------------------------
-# allows to access pixels directly using image indexing with 2 parameters, row then column
-# and also image slicing, for CvMat_p
-# at the same time, ctypes' array indexing and slicing are disabled to avoid confusion
-def sdHack_cvmat(cls):
-    def check_slice(sl, length):
-        if isinstance(sl, slice):
-            start = 0 if sl.start is None else sl.start
-            if not 0 <= start < length:
-                raise IndexError("Item %d is not in range [0,%d)" % (start, length))
-
-            step = 1 if sl.step is None else sl.step
-                
-            stop = length if step >= 0 else -1
-            if sl.stop is not None:
-                if step >= 0:
-                    if stop > sl.stop:
-                        stop = sl.stop
-                    if stop < start:
-                        stop = start
-                else:
-                    if stop < sl.stop:
-                        stop = sl.stop
-                    if stop > start:
-                        stop = start
-        else:
-            sl = int(sl)
-            if not 0 <= sl < length:
-                raise IndexError("Item %d is not in [0,%d)" % (sl, length))
-            start = sl
-            stop = sl+1
-            step = 1
-            
-        return slice(start, stop, step)
-    
-    def type2ctype(depth):   
-        _type2ctype = {
-            CV_8U: c_uint8,
-            CV_8S: c_int8,
-            CV_16U: c_uint16,
-            CV_16S: c_int16,
-            CV_32S: c_int32,
-            CV_32F: c_float,
-            CV_64F: c_double,
-        }
-        
-        cn = ((depth >> CV_CN_SHIFT)&7)+1
-        return _type2ctype[depth&7]*cn
-    
-    def get_pixel_or_slice2d(self, key):
-        if not isinstance(key, tuple):
-            key = (key, slice(None))
-            
-        if len(key) < 2:
-            key = (key[0], slice(None))
-        
-        if len(key) > 2:
-            raise TypeError("Key cannot be a tuple with more than 2 items.")
-    
-        if isinstance(key[0], int) and isinstance(key[1], int): # a pixel
-            h = self.contents.rows
-            y = key[0]
-            if not 0 <= y < h:
-                raise IndexError("Row %d is not in [0,%d)" % (y, h))
-
-            w = self.contents.cols
-            x = key[1]
-            if not 0 <= x < w:
-                raise IndexError("Column %d is not in [0,%d)" % (x, w))
-                    
-            datatype = type2ctype(self.contents.type)
-            return datatype.from_address(addressof(self.contents.data.ptr.contents)+self.contents.step*y+x*sizeof(datatype))
-            
-        # a 2d-slice
-        w = self.contents.cols
-        sx = check_slice(key[1], w)
-        if sx.step != 1:
-            raise IndexError("Column slice must be positively continuous, i.e. step_x == 1.")
-            
-        h = self.contents.rows
-        sy = check_slice(key[0], h)        
-        if sy.step == 0:
-            raise IndexError("Row slice cannot have zero step, i.e. step_y != 0.")
-            
-        result = cvGetSubRect(self, cvRect(0,0,1,1))
-
-        cols = sx.stop-sx.start
-        if sy.step > 0:
-            rows = (sy.stop-sy.start) / sy.step
-        else:
-            rows = (sy.start-sy.stop) / (-sy.step)
-        step = sy.step*self.contents.step
-        
-        data_address = addressof(result.contents.data.ptr.contents)+self.contents.step*sy.start+sx.start
-        
-        cvInitMatHeader(result, rows, cols, result.contents.type, c_void_p(data_address), step)
-            
-        return result
-
-    def my__getitem__(self, key):
-        z = get_pixel_or_slice2d(self, key)
-        return z if isinstance(z, CvMat_p) or len(z) > 1 else z[0]
-                    
-    def my__setitem__(self, key, value):
-        z = get_pixel_or_slice2d(self, key)
-        if isinstance(z, CvMat_p):
-            if isinstance(value, CvMat_p):
-                cvCopy(value, z)
-            elif isinstance(value, tuple) or isinstance(value, list):
-                for y in xrange(z.rows):
-                    vy = value[y]
-                    for x in xrange(z.cols):
-                        z[y,x] = vy[x]
-            else:
-                if not isinstance(value, CvScalar):
-                    value = cvScalar(value)
-                cvSet(z, value)
-        else:
-            y = getattr(value, '__getitem__', None)
-            if y:
-                for i in xrange(len(z)):
-                    z[i] = value[i]
-            else:
-                z[0] = value
-            
-    def my__getslice__(self, i, j):
-        return my__getitem__(self, slice(i,j))
-        
-    def my__setslice__(self, i, j, value):
-        my__setitem__(self, slice(i,j), value)
-        
-    cls.__getitem__ = my__getitem__
-    cls.__setitem__ = my__setitem__
-    cls.__getslice__ = my__getslice__
-    cls.__setslice__ = my__setslice__
-    
-
-#-----------------------------------------------------------------------------
-# Another hack in OpenCV's CvMat_p
-#-----------------------------------------------------------------------------
-# With respect to the previous hack, this hack allows:
-#  - Iteration of rows. For example:
-#      for x in mat:
-#        <do something with row x>
-#    would iterate on the rows of mat (x = cvGetRows(mat, i, i+1)).
-#  - Iteration of columns. For example:
-#      for y in mat.colrange():
-#        <do something with column y>
-#    would iterate on the columns of mat (y = cvGetCols(mat, i, i+1)).
-# Note that if you want to extract a row or a column by index, use
-# image slicing from the previous hack.
-def sdHack_cvmat2(cls):
-    def my__iter__(self):
-        for i in xrange(self.contents.rows):
-            yield cvGetRows(self, i, i+1)
-        
-    def colrange(self):
-        for i in xrange(self.contents.cols):
-            yield cvGetCols(self, i, i+1)
-
-    cls.__iter__ = my__iter__
-    cls.colrange = colrange
-        
 
 #-----------------------------------------------------------------------------
 # A useful converter for CvSeq_p
@@ -617,11 +379,11 @@ def sdHack_del(cls):
 # Begin of cxcore/cxtypes.h
 #=============================================================================
 
-class CvArr_p(c_void_p):
+class CvArr(_Structure):
     pass
-
-# Minh-Tri's hacks
-sdHack_del(CvArr_p)
+    
+CvArr_p = POINTER(CvArr)
+CvArr_r = ByRefArg(CvArr)
 
 class Cv32suf(Union):
     _fields_ = [
@@ -710,10 +472,19 @@ IPL_DEPTH_16U = 16
 IPL_DEPTH_32F = 32
 IPL_DEPTH_64F = 64
 
-
 IPL_DEPTH_8S = IPL_DEPTH_SIGN + IPL_DEPTH_8U
 IPL_DEPTH_16S = IPL_DEPTH_SIGN + IPL_DEPTH_16U
 IPL_DEPTH_32S = IPL_DEPTH_SIGN + 32
+
+_iplimage_depth2ctype = {
+    IPL_DEPTH_8U: c_uint8,
+    IPL_DEPTH_8S: c_int8,
+    IPL_DEPTH_16U: c_uint16,
+    IPL_DEPTH_16S: c_int16,
+    IPL_DEPTH_32S: c_int32,
+    IPL_DEPTH_32F: c_float,
+    IPL_DEPTH_64F: c_double,
+}
 
 IPL_DATA_ORDER_PIXEL = 0
 IPL_DATA_ORDER_PLANE = 1
@@ -755,7 +526,56 @@ IPL_IMAGE_ROI = 4
 IPL_BORDER_REFLECT_101    = 4
 
 # IPL image header
+# allows to access pixels directly using image indexing with 2 parameters (row then column)
+# If you want image slicing, convert the image into a CvMat.
+# e.g.: let img be an instance of IplImage
+# img[3,4] means the pixel located at row 3, column 4 (zero-based) in the image
+#    a pixel can be a ctype array or a number variable, depending on its type specified by img.depth
+# img[3:4] is *invalid*
+# img[3] is *invalid*
 class IplImage(_Structure):
+    def get_pixel(self, key):
+        if not isinstance(key, tuple) or len(key) != 2 or not isinstance(key[0], int) or not isinstance(key[1], int):
+            raise KeyError("Key (%s) is not a tuple of 2 integers." % str(key))
+        
+        h = self.height
+        y = key[0]
+        if not 0 <= y < h:
+            raise IndexError("Row %d is not in [0,%d)" % (y, h))
+
+        w = self.width
+        x = key[1]
+        if not 0 <= x < w:
+            raise IndexError("Column %d is not in [0,%d)" % (x, w))
+
+        d = self.depth
+        if d < 0:
+            d += 0x100000000
+        datatype = _iplimage_depth2ctype[d]*self.nChannels
+        return datatype.from_address(addressof(self.imageData.contents)+self.widthStep*y+x*sizeof(datatype))
+
+    def __getitem__(self, key):
+        pixel = get_pixel(self, key)
+        return pixel if len(pixel) > 1 else pixel[0]
+        
+    def __setitem__(self, key, value):
+        pixel = get_pixel(self, key)
+
+        if isinstance(value, CvScalar):
+            for i in xrange(len(pixel)):
+                pixel[i] = value.val[i]
+        elif getattr(value, '__getitem__', None) is not None:
+            for i in xrange(len(pixel)):
+                pixel[i] = value[i]
+        else:
+            pixel[0] = value
+        
+    def __del__(self):
+        if self._owner == 1: # own header only
+            _cvReleaseImageHeader(pointer(self))
+        elif self._owner == 2: # own header and data
+            _cvReleaseImage(pointer(self))
+
     def __repr__(self):
         '''Print the fields'''
         res = []
@@ -763,7 +583,9 @@ class IplImage(_Structure):
             if field[0] in ['imageData', 'imageDataOrigin']: continue
             res.append('%s=%s' % (field[0], repr(getattr(self, field[0]))))
         return self.__class__.__name__ + '(' + ','.join(res) + ')'
+        
 IplImage_p = POINTER(IplImage)
+IplImage_r = ByRefArg(IplImage)
 
 IplImage._fields_ = [("nSize", c_int),
         ("ID", c_int),
@@ -789,11 +611,6 @@ IplImage._fields_ = [("nSize", c_int),
         ("imageDataOrigin", c_int8_p)]
         
 CV_TYPE_NAME_IMAGE = "opencv-image"
-
-# Minh-Tri's hacks
-sdHack_iplimage(IplImage_p)
-sdHack_contents_getattr(IplImage_p)
-sdHack_del(IplImage_p)
 
 
 #-----------------------------------------------------------------------------
@@ -900,6 +717,50 @@ CV_MAGIC_MASK = 0xFFFF0000
 CV_MAT_MAGIC_VAL = 0x42420000
 CV_TYPE_NAME_MAT = "opencv-matrix"
 
+def type2ctype(depth):   
+    _type2ctype = {
+        CV_8U: c_uint8,
+        CV_8S: c_int8,
+        CV_16U: c_uint16,
+        CV_16S: c_int16,
+        CV_32S: c_int32,
+        CV_32F: c_float,
+        CV_64F: c_double,
+    }
+    
+    cn = ((depth >> CV_CN_SHIFT)&7)+1
+    return _type2ctype[depth&7]*cn
+
+def check_slice(sl, length):
+    if isinstance(sl, slice):
+        start = 0 if sl.start is None else sl.start
+        if not 0 <= start < length:
+            raise IndexError("Item %d is not in range [0,%d)" % (start, length))
+
+        step = 1 if sl.step is None else sl.step
+            
+        stop = length if step >= 0 else -1
+        if sl.stop is not None:
+            if step >= 0:
+                if stop > sl.stop:
+                    stop = sl.stop
+                if stop < start:
+                    stop = start
+            else:
+                if stop < sl.stop:
+                    stop = sl.stop
+                if stop > start:
+                    stop = start
+    else:
+        sl = int(sl)
+        if not 0 <= sl < length:
+            raise IndexError("Item %d is not in [0,%d)" % (sl, length))
+        start = sl
+        stop = sl+1
+        step = 1
+        
+    return slice(start, stop, step)
+
 class CvMatData(Union):
     _fields_ = [
         ('ptr', c_ubyte_p),
@@ -925,7 +786,112 @@ class CvMatCols(Union):
 CvMatCols_p = POINTER(CvMatCols)
     
 # Multi-channel matrix
+#  - Allows to access pixels directly using image indexing with 2 parameters, row then column
+# and also image slicing, for CvMat
+#  - Iteration of rows. For example:
+#      for x in mat:
+#        <do something with row x>
+#    would iterate on the rows of mat (x = cvGetRows(mat, i, i+1)).
+#  - Iteration of columns. For example:
+#      for y in mat.colrange():
+#        <do something with column y>
+#    would iterate on the columns of mat (y = cvGetCols(mat, i, i+1)).
 class CvMat(_Structure):
+    def get_pixel_or_slice2d(self, key):
+        if not isinstance(key, tuple):
+            key = (key, slice(None))
+            
+        if len(key) < 2:
+            key = (key[0], slice(None))
+        
+        if len(key) > 2:
+            raise TypeError("Key cannot be a tuple with more than 2 items.")
+    
+        if isinstance(key[0], int) and isinstance(key[1], int): # a pixel
+            h = self.rows
+            y = key[0]
+            if not 0 <= y < h:
+                raise IndexError("Row %d is not in [0,%d)" % (y, h))
+
+            w = self.cols
+            x = key[1]
+            if not 0 <= x < w:
+                raise IndexError("Column %d is not in [0,%d)" % (x, w))
+                    
+            datatype = type2ctype(self.type)
+            return datatype.from_address(addressof(self.data.ptr.contents)+self.step*y+x*sizeof(datatype))
+            
+        # a 2d-slice
+        w = self.cols
+        sx = check_slice(key[1], w)
+        if sx.step != 1:
+            raise IndexError("Column slice must be positively continuous, i.e. step_x == 1.")
+            
+        h = self.rows
+        sy = check_slice(key[0], h)        
+        if sy.step == 0:
+            raise IndexError("Row slice cannot have zero step, i.e. step_y != 0.")
+            
+        cols = sx.stop-sx.start
+        if sy.step > 0:
+            rows = (sy.stop-sy.start) / sy.step
+        else:
+            rows = (sy.start-sy.stop) / (-sy.step)
+        step = sy.step*self.step
+        
+        data_address = addressof(self.data.ptr.contents)+self.step*sy.start+sx.start
+        
+        z = CvMat()
+        cvInitMatHeader(z, rows, cols, self.type, c_void_p(data_address), step)
+        z._depends = (self,) # make sure z is deleted before self is deleted, don't care about self.data!!
+        return z
+
+    def __getitem__(self, key):
+        z = self.get_pixel_or_slice2d(key)
+        return z if isinstance(z, CvMat) or len(z) > 1 else z[0]
+                    
+    def __setitem__(self, key, value):
+        z = self.get_pixel_or_slice2d(key)
+        if isinstance(z, CvMat):
+            if isinstance(value, CvMat):
+                cvCopy(value, z)
+            elif isinstance(value, tuple) or isinstance(value, list):
+                for y in xrange(z.rows):
+                    vy = value[y]
+                    for x in xrange(z.cols):
+                        z[y,x] = vy[x]
+            else:
+                if not isinstance(value, CvScalar):
+                    value = cvScalar(value)
+                cvSet(z, value)
+        else:
+            y = getattr(value, '__getitem__', None)
+            if y:
+                for i in xrange(len(z)):
+                    z[i] = value[i]
+            else:
+                z[0] = value
+            
+    def __getslice__(self, i, j):
+        return self.__getitem__(slice(i,j))
+        
+    def __setslice__(self, i, j, value):
+        self.__setitem__(slice(i,j), value)
+        
+    def __iter__(self):
+        for i in xrange(self.rows):
+            yield cvGetRows(self, i, i+1)
+        
+    def colrange(self):
+        for i in xrange(self.cols):
+            yield cvGetCols(self, i, i+1)
+            
+    _owner = False
+            
+    def __del__(self):
+        if self._owner is True:
+            _cvReleaseMat(pointer(self))
+
     _fields_ = [("type", c_int),
                 ("step", c_int),
                 ("refcount", c_void_p),
@@ -934,13 +900,10 @@ class CvMat(_Structure):
                 ("r", CvMatRows),
                 ("c", CvMatCols)]
     _anonymous_ = ("r", "c",)
+
 CvMat_p = POINTER(CvMat)
+CvMat_r = ByRefArg(CvMat)
     
-# Minh-Tri's hacks
-sdHack_cvmat(CvMat_p)
-sdHack_cvmat2(CvMat_p)
-sdHack_contents_getattr(CvMat_p)
-sdHack_del(CvMat_p)
 
 #-----------------------------------------------------------------------------
 # Multi-dimensional dense array (CvMatND)
@@ -966,9 +929,12 @@ class CvMatND(_Structure):
                 ("hdrefcount", c_int),
                 ("data", CvMatData),
                 ("dim", CvMatNDdim*CV_MAX_DIM)]
-                
+    
+    _owner = False
+    
     def __del__(self):
-        _cvReleaseMat(pointer(self))
+        if self._owner is True:
+            _cvReleaseMat(pointer(self))
                 
 CvMatND_p = POINTER(CvMatND)
 CvMatND_r = ByRefArg(CvMatND)
@@ -1769,8 +1735,8 @@ _cvAlloc_ = cfunc('cvAlloc', _cxDLL, CvArr_p,
 )
 
 # Allocates memory buffer
-def cvAlloc(size):
-    """CvArr* cvAlloc(size_t size)
+def _cvAlloc(size):
+    """CvArr cvAlloc(size_t size)
 
     Allocates memory buffer
     """    
@@ -1780,8 +1746,8 @@ def cvAlloc(size):
     
 
 # Deallocates memory buffer
-def cvFree(ptr):
-    """void cvFree(CvArr* ptr)
+def _cvFree(ptr):
+    """void cvFree(CvArr ptr)
 
     Deallocates memory buffer. 
     [ctypes-opencv] You don't need to call this method explicitly, unless you want to free some space.
@@ -1796,185 +1762,188 @@ def cvFree(ptr):
 #-----------------------------------------------------------------------------
 
 
+# Releases image header
 _cvReleaseImageHeader = cfunc('cvReleaseImageHeader', _cxDLL, None,
     ('image', ByRefArg(IplImage_p), 1), # IplImage** image 
 )
 
+# Allocates, initializes, and returns structure IplImage
 _cvCreateImageHeader = cfunc('cvCreateImageHeader', _cxDLL, IplImage_p,
     ('size', CvSize, 1), # CvSize size
     ('depth', c_int, 1), # int depth
     ('channels', c_int, 1), # int channels 
 )
 
-# Allocates, initializes, and returns structure IplImage
-def cvCreateImageHeader(*args):
-    """IplImage* cvCreateImageHeader(CvSize size, int depth, int channels)
+def cvCreateImageHeader(size, depth, channels):
+    """IplImage cvCreateImageHeader(CvSize size, int depth, int channels)
 
     Allocates, initializes, and returns structure IplImage
     """
-    z = _cvCreateImageHeader(*args)
-    sdAdd_autoclean(z, _cvReleaseImage)
+    z = deref(_cvCreateImageHeader(size, depth, channels))
+    z._owner = 1 # header only
     return z
 
 # Initializes allocated by user image header
-cvInitImageHeader = cfunc('cvInitImageHeader', _cxDLL, IplImage_p,
-    ('image', IplImage_p, 1), # IplImage* image
+_cvInitImageHeader = cfunc('cvInitImageHeader', _cxDLL, IplImage_p,
+    ('image', IplImage_r, 1), # IplImage* image
     ('size', CvSize, 1), # CvSize size
     ('depth', c_int, 1), # int depth
     ('channels', c_int, 1), # int channels
     ('origin', c_int, 1, 0), # int origin
     ('align', c_int, 1, 4), # int align
 )
-cvInitImageHeader.__doc__ = """IplImage* cvInitImageHeader(IplImage* image, CvSize size, int depth, int channels, int origin=0, int align=4)
 
-Initializes allocated by user image header
-"""
+def cvInitImageHeader(image, size, depth, channels, origin=0, align=4):
+    """IplImage cvInitImageHeader(IplImage image, CvSize size, int depth, int channels, int origin=0, int align=4)
 
+    Initializes allocated by user image header
+    """
+    return deref(_cvInitImageHeader(image, size, depth, channels, origin=origin, align=align))
+
+# Releases header and image data
 _cvReleaseImage = cfunc('cvReleaseImage', _cxDLL, None,
     ('image', ByRefArg(IplImage_p), 1), # IplImage** image 
 )
 
+# Creates header and allocates data
 _cvCreateImage = cfunc('cvCreateImage', _cxDLL, IplImage_p,
     ('size', CvSize, 1), # CvSize size
     ('depth', c_int, 1), # int depth
     ('channels', c_int, 1), # int channels 
 )
 
-# Creates header and allocates data
-def cvCreateImage(*args):
-    """IplImage* cvCreateImage(CvSize size, int depth, int channels)
+def cvCreateImage(size, depth, channels):
+    """IplImage cvCreateImage(CvSize size, int depth, int channels)
 
     Creates header and allocates data
     """
-    z = _cvCreateImage(*args)
-    sdAdd_autoclean(z, _cvReleaseImage)
+    z = deref(_cvCreateImage(size, depth, channels))
+    z._owner = 2 # both header and data
     return z
 
-# Releases image header
-cvReleaseImageHeader = cvFree
-    
-# Releases header and image data
-cvReleaseImage = cvFree
-
+# Makes a full copy of image (widthStep may differ)
 _cvCloneImage = cfunc('cvCloneImage', _cxDLL, IplImage_p,
-    ('image', IplImage_p, 1), # const IplImage* image 
+    ('image', IplImage_r, 1), # const IplImage* image 
 )
 
-# Makes a full copy of image (widthStep may differ)
-def cvCloneImage(*args):
-    """IplImage* cvCloneImage(const IplImage* image)
+def cvCloneImage(image):
+    """IplImage cvCloneImage(const IplImage image)
 
     Makes a full copy of image (widthStep may differ)
     """
-    z = _cvCloneImage(*args)
-    sdAdd_autoclean(z, _cvReleaseImage)
+    z = deref(_cvCloneImage(image))
+    z._owner = 2 # as a clone, z owns both header and data
     return z
 
 # Sets channel of interest to given value
 cvSetImageCOI = cfunc('cvSetImageCOI', _cxDLL, None,
-    ('image', IplImage_p, 1), # IplImage* image
+    ('image', IplImage_r, 1), # IplImage* image
     ('coi', c_int, 1), # int coi 
 )
-cvSetImageCOI.__doc__ = """void cvSetImageCOI(IplImage* image, int coi)
+cvSetImageCOI.__doc__ = """void cvSetImageCOI(IplImage image, int coi)
 
 Sets channel of interest to given value
 """
 
 # Returns index of channel of interest
 cvGetImageCOI = cfunc('cvGetImageCOI', _cxDLL, c_int,
-    ('image', IplImage_p, 1), # const IplImage* image 
+    ('image', IplImage_r, 1), # const IplImage* image 
 )
-cvGetImageCOI.__doc__ = """int cvGetImageCOI(const IplImage* image)
+cvGetImageCOI.__doc__ = """int cvGetImageCOI(const IplImage image)
 
 Returns index of channel of interest
 """
 
 # Sets image ROI to given rectangle
 cvSetImageROI = cfunc('cvSetImageROI', _cxDLL, None,
-    ('image', IplImage_p, 1), # IplImage* image
+    ('image', IplImage_r, 1), # IplImage* image
     ('rect', CvRect, 1), # CvRect rect 
 )
-cvSetImageROI.__doc__ = """void cvSetImageROI(IplImage* image, CvRect rect)
+cvSetImageROI.__doc__ = """void cvSetImageROI(IplImage image, CvRect rect)
 
 Sets image ROI to given rectangle
 """
 
 # Releases image ROI
 cvResetImageROI = cfunc('cvResetImageROI', _cxDLL, None,
-    ('image', IplImage_p, 1), # IplImage* image 
+    ('image', IplImage_r, 1), # IplImage* image 
 )
-cvResetImageROI.__doc__ = """void cvResetImageROI(IplImage* image)
+cvResetImageROI.__doc__ = """void cvResetImageROI(IplImage image)
 
 Releases image ROI
 """
 
 # Returns image ROI coordinates
 cvGetImageROI = cfunc('cvGetImageROI', _cxDLL, CvRect,
-    ('image', IplImage_p, 1), # const IplImage* image 
+    ('image', IplImage_r, 1), # const IplImage* image 
 )
-cvGetImageROI.__doc__ = """CvRect cvGetImageROI(const IplImage* image)
+cvGetImageROI.__doc__ = """CvRect cvGetImageROI(const IplImage image)
 
 Returns image ROI coordinates
 """
 
+# Deallocates matrix
 _cvReleaseMat = cfunc('cvReleaseMat', _cxDLL, None,
     ('mat', ByRefArg(CvMat_p), 1), # CvMat** mat 
 )
 
+# Creates new matrix header
 _cvCreateMatHeader = cfunc('cvCreateMatHeader', _cxDLL, CvMat_p,
     ('rows', c_int, 1), # int rows
     ('cols', c_int, 1), # int cols
     ('type', c_int, 1), # int type 
 )
 
-# Creates new matrix header
-def cvCreateMatHeader(*args):
-    """CvMat* cvCreateMatHeader(int rows, int cols, int type)
+def cvCreateMatHeader(rows, cols, cvmat_type):
+    """CvMat cvCreateMatHeader(int rows, int cols, int type)
 
     Creates new matrix header
     """
-    z = _cvCreateMatHeader(*args)
-    sdAdd_autoclean(z, _cvReleaseMat)
+    z = deref(_cvCreateMatHeader(rows, cols, cvmat_type))
+    z._owner = True
     return z
 
 CV_AUTOSTEP = 0x7fffffff
 
 # Initializes matrix header
-cvInitMatHeader = cfunc('cvInitMatHeader', _cxDLL, CvMat_p,
-    ('mat', CvMat_p, 1), # CvMat* mat
+_cvInitMatHeader = cfunc('cvInitMatHeader', _cxDLL, CvMat_p,
+    ('mat', CvMat_r, 1), # CvMat* mat
     ('rows', c_int, 1), # int rows
     ('cols', c_int, 1), # int cols
     ('type', c_int, 1), # int type
     ('data', c_void_p, 1, None), # void* data
-    ('step', c_int, 1), # int step
+    ('step', c_int, 1, CV_AUTOSTEP), # int step
 )
-cvInitMatHeader.__doc__ = """CvMat* cvInitMatHeader(CvMat* mat, int rows, int cols, int type, void* data=NULL, int step=CV_AUTOSTEP)
 
-Initializes matrix header
-"""
+def cvInitMatHeader(mat, rows, cols, cvmat_type, data=None, step=CV_AUTOSTEP):
+    """CvMat cvInitMatHeader(CvMat mat, int rows, int cols, int type, void* data=NULL, int step=CV_AUTOSTEP)
 
+    Initializes matrix header
+    """
+    _cvInitMatHeader(mat, rows, cols, cvmat_type, data=data, step=step)
+    if data is not None:
+        mat._depends = (data,)
+    return mat
+
+# Creates new matrix
 _cvCreateMat = cfunc('cvCreateMat', _cxDLL, CvMat_p,
     ('rows', c_int, 1), # int rows
     ('cols', c_int, 1), # int cols
     ('type', c_int, 1), # int type 
 )
 
-# Creates new matrix
-def cvCreateMat(*args):
-    """CvMat* cvCreateMat(int rows, int cols, int type)
+def cvCreateMat(rows, cols, cvmat_type):
+    """CvMat cvCreateMat(int rows, int cols, int type)
 
     Creates new matrix
     """
-    z = _cvCreateMat(*args)
-    sdAdd_autoclean(z, _cvReleaseMat)
+    z = deref(_cvCreateMat(rows, cols, cvmat_type))
+    z._owner = True
     return z
-
-# Deallocates matrix
-cvReleaseMat = cvFree    
 
 # Minh-Tri's helpers
 def cvCreateMatFromCvPoint2D32fList(points):
-    """CvMat* cvCreateMatFromCvPoint2D32fList(list_or_tuple_of_CvPoint2D32f points)
+    """CvMat cvCreateMatFromCvPoint2D32fList(list_or_tuple_of_CvPoint2D32f points)
     
     Creates a new matrix from a list/tuple of CvPoint2D32f points
     """
@@ -1988,7 +1957,7 @@ def cvCreateMatFromCvPoint2D32fList(points):
     return z
 
 def cvCreateMatFromCvPointList(points):
-    """CvMat* cvCreateMatFromCvPointList(list_or_tuple_of_CvPoint points)
+    """CvMat cvCreateMatFromCvPointList(list_or_tuple_of_CvPoint points)
     
     Creates a new matrix from a list/tuple of CvPoint points
     """
@@ -2001,102 +1970,115 @@ def cvCreateMatFromCvPointList(points):
         y[1] = x.y
     return z
 
+# Creates matrix copy
 _cvCloneMat = cfunc('cvCloneMat', _cxDLL, CvMat_p,
-    ('mat', CvMat_p, 1), # const CvMat* mat 
+    ('mat', CvMat_r, 1), # const CvMat* mat 
 )
 
-# Creates matrix copy
-def cvCloneMat(*args):
-    """CvMat* cvCloneMat(const CvMat* mat)
+def cvCloneMat(mat):
+    """CvMat cvCloneMat(const CvMat mat)
 
     Creates matrix copy
     """
-    z = _cvCloneMat(*args)
-    sdAdd_autoclean(z, _cvReleaseMat)
+    z = deref(_cvCloneMat(mat))
+    z._owner = True
     return z
 
+# Returns matrix header corresponding to the rectangular sub-array of input image or matrix
 _cvGetSubRect = cfunc('cvGetSubRect', _cxDLL, None,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('submat', CvMat_p, 1), # CvMat* submat
+    ('arr', CvArr_r, 1), # const CvArr* arr
+    ('submat', CvMat_r, 1), # CvMat* submat
     ('rect', CvRect, 1), # CvRect rect 
 )
 
-# Returns matrix header corresponding to the rectangular sub-array of input image or matrix
-def cvGetSubRect(arr, rect, submat=None):
-    """CvMat* cvGetSubRect(const CvArr* arr, CvRect rect, CvMat* submat=NULL)
+def cvGetSubRect(arr, rect):
+    """CvMat cvGetSubRect(const CvArr arr, CvRect rect)
 
     Returns matrix header corresponding to the rectangular sub-array of input image or matrix
-    [ctypes-opencv] The format of this function is changed a bit from OpenCV to support OpenCV's pythonic interface. If submat is NULL, a new CvMat is created. Otherwise, the submat will be filled with a new header.
     """
-    if submat is None:
-        submat = pointer(CvMat())
-    _cvGetSubRect(arr, submat, rect)
-    return submat
+    z = CvMat()
+    _cvGetSubRect(arr, z, rect)
+    z._depends = (arr,) # make sure submat is deleted before arr is deleted
+    return z
 
 cvGetSubArr = cvGetSubRect
 
 # Returns array row or row span
 _cvGetRows = cfunc('cvGetRows', _cxDLL, CvMat_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('submat', CvMat_p, 1), # CvMat* submat
+    ('arr', CvArr_r, 1), # const CvArr* arr
+    ('submat', CvMat_r, 1), # CvMat* submat
     ('start_row', c_int, 1), # int start_row
     ('end_row', c_int, 1), # int end_row
     ('delta_row', c_int, 1, 1), # int delta_row
 )
 
 def cvGetRows(arr, start_row, end_row, delta_row=1):
-    """CvMat* cvGetRows(const CvArr* arr, int start_row, int end_row, int delta_row=1)
+    """CvMat cvGetRows(const CvArr arr, int start_row, int end_row, int delta_row=1)
 
     Returns array row or row span
-    [ctypes-opencv] A CvMat* is automatically created for each call.
     """
-    x = pointer(CvMat())
-    _cvGetRows(arr, x, start_row, end_row, delta_row)
-    return x
+    z = CvMat()
+    _cvGetRows(arr, z, start_row, end_row, delta_row)
+    z._depends = (arr,) # make sure submat is deleted before arr is deleted
+    return z
+    
+def cvGetRow(arr, row):
+    return cvGetRows(arr, row, row+1)
 
 # Returns array column or column span
 _cvGetCols = cfunc('cvGetCols', _cxDLL, CvMat_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('submat', CvMat_p, 1), # CvMat* submat
+    ('arr', CvArr_r, 1), # const CvArr* arr
+    ('submat', CvMat_r, 1), # CvMat* submat
     ('start_col', c_int, 1), # int start_col
     ('end_col', c_int, 1), # int end_col 
 )
 
 def cvGetCols(arr, start_col, end_col):
-    """CvMat* cvGetCols(const CvArr* arr, int start_col, int end_col)
+    """CvMat cvGetCols(const CvArr arr, int start_col, int end_col)
 
     Returns array column or column span
-    [ctypes-opencv] A CvMat* is automatically created for each call.
     """
-    x = pointer(CvMat())
-    _cvGetCols(arr, x, start_col, end_col)
-    return x
+    z = CvMat()
+    _cvGetCols(arr, z, start_col, end_col)
+    z._depends = (arr,) # make sure submat is deleted before arr is deleted
+    return z
+    
+def cvGetCol(arr, col):
+    return cvGetCols(arr, col, col+1)
 
 # Returns one of array diagonals
-cvGetDiag = cfunc('cvGetDiag', _cxDLL, CvMat_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('submat', CvMat_p, 1), # CvMat* submat
+_cvGetDiag = cfunc('cvGetDiag', _cxDLL, CvMat_p,
+    ('arr', CvArr_r, 1), # const CvArr* arr
+    ('submat', CvMat_r, 1), # CvMat* submat
     ('diag', c_int, 1, 0), # int diag
 )
-cvGetDiag.__doc__ = """CvMat* cvGetDiag(const CvArr* arr, CvMat* submat, int diag=0)
 
-Returns one of array diagonals
-"""
+def cvGetDiag(arr, diag=0):
+    """CvMat cvGetDiag(const CvArr arr, int diag=0)
 
+    Returns one of array diagonals
+    """
+    z = CvMat()
+    _cvGetDiag(arr, z, diag=diag)
+    z._depends = (arr,) # make sure submat is deleted before arr is deleted
+    return z
+
+# Creates new matrix header
 _cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, CvMatND_p,
     ('dims', c_int, 1), # int dims
     ('sizes', ListPOINTER(c_int), 1), # const int* sizes
     ('type', c_int, 1), # int type 
 )
 
-# Creates new matrix header
 def cvCreateMatNDHeader(sizes, cvmat_type):
     """CvMatND cvCreateMatNDHeader(list_or_tuple_of_int sizes, int type)
 
     Creates new matrix header
     [ctypes-opencv] returns None if CvMatND is not created
     """
-    return deref(_cvCreateMatNDHeader(len(sizes), sizes, cvmat_type))
+    z = deref(_cvCreateMatNDHeader(len(sizes), sizes, cvmat_type))
+    z._owner = True
+    return z
 
 # Creates multi-dimensional dense array
 _cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, CvMatND_p,
@@ -2111,7 +2093,9 @@ def cvCreateMatND(sizes, cvmat_type):
     Creates multi-dimensional dense array
     [ctypes-opencv] returns None if CvMatND is not created
     """
-    return deref(_cvCreateMatND(len(sizes), sizes, cvmat_type))
+    z = deref(_cvCreateMatND(len(sizes), sizes, cvmat_type))
+    z._owner = True
+    return z
 
 # Initializes multi-dimensional array header
 _cvInitMatNDHeader = cfunc('cvInitMatNDHeader', _cxDLL, CvMatND_p,
@@ -2219,27 +2203,27 @@ def cvGetNextSparseNode(mat_iterator):
 
 # Returns type of array elements
 cvGetElemType = cfunc('cvGetElemType', _cxDLL, c_int,
-    ('arr', CvArr_p, 1), # const CvArr* arr 
+    ('arr', CvArr_r, 1), # const CvArr* arr 
 )
-cvGetElemType.__doc__ = """int cvGetElemType(const CvArr* arr)
+cvGetElemType.__doc__ = """int cvGetElemType(const CvArr arr)
 
 Returns type of array elements
 """
 
 # Return number of array dimensions and their sizes or the size of particular dimension
 _cvGetDims = cfunc('cvGetDims', _cxDLL, c_int,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('sizes', c_int_p, 1, None), # int* sizes
 )
 
 _cvGetDimSize = cfunc('cvGetDimSize', _cxDLL, c_int,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('index', c_int, 1), # int index 
 )
 
 # Return a tuple of array dimensions
 def cvGetDims(arr):
-    """tuple_of_ints cvGetDims(const CvArr* arr)
+    """tuple_of_ints cvGetDims(const CvArr arr)
 
     Return a tuple of array dimensions
     """
@@ -2250,46 +2234,46 @@ def cvGetDims(arr):
 
 # Return POINTER to the particular array element
 cvPtr1D = cfunc('cvPtr1D', _cxDLL, c_void_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('type', c_int_p, 1, None), # int* type
 )
-cvPtr1D.__doc__ = """uchar* cvPtr1D(const CvArr* arr, int idx0, int* type=NULL)
+cvPtr1D.__doc__ = """uchar* cvPtr1D(const CvArr arr, int idx0, int* type=NULL)
 
 Return POINTER to the particular array element
 """
 
 cvPtr2D = cfunc('cvPtr2D', _cxDLL, c_void_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1
     ('type', c_int_p, 1, None), # int* type
 )
-cvPtr2D.__doc__ = """uchar* cvPtr2D(const CvArr* arr, int idx0, int idx1, int idx2, int* type=NULL)
+cvPtr2D.__doc__ = """uchar* cvPtr2D(const CvArr arr, int idx0, int idx1, int idx2, int* type=NULL)
 
 Return POINTER to the particular array element
 """
 
 cvPtr3D = cfunc('cvPtr3D', _cxDLL, c_void_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1
     ('idx2', c_int, 1), # int idx2
     ('type', c_int_p, 1, None), # int* type
 )
-cvPtr3D.__doc__ = """uchar* cvPtr3D(const CvArr* arr, int idx0, int idx1, int idx2, int* type=NULL)
+cvPtr3D.__doc__ = """uchar* cvPtr3D(const CvArr arr, int idx0, int idx1, int idx2, int* type=NULL)
 
 Return POINTER to the particular array element
 """
 
 cvPtrND = cfunc('cvPtrND', _cxDLL, c_void_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx', c_int_p, 1), # int* idx
     ('type', c_int_p, 1, None), # int* type
     ('create_node', c_int, 1, 1), # int create_node
     ('precalc_hashval', POINTER(c_uint32), 1, None), # unsigned* precalc_hashval
 )
-cvPtrND.__doc__ = """uchar* cvPtrND(const CvArr* arr, int* idx, int* type=NULL, int create_node=1, int* precalc_hashval=NULL)
+cvPtrND.__doc__ = """uchar* cvPtrND(const CvArr arr, int* idx, int* type=NULL, int create_node=1, int* precalc_hashval=NULL)
 
 Return POINTER to the particular array element
 """
@@ -2297,203 +2281,228 @@ Return POINTER to the particular array element
 
 # Return the particular array element
 cvGet1D = cfunc('cvGet1D', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0 
 )
-cvGet1D.__doc__ = """CvScalar cvGet1D(const CvArr* arr, int idx0)
+cvGet1D.__doc__ = """CvScalar cvGet1D(const CvArr arr, int idx0)
 
 Return the particular array element
 """
 
 cvGet2D = cfunc('cvGet2D', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1 
 )
-cvGet2D.__doc__ = """CvScalar cvGet2D(const CvArr* arr, int idx0, int idx1)
+cvGet2D.__doc__ = """CvScalar cvGet2D(const CvArr arr, int idx0, int idx1)
 
 Return the particular array element
 """
 
 cvGet3D = cfunc('cvGet3D', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1
     ('idx2', c_int, 1), # int idx2 
 )
-cvGet3D.__doc__ = """CvScalar cvGet3D(const CvArr* arr, int idx0, int idx1, int idx2)
+cvGet3D.__doc__ = """CvScalar cvGet3D(const CvArr arr, int idx0, int idx1, int idx2)
 
 Return the particular array element
 """
 
 cvGetND = cfunc('cvGetND', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx', c_int_p, 1), # int* idx 
 )
-cvGetND.__doc__ = """CvScalar cvGetND(const CvArr* arr, int* idx)
+cvGetND.__doc__ = """CvScalar cvGetND(const CvArr arr, int* idx)
 
 Return the particular array element
 """
 
 # Return the particular element of single-channel array
 cvGetReal1D = cfunc('cvGetReal1D', _cxDLL, c_double,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0 
 )
-cvGetReal1D.__doc__ = """double cvGetReal1D(const CvArr* arr, int idx0)
+cvGetReal1D.__doc__ = """double cvGetReal1D(const CvArr arr, int idx0)
 
 Return the particular element of single-channel array
 """
 
 cvGetReal2D = cfunc('cvGetReal2D', _cxDLL, c_double,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1 
 )
-cvGetReal2D.__doc__ = """double cvGetReal2D(const CvArr* arr, int idx0, int idx1)
+cvGetReal2D.__doc__ = """double cvGetReal2D(const CvArr arr, int idx0, int idx1)
 
 Return the particular element of single-channel array
 """
 
 cvGetReal3D = cfunc('cvGetReal3D', _cxDLL, c_double,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1
     ('idx2', c_int, 1), # int idx2 
 )
-cvGetReal3D.__doc__ = """double cvGetReal3D(const CvArr* arr, int idx0, int idx1, int idx2)
+cvGetReal3D.__doc__ = """double cvGetReal3D(const CvArr arr, int idx0, int idx1, int idx2)
 
 Return the particular element of single-channel array
 """
 
 cvGetRealND = cfunc('cvGetRealND', _cxDLL, c_double,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('idx', c_int_p, 1), # int* idx 
 )
-cvGetRealND.__doc__ = """double cvGetRealND(const CvArr* arr, int* idx)
+cvGetRealND.__doc__ = """double cvGetRealND(const CvArr arr, int* idx)
 
 Return the particular element of single-channel array
 """
 
 # Change the particular array element
 cvSet1D = cfunc('cvSet1D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('value', CvScalar, 1), # CvScalar value 
 )
-cvSet1D.__doc__ = """void cvSet1D(CvArr* arr, int idx0, CvScalar value)
+cvSet1D.__doc__ = """void cvSet1D(CvArr arr, int idx0, CvScalar value)
 
 Change the particular array element
 """
 
 cvSet2D = cfunc('cvSet2D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1
     ('value', CvScalar, 1), # CvScalar value 
 )
-cvSet2D.__doc__ = """void cvSet2D(CvArr* arr, int idx0, int idx1, CvScalar value)
+cvSet2D.__doc__ = """void cvSet2D(CvArr arr, int idx0, int idx1, CvScalar value)
 
 Change the particular array element
 """
 
 cvSet3D = cfunc('cvSet3D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1
     ('idx2', c_int, 1), # int idx2
     ('value', CvScalar, 1), # CvScalar value 
 )
-cvSet3D.__doc__ = """void cvSet3D(CvArr* arr, int idx0, int idx1, int idx2, CvScalar value)
+cvSet3D.__doc__ = """void cvSet3D(CvArr arr, int idx0, int idx1, int idx2, CvScalar value)
 
 Change the particular array element
 """
 
 cvSetND = cfunc('cvSetND', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('idx', c_int_p, 1), # int* idx
     ('value', CvScalar, 1), # CvScalar value 
 )
-cvSetND.__doc__ = """void cvSetND(CvArr* arr, int* idx, CvScalar value)
+cvSetND.__doc__ = """void cvSetND(CvArr arr, int* idx, CvScalar value)
 
 Change the particular array element
 """
 
 # Change the particular array element
 cvSetReal1D = cfunc('cvSetReal1D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('value', c_double, 1), # double value 
 )
-cvSetReal1D.__doc__ = """void cvSetReal1D(CvArr* arr, int idx0, double value)
+cvSetReal1D.__doc__ = """void cvSetReal1D(CvArr arr, int idx0, double value)
 
 Change the particular array element
 """
 
 cvSetReal2D = cfunc('cvSetReal2D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1
     ('value', c_double, 1), # double value 
 )
-cvSetReal2D.__doc__ = """void cvSetReal2D(CvArr* arr, int idx0, int idx1, double value)
+cvSetReal2D.__doc__ = """void cvSetReal2D(CvArr arr, int idx0, int idx1, double value)
 
 Change the particular array element
 """
 
 cvSetReal3D = cfunc('cvSetReal3D', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('idx0', c_int, 1), # int idx0
     ('idx1', c_int, 1), # int idx1
     ('idx2', c_int, 1), # int idx2
     ('value', c_double, 1), # double value 
 )
-cvSetReal3D.__doc__ = """void cvSetReal3D(CvArr* arr, int idx0, int idx1, int idx2, double value)
+cvSetReal3D.__doc__ = """void cvSetReal3D(CvArr arr, int idx0, int idx1, int idx2, double value)
 
 Change the particular array element
 """
 
 cvSetRealND = cfunc('cvSetRealND', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('idx', c_int_p, 1), # int* idx
     ('value', c_double, 1), # double value 
 )
-cvSetRealND.__doc__ = """void cvSetRealND(CvArr* arr, int* idx, double value)
+cvSetRealND.__doc__ = """void cvSetRealND(CvArr arr, int* idx, double value)
 
 Change the particular array element
 """
 
 # Clears the particular array element
 cvClearND = cfunc('cvClearND', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('idx', c_int_p, 1), # int* idx 
 )
-cvClearND.__doc__ = """void cvClearND(CvArr* arr, int* idx)
+cvClearND.__doc__ = """void cvClearND(CvArr arr, int* idx)
 
 Clears the particular array element
 """
 
 # Returns matrix header for arbitrary array
-cvGetMat = cfunc('cvGetMat', _cxDLL, CvMat_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('header', CvMat_p, 1), # CvMat* header
-    ('coi', c_int_p, 1, None), # int* coi
+_cvGetMat = cfunc('cvGetMat', _cxDLL, CvMat_p,
+    ('arr', CvArr_r, 1), # const CvArr* arr
+    ('header', CvMat_r, 1), # CvMat* header
+    ('coi', ByRefArg(c_int), 1, None), # int* coi
     ('allowND', c_int, 1, 0), # int allowND
 )
-cvGetMat.__doc__ = """CvMat* cvGetMat(const CvArr* arr, CvMat* header, int* coi=NULL, int allowND=0)
 
-Returns matrix header for arbitrary array
-"""
+def cvGetMat(arr, allowND=0):
+    """CvMat cvGetMat(const CvArr arr, int allowND=0)
+
+    Returns matrix header for arbitrary array
+    """
+    z = CvMat()
+    _cvGetMat(arr, z, allowND=allowND)
+    z._depends = (arr,)
+    return z
+
+def cvGetMatWithCoi(arr, allowND=0):
+    """(CvMat, int coi) = cvGetMatWithCoi(const CvArr arr, int allowND=0)
+
+    Returns matrix header for arbitrary array, and the COI
+    """
+    coi = c_int()
+    z = CvMat()
+    _cvGetMat(arr, z, coi=coi, allowND=allowND)
+    z._depends = (arr,)
+    return (z, coi.value)
 
 # Returns image header for arbitrary array
-cvGetImage = cfunc('cvGetImage', _cxDLL, IplImage_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('image_header', IplImage_p, 1), # IplImage* image_header 
+_cvGetImage = cfunc('cvGetImage', _cxDLL, IplImage_p,
+    ('arr', CvArr_r, 1), # const CvArr* arr
+    ('image_header', IplImage_r, 1), # IplImage* image_header 
 )
-cvGetImage.__doc__ = """IplImage* cvGetImage(const CvArr* arr, IplImage* image_header)
 
-Returns image header for arbitrary array
-"""
+def cvGetImage(arr):
+    """IplImage cvGetImage(const CvArr arr)
+
+    Returns image header for arbitrary array
+    [ctypes-opencv] returns None if arr cannot be converted into IplImage
+    """
+    z = IplImage()
+    _cvGetImage(arr, z)
+    z._owner = 0 # owns nothing, no need to call cvReleaseImage...() at deconstruction
+    z._depends = (arr,) # make sure arr is deleted after z is deleted
+    return z
 
 
 #-----------------------------------------------------------------------------
@@ -2503,36 +2512,42 @@ Returns image header for arbitrary array
 
 # Changes shape of multi-dimensional array w/o copying data
 cvReshapeMatND = cfunc('cvReshapeMatND', _cxDLL, c_void_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('sizeof_header', c_int, 1), # int sizeof_header
-    ('header', CvArr_p, 1), # CvArr* header
+    ('header', CvArr_r, 1), # CvArr* header
     ('new_cn', c_int, 1), # int new_cn
     ('new_dims', c_int, 1), # int new_dims
     ('new_sizes', c_int_p, 1), # int* new_sizes 
 )
-cvReshapeMatND.__doc__ = """CvArr* cvReshapeMatND(const CvArr* arr, int sizeof_header, CvArr* header, int new_cn, int new_dims, int* new_sizes)
+cvReshapeMatND.__doc__ = """CvArr cvReshapeMatND(const CvArr arr, int sizeof_header, CvArr header, int new_cn, int new_dims, int* new_sizes)
 
 Changes shape of multi-dimensional array w/o copying data
 """
 
 # Changes shape of matrix/image without copying data
-cvReshape = cfunc('cvReshape', _cxDLL, CvMat_p,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('header', CvMat_p, 1), # CvMat* header
+_cvReshape = cfunc('cvReshape', _cxDLL, CvMat_p,
+    ('arr', CvArr_r, 1), # const CvArr* arr
+    ('header', CvMat_r, 1), # CvMat* header
     ('new_cn', c_int, 1), # int new_cn
     ('new_rows', c_int, 1, 0), # int new_rows
 )
-cvReshape.__doc__ = """CvMat* cvReshape(const CvArr* arr, CvMat* header, int new_cn, int new_rows=0)
 
-Changes shape of matrix/image without copying data
-"""
+def cvReshape(arr, new_cn, new_rows=0):
+    """CvMat cvReshape(const CvArr arr, int new_cn, int new_rows=0)
+
+    Changes shape of matrix/image without copying data
+    """
+    z = CvMat()
+    _cvReshape(arr, z, new_cn, new_rows=new_rows)
+    z._depends = (arr,)
+    return z
 
 # Fill destination array with tiled source array
 cvRepeat = cfunc('cvRepeat', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvRepeat.__doc__ = """void cvRepeat(const CvArr* src, CvArr* dst)
+cvRepeat.__doc__ = """void cvRepeat(const CvArr src, CvArr dst)
 
 Fill destination array with tiled source array
 """
@@ -2545,50 +2560,50 @@ Fill destination array with tiled source array
 
 # Allocates array data
 cvCreateData = cfunc('cvCreateData', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr 
+    ('arr', CvArr_r, 1), # CvArr* arr 
 )
-cvCreateData.__doc__ = """void cvCreateData(CvArr* arr)
+cvCreateData.__doc__ = """void cvCreateData(CvArr arr)
 
 Allocates array data
 """
 
 # Releases array data
 cvReleaseData = cfunc('cvReleaseData', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr 
+    ('arr', CvArr_r, 1), # CvArr* arr 
 )
-cvReleaseData.__doc__ = """void cvReleaseData(CvArr* arr)
+cvReleaseData.__doc__ = """void cvReleaseData(CvArr arr)
 
 Releases array data
 """
 
 # Assigns user data to the array header
 cvSetData = cfunc('cvSetData', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('data', c_void_p, 1), # void* data
     ('step', c_int, 1), # int step 
 )
-cvSetData.__doc__ = """void cvSetData(CvArr* arr, void* data, int step)
+cvSetData.__doc__ = """void cvSetData(CvArr arr, void* data, int step)
 
 Assigns user data to the array header
 """
 
 # Retrieves low-level information about the array
 cvGetRawData = cfunc('cvGetRawData', _cxDLL, None,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('data', POINTER(POINTER(c_byte)), 1), # uchar** data
     ('step', c_int_p, 1, None), # int* step
     ('roi_size', CvSize_r, 1, None), # CvSize* roi_size
 )
-cvGetRawData.__doc__ = """void cvGetRawData(const CvArr* arr, uchar** data, int* step=NULL, CvSize roi_size=NULL)
+cvGetRawData.__doc__ = """void cvGetRawData(const CvArr arr, uchar** data, int* step=NULL, CvSize roi_size=NULL)
 
 Retrieves low-level information about the array
 """
 
 # Returns size of matrix or image ROI
 cvGetSize = cfunc('cvGetSize', _cxDLL, CvSize,
-    ('arr', CvArr_p, 1), # const CvArr* arr 
+    ('arr', CvArr_r, 1), # const CvArr* arr 
 )
-cvGetSize.__doc__ = """CvSize cvGetSize(const CvArr* arr)
+cvGetSize.__doc__ = """CvSize cvGetSize(const CvArr arr)
 
 Returns size of matrix or image ROI
 """
@@ -2601,31 +2616,31 @@ Returns size of matrix or image ROI
 
 # Copies one array to another
 cvCopy = cfunc('cvCopy', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvCopy.__doc__ = """void cvCopy(const CvArr* src, CvArr* dst, const CvArr* mask=NULL)
+cvCopy.__doc__ = """void cvCopy(const CvArr src, CvArr dst, const CvArr mask=NULL)
 
 Copies one array to another
 """
 
 # Sets every element of array to given value
 cvSet = cfunc('cvSet', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('value', CvScalar, 1), # CvScalar value
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvSet.__doc__ = """void cvSet(CvArr* arr, CvScalar value, const CvArr* mask=NULL)
+cvSet.__doc__ = """void cvSet(CvArr arr, CvScalar value, const CvArr mask=NULL)
 
 Sets every element of array to given value
 """
 
 # Clears the array
 cvSetZero = cfunc('cvSetZero', _cxDLL, None,
-    ('arr', CvArr_p, 1), # CvArr* arr 
+    ('arr', CvArr_r, 1), # CvArr* arr 
 )
-cvSetZero.__doc__ = """void cvSetZero(CvArr* arr)
+cvSetZero.__doc__ = """void cvSetZero(CvArr arr)
 
 Clears the array
 """
@@ -2640,35 +2655,35 @@ cvZero = cvSetZero
 
 # Divides multi-channel array into several single-channel arrays or extracts a single channel from the array
 cvSplit = cfunc('cvSplit', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst0', CvArr_p, 1, None), # CvArr* dst0
-    ('dst1', CvArr_p, 1, None), # CvArr* dst1
-    ('dst2', CvArr_p, 1, None), # CvArr* dst2
-    ('dst3', CvArr_p, 1, None), # CvArr* dst3
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst0', CvArr_r, 1, None), # CvArr* dst0
+    ('dst1', CvArr_r, 1, None), # CvArr* dst1
+    ('dst2', CvArr_r, 1, None), # CvArr* dst2
+    ('dst3', CvArr_r, 1, None), # CvArr* dst3
 )
-cvSplit.__doc__ = """void cvSplit(const CvArr* src, CvArr* dst0, CvArr* dst1, CvArr* dst2, CvArr* dst3)
+cvSplit.__doc__ = """void cvSplit(const CvArr src, CvArr dst0, CvArr dst1, CvArr dst2, CvArr dst3)
 
 Divides multi-channel array into several single-channel arrays or extracts a single channel from the array
 """
 
 # Composes multi-channel array from several single-channel arrays or inserts a single channel into the array
 cvMerge = cfunc('cvMerge', _cxDLL, None,
-    ('src0', CvArr_p, 1), # const CvArr* src0
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('src3', CvArr_p, 1), # const CvArr* src3
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src0', CvArr_r, 1), # const CvArr* src0
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('src3', CvArr_r, 1), # const CvArr* src3
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvMerge.__doc__ = """void cvMerge(const CvArr* src0, const CvArr* src1, const CvArr* src2, const CvArr* src3, CvArr* dst)
+cvMerge.__doc__ = """void cvMerge(const CvArr src0, const CvArr src1, const CvArr src2, const CvArr src3, CvArr dst)
 
 Composes multi-channel array from several single-channel arrays or inserts a single channel into the array
 """
 
 # Copies several channels from input arrays to certain channels of output arrays
 _cvMixChannels = cfunc('cvMixChannels', _cxDLL, None,
-    ('src', ListPOINTER(CvArr_p), 1), # const CvArr** src
+    ('src', ListPOINTER(CvArr_p), 1), # const CvArr*** src
     ('src_count', c_int, 1), # int src_count
-    ('dst', ListPOINTER(CvArr_p), 1), # CvArr** dst
+    ('dst', ListPOINTER(CvArr_p), 1), # CvArr*** dst
     ('dst_count', c_int, 1), # int dst_count
     ('from_to', ListPOINTER(c_int), 1), # const int* from_to
     ('pair_count', c_int, 1), # int pair_count
@@ -2689,12 +2704,12 @@ def cvMixChannels(src, dst, from_to):
 
 # Converts one array to another with optional linear transformation
 cvConvertScale = cfunc('cvConvertScale', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('scale', c_double, 1, 1), # double scale
     ('shift', c_double, 1, 0), # double shift
 )
-cvConvertScale.__doc__ = """void cvConvertScale(const CvArr* src, CvArr* dst, double scale=1, double shift=0)
+cvConvertScale.__doc__ = """void cvConvertScale(const CvArr src, CvArr dst, double scale=1, double shift=0)
 
 Converts one array to another with optional linear transformation
 """
@@ -2708,12 +2723,12 @@ def cvConvert(src, dst):
 
 # Converts input array elements to 8-bit unsigned integer another with optional linear transformation
 cvConvertScaleAbs = cfunc('cvConvertScaleAbs', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('scale', c_double, 1, 1), # double scale
     ('shift', c_double, 1, 0), # double shift
 )
-cvConvertScaleAbs.__doc__ = """void cvConvertScaleAbs(const CvArr* src, CvArr* dst, double scale=1, double shift=0)
+cvConvertScaleAbs.__doc__ = """void cvConvertScaleAbs(const CvArr src, CvArr dst, double scale=1, double shift=0)
 
 Converts input array elements to 8-bit unsigned integer another with optional linear transformation
 """
@@ -2741,54 +2756,54 @@ cvCheckTermCriteria = cfunc('cvCheckTermCriteria', _cxDLL, CvTermCriteria,
 
 # Performs look-up table transform of array
 cvLUT = cfunc('cvLUT', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('lut', CvArr_p, 1), # const CvArr* lut 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('lut', CvArr_r, 1), # const CvArr* lut 
 )
-cvLUT.__doc__ = """void cvLUT(const CvArr* src, CvArr* dst, const CvArr* lut)
+cvLUT.__doc__ = """void cvLUT(const CvArr src, CvArr dst, const CvArr lut)
 
 Performs look-up table transform of array
 """
 
 # Computes per-element sum of two arrays
 cvAdd = cfunc('cvAdd', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvAdd.__doc__ = """void cvAdd(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
+cvAdd.__doc__ = """void cvAdd(const CvArr src1, const CvArr src2, CvArr dst, const CvArr mask=NULL)
 
 Computes per-element sum of two arrays
 """
 
 # Computes sum of array and scalar
 cvAddS = cfunc('cvAddS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
+    ('src', CvArr_r, 1), # const CvArr* src
     ('value', CvScalar, 1), # CvScalar value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvAddS.__doc__ = """void cvAddS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
+cvAddS.__doc__ = """void cvAddS(const CvArr src, CvScalar value, CvArr dst, const CvArr mask=NULL)
 
 Computes sum of array and scalar
 """
 
 # Computes per-element difference between two arrays
 cvSub = cfunc('cvSub', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvSub.__doc__ = """void cvSub(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
+cvSub.__doc__ = """void cvSub(const CvArr src1, const CvArr src2, CvArr dst, const CvArr mask=NULL)
 
 Computes per-element difference between two arrays
 """
 
 # Computes difference between array and scalar
 def cvSubS(src, value, dst, mask=None):
-    """void cvSubS( const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL )
+    """void cvSubS( const CvArr src, CvScalar value, CvArr dst, const CvArr mask=NULL )
 
     Computes difference between array and scalar
     """
@@ -2797,179 +2812,179 @@ def cvSubS(src, value, dst, mask=None):
 
 # Computes difference between scalar and array
 cvSubRS = cfunc('cvSubRS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
+    ('src', CvArr_r, 1), # const CvArr* src
     ('value', CvScalar, 1), # CvScalar value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvSubRS.__doc__ = """void cvSubRS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
+cvSubRS.__doc__ = """void cvSubRS(const CvArr src, CvScalar value, CvArr dst, const CvArr mask=NULL)
 
 Computes difference between scalar and array
 """
 
 # Calculates per-element product of two arrays
 cvMul = cfunc('cvMul', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('scale', c_double, 1, 1), # double scale
 )
-cvMul.__doc__ = """void cvMul(const CvArr* src1, const CvArr* src2, CvArr* dst, double scale=1)
+cvMul.__doc__ = """void cvMul(const CvArr src1, const CvArr src2, CvArr dst, double scale=1)
 
 Calculates per-element product of two arrays
 """
 
 # Performs per-element division of two arrays
 cvDiv = cfunc('cvDiv', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('scale', c_double, 1, 1), # double scale
 )
-cvDiv.__doc__ = """void cvDiv(const CvArr* src1, const CvArr* src2, CvArr* dst, double scale=1)
+cvDiv.__doc__ = """void cvDiv(const CvArr src1, const CvArr src2, CvArr dst, double scale=1)
 
 Performs per-element division of two arrays
 """
 
 # Calculates sum of scaled array and another array
 cvScaleAdd = cfunc('cvScaleAdd', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src1', CvArr_r, 1), # const CvArr* src1
     ('scale', CvScalar, 1), # CvScalar scale
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
 
-cvScaleAdd.__doc__ = """void cvScaleAdd(const CvArr* src1, CvScalar scale, const CvArr* src2, CvArr* dst)
+cvScaleAdd.__doc__ = """void cvScaleAdd(const CvArr src1, CvScalar scale, const CvArr src2, CvArr dst)
 
 Calculates sum of scaled array and another array
 """
 
 # Computes weighted sum of two arrays
 cvAddWeighted = cfunc('cvAddWeighted', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
+    ('src1', CvArr_r, 1), # const CvArr* src1
     ('alpha', c_double, 1), # double alpha
-    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('src2', CvArr_r, 1), # const CvArr* src2
     ('beta', c_double, 1), # double beta
     ('gamma', c_double, 1), # double gamma
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvAddWeighted.__doc__ = """void cvAddWeighted(const CvArr* src1, double alpha, const CvArr* src2, double beta, double gamma, CvArr* dst)
+cvAddWeighted.__doc__ = """void cvAddWeighted(const CvArr src1, double alpha, const CvArr src2, double beta, double gamma, CvArr dst)
 
 Computes weighted sum of two arrays
 """
 
 # Calculates dot product of two arrays in Euclidian metrics
 cvDotProduct = cfunc('cvDotProduct', _cxDLL, c_double,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2 
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2 
 )
-cvDotProduct.__doc__ = """double cvDotProduct(const CvArr* src1, const CvArr* src2)
+cvDotProduct.__doc__ = """double cvDotProduct(const CvArr src1, const CvArr src2)
 
 Calculates dot product of two arrays in Euclidian metrics
 """
 
 # Calculates per-element bit-wise conjunction of two arrays
 cvAnd = cfunc('cvAnd', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvAnd.__doc__ = """void cvAnd(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
+cvAnd.__doc__ = """void cvAnd(const CvArr src1, const CvArr src2, CvArr dst, const CvArr mask=NULL)
 
 Calculates per-element bit-wise conjunction of two arrays
 """
 
 # Calculates per-element bit-wise conjunction of array and scalar
 cvAndS = cfunc('cvAndS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
+    ('src', CvArr_r, 1), # const CvArr* src
     ('value', CvScalar, 1), # CvScalar value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvAndS.__doc__ = """void cvAndS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
+cvAndS.__doc__ = """void cvAndS(const CvArr src, CvScalar value, CvArr dst, const CvArr mask=NULL)
 
 Calculates per-element bit-wise conjunction of array and scalar
 """
 
 # Calculates per-element bit-wise disjunction of two arrays
 cvOr = cfunc('cvOr', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvOr.__doc__ = """void cvOr(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
+cvOr.__doc__ = """void cvOr(const CvArr src1, const CvArr src2, CvArr dst, const CvArr mask=NULL)
 
 Calculates per-element bit-wise disjunction of two arrays
 """
 
 # Calculates per-element bit-wise disjunction of array and scalar
 cvOrS = cfunc('cvOrS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
+    ('src', CvArr_r, 1), # const CvArr* src
     ('value', CvScalar, 1), # CvScalar value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvOrS.__doc__ = """void cvOrS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
+cvOrS.__doc__ = """void cvOrS(const CvArr src, CvScalar value, CvArr dst, const CvArr mask=NULL)
 
 Calculates per-element bit-wise disjunction of array and scalar
 """
 
 # Performs per-element bit-wise "exclusive or" operation on two arrays
 cvXor = cfunc('cvXor', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvXor.__doc__ = """void cvXor(const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask=NULL)
+cvXor.__doc__ = """void cvXor(const CvArr src1, const CvArr src2, CvArr dst, const CvArr mask=NULL)
 
 Performs per-element bit-wise "exclusive or" operation on two arrays
 """
 
 # Performs per-element bit-wise "exclusive or" operation on array and scalar
 cvXorS = cfunc('cvXorS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
+    ('src', CvArr_r, 1), # const CvArr* src
     ('value', CvScalar, 1), # CvScalar value
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvXorS.__doc__ = """void cvXorS(const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask=NULL)
+cvXorS.__doc__ = """void cvXorS(const CvArr src, CvScalar value, CvArr dst, const CvArr mask=NULL)
 
 Performs per-element bit-wise "exclusive or" operation on array and scalar
 """
 
 # Performs per-element bit-wise inversion of array elements
 cvNot = cfunc('cvNot', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvNot.__doc__ = """void cvNot(const CvArr* src, CvArr* dst)
+cvNot.__doc__ = """void cvNot(const CvArr src, CvArr dst)
 
 Performs per-element bit-wise inversion of array elements
 """
 
 # Checks that array elements lie between elements of two other arrays
 cvInRange = cfunc('cvInRange', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('lower', CvArr_p, 1), # const CvArr* lower
-    ('upper', CvArr_p, 1), # const CvArr* upper
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('lower', CvArr_r, 1), # const CvArr* lower
+    ('upper', CvArr_r, 1), # const CvArr* upper
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvInRange.__doc__ = """void cvInRange(const CvArr* src, const CvArr* lower, const CvArr* upper, CvArr* dst)
+cvInRange.__doc__ = """void cvInRange(const CvArr src, const CvArr lower, const CvArr upper, CvArr dst)
 
 Checks that array elements lie between elements of two other arrays
 """
 
 # Checks that array elements lie between two scalars
 cvInRangeS = cfunc('cvInRangeS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
+    ('src', CvArr_r, 1), # const CvArr* src
     ('lower', CvScalar, 1), # CvScalar lower
     ('upper', CvScalar, 1), # CvScalar upper
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvInRangeS.__doc__ = """void cvInRangeS(const CvArr* src, CvScalar lower, CvScalar upper, CvArr* dst)
+cvInRangeS.__doc__ = """void cvInRangeS(const CvArr src, CvScalar lower, CvScalar upper, CvArr dst)
 
 Checks that array elements lie between two scalars
 """
@@ -2983,96 +2998,96 @@ CV_CMP_NE = 5
 
 # Performs per-element comparison of two arrays
 cvCmp = cfunc('cvCmp', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('cmp_op', c_int, 1), # int cmp_op 
 )
-cvCmp.__doc__ = """void cvCmp(const CvArr* src1, const CvArr* src2, CvArr* dst, int cmp_op)
+cvCmp.__doc__ = """void cvCmp(const CvArr src1, const CvArr src2, CvArr dst, int cmp_op)
 
 Performs per-element comparison of two arrays
 """
 
 # Performs per-element comparison of array and scalar
 cvCmpS = cfunc('cvCmpS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
+    ('src', CvArr_r, 1), # const CvArr* src
     ('value', c_double, 1), # double value
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('cmp_op', c_int, 1), # int cmp_op 
 )
-cvCmpS.__doc__ = """void cvCmpS(const CvArr* src, double value, CvArr* dst, int cmp_op)
+cvCmpS.__doc__ = """void cvCmpS(const CvArr src, double value, CvArr dst, int cmp_op)
 
 Performs per-element comparison of array and scalar
 """
 
 # Finds per-element minimum of two arrays
 cvMin = cfunc('cvMin', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvMin.__doc__ = """void cvMin(const CvArr* src1, const CvArr* src2, CvArr* dst)
+cvMin.__doc__ = """void cvMin(const CvArr src1, const CvArr src2, CvArr dst)
 
 Finds per-element minimum of two arrays
 """
 
 # Finds per-element maximum of two arrays
 cvMax = cfunc('cvMax', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvMax.__doc__ = """void cvMax(const CvArr* src1, const CvArr* src2, CvArr* dst)
+cvMax.__doc__ = """void cvMax(const CvArr src1, const CvArr src2, CvArr dst)
 
 Finds per-element maximum of two arrays
 """
 
 # Finds per-element minimum of array and scalar
 cvMinS = cfunc('cvMinS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
+    ('src', CvArr_r, 1), # const CvArr* src
     ('value', c_double, 1), # double value
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvMinS.__doc__ = """void cvMinS(const CvArr* src, double value, CvArr* dst)
+cvMinS.__doc__ = """void cvMinS(const CvArr src, double value, CvArr dst)
 
 Finds per-element minimum of array and scalar
 """
 
 # Finds per-element maximum of array and scalar
 cvMaxS = cfunc('cvMaxS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
+    ('src', CvArr_r, 1), # const CvArr* src
     ('value', c_double, 1), # double value
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvMaxS.__doc__ = """void cvMaxS(const CvArr* src, double value, CvArr* dst)
+cvMaxS.__doc__ = """void cvMaxS(const CvArr src, double value, CvArr dst)
 
 Finds per-element maximum of array and scalar
 """
 
 # Calculates absolute difference between two arrays
 cvAbsDiff = cfunc('cvAbsDiff', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvAbsDiff.__doc__ = """void cvAbsDiff(const CvArr* src1, const CvArr* src2, CvArr* dst)
+cvAbsDiff.__doc__ = """void cvAbsDiff(const CvArr src1, const CvArr src2, CvArr dst)
 
 Calculates absolute difference between two arrays
 """
 
 # Calculates absolute difference between array and scalar
 cvAbsDiffS = cfunc('cvAbsDiffS', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('value', CvScalar, 1), # CvScalar value 
 )
-cvAbsDiffS.__doc__ = """void cvAbsDiffS(const CvArr* src, CvArr* dst, CvScalar value)
+cvAbsDiffS.__doc__ = """void cvAbsDiffS(const CvArr src, CvArr dst, CvScalar value)
 
 Calculates absolute difference between array and scalar
 """
 
 def cvAbs(src, dst):
-    """void cvAbs(const CvArr* src, CvArr* dst)
+    """void cvAbs(const CvArr src, CvArr dst)
     
     Calculates absolute value of every element in array
     """
@@ -3086,57 +3101,57 @@ def cvAbs(src, dst):
 
 # Calculates magnitude and/or angle of 2d vectors
 cvCartToPolar = cfunc('cvCartToPolar', _cxDLL, None,
-    ('x', CvArr_p, 1), # const CvArr* x
-    ('y', CvArr_p, 1), # const CvArr* y
-    ('magnitude', CvArr_p, 1), # CvArr* magnitude
-    ('angle', CvArr_p, 1, None), # CvArr* angle
+    ('x', CvArr_r, 1), # const CvArr* x
+    ('y', CvArr_r, 1), # const CvArr* y
+    ('magnitude', CvArr_r, 1), # CvArr* magnitude
+    ('angle', CvArr_r, 1, None), # CvArr* angle
     ('angle_in_degrees', c_int, 1, 0), # int angle_in_degrees
 )
-cvCartToPolar.__doc__ = """void cvCartToPolar(const CvArr* x, const CvArr* y, CvArr* magnitude, CvArr* angle=NULL, int angle_in_degrees=0)
+cvCartToPolar.__doc__ = """void cvCartToPolar(const CvArr x, const CvArr y, CvArr magnitude, CvArr angle=NULL, int angle_in_degrees=0)
 
 Calculates magnitude and/or angle of 2d vectors
 """
 
 # Calculates cartesian coordinates of 2d vectors represented in polar form
 cvPolarToCart = cfunc('cvPolarToCart', _cxDLL, None,
-    ('magnitude', CvArr_p, 1), # const CvArr* magnitude
-    ('angle', CvArr_p, 1), # const CvArr* angle
-    ('x', CvArr_p, 1), # CvArr* x
-    ('y', CvArr_p, 1), # CvArr* y
+    ('magnitude', CvArr_r, 1), # const CvArr* magnitude
+    ('angle', CvArr_r, 1), # const CvArr* angle
+    ('x', CvArr_r, 1), # CvArr* x
+    ('y', CvArr_r, 1), # CvArr* y
     ('angle_in_degrees', c_int, 1, 0), # int angle_in_degrees
 )
-cvPolarToCart.__doc__ = """void cvPolarToCart(const CvArr* magnitude, const CvArr* angle, CvArr* x, CvArr* y, int angle_in_degrees=0)
+cvPolarToCart.__doc__ = """void cvPolarToCart(const CvArr magnitude, const CvArr angle, CvArr x, CvArr y, int angle_in_degrees=0)
 
 Calculates cartesian coordinates of 2d vectors represented in polar form
 """
 
 # Raises every array element to power
 cvPow = cfunc('cvPow', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('power', c_double, 1), # double power 
 )
-cvPow.__doc__ = """void cvPow(const CvArr* src, CvArr* dst, double power)
+cvPow.__doc__ = """void cvPow(const CvArr src, CvArr dst, double power)
 
 Raises every array element to power
 """
 
 # Calculates exponent of every array element
 cvExp = cfunc('cvExp', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvExp.__doc__ = """void cvExp(const CvArr* src, CvArr* dst)
+cvExp.__doc__ = """void cvExp(const CvArr src, CvArr dst)
 
 Calculates exponent of every array element
 """
 
 # Calculates natural logarithm of every array element absolute value
 cvLog = cfunc('cvLog', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvLog.__doc__ = """void cvLog(const CvArr* src, CvArr* dst)
+cvLog.__doc__ = """void cvLog(const CvArr src, CvArr dst)
 
 Calculates natural logarithm of every array element absolute value
 """
@@ -3165,12 +3180,12 @@ CV_CHECK_QUIET = 2
 
 # Checks every element of input array for invalid values
 cvCheckArr = cfunc('cvCheckArr', _cxDLL, c_int,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('flags', c_int, 1, 0), # int flags
     ('min_val', c_double, 1, 0), # double min_val
     ('max_val', c_double, 1, 0), # double max_val
 )
-cvCheckArr.__doc__ = """int cvCheckArr(const CvArr* arr, int flags=0, double min_val=0, double max_val=)
+cvCheckArr.__doc__ = """int cvCheckArr(const CvArr arr, int flags=0, double min_val=0, double max_val=)
 
 Checks every element of input array for invalid values
 """
@@ -3183,33 +3198,33 @@ CV_RAND_NORMAL = 1
 # Fills array with random numbers and updates the RNG state
 cvRandArr = cfunc('cvRandArr', _cxDLL, None,
     ('rng', CvRNG_r, 1), # CvRNG* rng
-    ('arr', CvArr_p, 1), # CvArr* arr
+    ('arr', CvArr_r, 1), # CvArr* arr
     ('dist_type', c_int, 1), # int dist_type
     ('param1', CvScalar, 1), # CvScalar param1
     ('param2', CvScalar, 1), # CvScalar param2 
 )
-cvRandArr.__doc__ = """void cvRandArr(CvRNG rng, CvArr* arr, int dist_type, CvScalar param1, CvScalar param2)
+cvRandArr.__doc__ = """void cvRandArr(CvRNG rng, CvArr arr, int dist_type, CvScalar param1, CvScalar param2)
 
 Fills array with random numbers and updates the RNG state
 """
 
 # Shuffles the matrix by swapping randomly chosen pairs of the matrix elements on each iteration
 cvRandShuffle = cfunc('cvRandShuffle', _cxDLL, None,
-    ('mat', CvArr_p, 1), # CvArr* arr
+    ('mat', CvArr_r, 1), # CvArr* arr
     ('rng', CvRNG_r, 1), # CvRNG* rng
     ('iter_factor', c_double, 1, 1.0), # double iter_factor=1
 )
-cvRandShuffle.__doc__ = """void cvRandShuffle( CvArr* mat, CvRNG rng, double iter_factor=1. )
+cvRandShuffle.__doc__ = """void cvRandShuffle( CvArr mat, CvRNG rng, double iter_factor=1. )
 
 Shuffles the matrix by swapping randomly chosen pairs of the matrix elements on each iteration
 """
 
 # Finds real roots of a cubic equation
 cvSolveCubic = cfunc('cvSolveCubic', _cxDLL, None,
-    ('coeffs', CvArr_p, 1), # const CvArr* coeffs
-    ('roots', CvArr_p, 1), # CvArr* roots 
+    ('coeffs', CvArr_r, 1), # const CvArr* coeffs
+    ('roots', CvArr_r, 1), # CvArr* roots 
 )
-cvSolveCubic.__doc__ = """void cvSolveCubic(const CvArr* coeffs, CvArr* roots)
+cvSolveCubic.__doc__ = """void cvSolveCubic(const CvArr coeffs, CvArr roots)
 
 Finds real roots of a cubic equation
 """
@@ -3222,11 +3237,11 @@ Finds real roots of a cubic equation
 
 # Calculates cross product of two 3D vectors
 cvCrossProduct = cfunc('cvCrossProduct', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvCrossProduct.__doc__ = """void cvCrossProduct(const CvArr* src1, const CvArr* src2, CvArr* dst)
+cvCrossProduct.__doc__ = """void cvCrossProduct(const CvArr src1, const CvArr src2, CvArr dst)
 
 Calculates cross product of two 3D vectors
 """
@@ -3237,15 +3252,15 @@ CV_GEMM_C_T = 4
 
 # Performs generalized matrix multiplication
 cvGEMM = cfunc('cvGEMM', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
     ('alpha', c_double, 1), # double alpha
-    ('src3', CvArr_p, 1), # const CvArr* src3
+    ('src3', CvArr_r, 1), # const CvArr* src3
     ('beta', c_double, 1), # double beta
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('tABC', c_int, 1, 0), # int tABC
 )
-cvGEMM.__doc__ = """void cvGEMM(const CvArr* src1, const CvArr* src2, double alpha, const CvArr* src3, double beta, CvArr* dst, int tABC=0)
+cvGEMM.__doc__ = """void cvGEMM(const CvArr src1, const CvArr src2, double alpha, const CvArr src3, double beta, CvArr dst, int tABC=0)
 
 Performs generalized matrix multiplication
 """
@@ -3253,14 +3268,14 @@ Performs generalized matrix multiplication
 cvMatMulAddEx = cvGEMM
 
 def cvMatMulAdd(src1, src2, src3, dst):
-    """void cvMatMulAdd(const CvArr* src1, const CvArr* src2, const CvArr* src3, CvArr* dst)
+    """void cvMatMulAdd(const CvArr src1, const CvArr src2, const CvArr src3, CvArr dst)
     
     Performs dst = src1*src2+src3
     """
     cvGEMM(src1, src2, 1, src3, 1, dst, 0)
 
 def cvMatMul(src1, src2, dst):
-    """void cvMatMul(const CvArr* src1, const CvArr* src2, CvArr* dst)
+    """void cvMatMul(const CvArr src1, const CvArr src2, CvArr dst)
     
     Performs dst = src1*src2
     """
@@ -3268,12 +3283,12 @@ def cvMatMul(src1, src2, dst):
 
 # Performs matrix transform of every array element
 cvTransform = cfunc('cvTransform', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('transmat', CvMat_p, 1), # const CvMat* transmat
-    ('shiftvec', CvMat_p, 1, None), # const CvMat* shiftvec
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('transmat', CvMat_r, 1), # const CvMat* transmat
+    ('shiftvec', CvMat_r, 1, None), # const CvMat* shiftvec
 )
-cvTransform.__doc__ = """void cvTransform(const CvArr* src, CvArr* dst, const CvMat* transmat, const CvMat* shiftvec=NULL)
+cvTransform.__doc__ = """void cvTransform(const CvArr src, CvArr dst, const CvMat transmat, const CvMat shiftvec=NULL)
 
 Performs matrix transform of every array element
 """
@@ -3282,33 +3297,33 @@ cvMatMulAddS = cvTransform
 
 # Performs perspective matrix transform of vector array
 cvPerspectiveTransform = cfunc('cvPerspectiveTransform', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
-    ('mat', CvMat_p, 1), # const CvMat* mat 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
+    ('mat', CvMat_r, 1), # const CvMat* mat 
 )
-cvPerspectiveTransform.__doc__ = """void cvPerspectiveTransform(const CvArr* src, CvArr* dst, const CvMat* mat)
+cvPerspectiveTransform.__doc__ = """void cvPerspectiveTransform(const CvArr src, CvArr dst, const CvMat mat)
 
 Performs perspective matrix transform of vector array
 """
 
 # Calculates product of array and transposed array
 cvMulTransposed = cfunc('cvMulTransposed', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('order', c_int, 1), # int order
-    ('delta', CvArr_p, 1, None), # const CvArr* delta
+    ('delta', CvArr_r, 1, None), # const CvArr* delta
 )
-cvMulTransposed.__doc__ = """void cvMulTransposed(const CvArr* src, CvArr* dst, int order, const CvArr* delta=NULL)
+cvMulTransposed.__doc__ = """void cvMulTransposed(const CvArr src, CvArr dst, int order, const CvArr delta=NULL)
 
 Calculates product of array and transposed array
 """
 
 # Transposes matrix
 cvTranspose = cfunc('cvTranspose', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst 
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst 
 )
-cvTranspose.__doc__ = """void cvTranspose(const CvArr* src, CvArr* dst)
+cvTranspose.__doc__ = """void cvTranspose(const CvArr src, CvArr dst)
 
 Transposes matrix
 """
@@ -3317,11 +3332,11 @@ cvT = cvTranspose
 
 # Flip a 2D array around vertical, horizontall or both axises
 cvFlip = cfunc('cvFlip', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1, None), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1, None), # CvArr* dst
     ('flip_mode', c_int, 1, 0), # int flip_mode
 )
-cvFlip.__doc__ = """void cvFlip(const CvArr* src, CvArr* dst=NULL, int flip_mode=)
+cvFlip.__doc__ = """void cvFlip(const CvArr src, CvArr dst=NULL, int flip_mode=)
 
 Flip a 2D array around vertical, horizontall or both axises
 """
@@ -3334,27 +3349,27 @@ CV_SVD_V_T = 4
 
 # Performs singular value decomposition of real floating-point matrix
 cvSVD = cfunc('cvSVD', _cxDLL, None,
-    ('A', CvArr_p, 1), # CvArr* A
-    ('W', CvArr_p, 1), # CvArr* W
-    ('U', CvArr_p, 1, None), # CvArr* U
-    ('V', CvArr_p, 1, None), # CvArr* V
+    ('A', CvArr_r, 1), # CvArr* A
+    ('W', CvArr_r, 1), # CvArr* W
+    ('U', CvArr_r, 1, None), # CvArr* U
+    ('V', CvArr_r, 1, None), # CvArr* V
     ('flags', c_int, 1, 0), # int flags
 )
-cvSVD.__doc__ = """void cvSVD(CvArr* A, CvArr* W, CvArr* U=NULL, CvArr* V=NULL, int flags=0)
+cvSVD.__doc__ = """void cvSVD(CvArr A, CvArr W, CvArr U=NULL, CvArr V=NULL, int flags=0)
 
 Performs singular value decomposition of real floating-point matrix
 """
 
 # Performs singular value back substitution
 cvSVBkSb = cfunc('cvSVBkSb', _cxDLL, None,
-    ('W', CvArr_p, 1), # const CvArr* W
-    ('U', CvArr_p, 1), # const CvArr* U
-    ('V', CvArr_p, 1), # const CvArr* V
-    ('B', CvArr_p, 1), # const CvArr* B
-    ('X', CvArr_p, 1), # CvArr* X
+    ('W', CvArr_r, 1), # const CvArr* W
+    ('U', CvArr_r, 1), # const CvArr* U
+    ('V', CvArr_r, 1), # const CvArr* V
+    ('B', CvArr_r, 1), # const CvArr* B
+    ('X', CvArr_r, 1), # CvArr* X
     ('flags', c_int, 1), # int flags 
 )
-cvSVBkSb.__doc__ = """void cvSVBkSb(const CvArr* W, const CvArr* U, const CvArr* V, const CvArr* B, CvArr* X, int flags)
+cvSVBkSb.__doc__ = """void cvSVBkSb(const CvArr W, const CvArr U, const CvArr V, const CvArr B, CvArr X, int flags)
 
 Performs singular value back substitution
 """
@@ -3365,11 +3380,11 @@ CV_SVD_SYM = 2
 
 # Finds inverse or pseudo-inverse of matrix
 cvInvert = cfunc('cvInvert', _cxDLL, c_double,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('method', c_int, 1), # int method
 )
-cvInvert.__doc__ = """double cvInvert(const CvArr* src, CvArr* dst, int method=CV_LU)
+cvInvert.__doc__ = """double cvInvert(const CvArr src, CvArr dst, int method=CV_LU)
 
 Finds inverse or pseudo-inverse of matrix
 """
@@ -3378,63 +3393,63 @@ cvInv = cvInvert
 
 # Solves linear system or least-squares problem
 cvSolve = cfunc('cvSolve', _cxDLL, c_int,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('method', c_int, 1), # int method
 )
-cvSolve.__doc__ = """int cvSolve(const CvArr* src1, const CvArr* src2, CvArr* dst, int method=CV_LU)
+cvSolve.__doc__ = """int cvSolve(const CvArr src1, const CvArr src2, CvArr dst, int method=CV_LU)
 
 Solves linear system or least-squares problem
 """
 
 # Returns determinant of matrix
 cvDet = cfunc('cvDet', _cxDLL, c_double,
-    ('mat', CvArr_p, 1), # const CvArr* mat 
+    ('mat', CvArr_r, 1), # const CvArr* mat 
 )
-cvDet.__doc__ = """double cvDet(const CvArr* mat)
+cvDet.__doc__ = """double cvDet(const CvArr mat)
 
 Returns determinant of matrix
 """
 
 # Returns trace of matrix
 cvTrace = cfunc('cvTrace', _cxDLL, CvScalar,
-    ('mat', CvArr_p, 1), # const CvArr* mat 
+    ('mat', CvArr_r, 1), # const CvArr* mat 
 )
-cvTrace.__doc__ = """CvScalar cvTrace(const CvArr* mat)
+cvTrace.__doc__ = """CvScalar cvTrace(const CvArr mat)
 
 Returns trace of matrix
 """
 
 # Computes eigenvalues and eigenvectors of symmetric matrix
 cvEigenVV = cfunc('cvEigenVV', _cxDLL, None,
-    ('mat', CvArr_p, 1), # CvArr* mat
-    ('evects', CvArr_p, 1), # CvArr* evects
-    ('evals', CvArr_p, 1), # CvArr* evals
+    ('mat', CvArr_r, 1), # CvArr* mat
+    ('evects', CvArr_r, 1), # CvArr* evects
+    ('evals', CvArr_r, 1), # CvArr* evals
     ('eps', c_double, 1, 0), # double eps
 )
-cvEigenVV.__doc__ = """void cvEigenVV(CvArr* mat, CvArr* evects, CvArr* evals, double eps=0)
+cvEigenVV.__doc__ = """void cvEigenVV(CvArr mat, CvArr evects, CvArr evals, double eps=0)
 
 Computes eigenvalues and eigenvectors of symmetric matrix
 """
 
 # Initializes scaled identity matrix
 cvSetIdentity = cfunc('cvSetIdentity', _cxDLL, None,
-    ('mat', CvArr_p, 1), # CvArr* mat
+    ('mat', CvArr_r, 1), # CvArr* mat
     ('value', CvScalar, 1), # CvScalar value
 )
-cvSetIdentity.__doc__ = """void cvSetIdentity(CvArr* mat, CvScalar value=cvRealScalar(1))
+cvSetIdentity.__doc__ = """void cvSetIdentity(CvArr mat, CvScalar value=cvRealScalar(1))
 
 Initializes scaled identity matrix
 """
 
 # Fills matrix with given range of numbers
 cvRange = cfunc('cvRange', _cxDLL, None,
-    ('mat', CvArr_p, 1), # CvArr* mat
+    ('mat', CvArr_r, 1), # CvArr* mat
     ('start', c_double, 1), # double start
     ('end', c_double, 1), # double end
 )
-cvRange.__doc__ = """void cvRange( CvArr* mat, double start, double end )
+cvRange.__doc__ = """void cvRange( CvArr mat, double start, double end )
 
 Fills matrix with given range of numbers
 """
@@ -3448,13 +3463,13 @@ CV_COVAR_COLS = 16
 
 # Calculates covariation matrix of the set of vectors
 cvCalcCovarMatrix = cfunc('cvCalcCovarMatrix', _cxDLL, None,
-    ('vects', c_void_p_p, 1), # const CvArr** vects
+    ('vects', c_void_p_p, 1), # const CvArr*** vects
     ('count', c_int, 1), # int count
-    ('cov_mat', CvArr_p, 1), # CvArr* cov_mat
-    ('avg', CvArr_p, 1), # CvArr* avg
+    ('cov_mat', CvArr_r, 1), # CvArr* cov_mat
+    ('avg', CvArr_r, 1), # CvArr* avg
     ('flags', c_int, 1), # int flags 
 )
-cvCalcCovarMatrix.__doc__ = """void cvCalcCovarMatrix(const CvArr** vects, int count, CvArr* cov_mat, CvArr* avg, int flags)
+cvCalcCovarMatrix.__doc__ = """void cvCalcCovarMatrix(const CvArr** vects, int count, CvArr cov_mat, CvArr avg, int flags)
 
 Calculates covariation matrix of the set of vectors
 """
@@ -3465,48 +3480,48 @@ CV_PCA_USE_AVG = 2
 
 # Performs Principal Component Analysis of a vector set
 cvCalcPCA = cfunc('cvCalcPCA', _cxDLL, None,
-    ('data', CvArr_p, 1), # CvArr* data
-    ('mean', CvArr_p, 1), # CvArr* mean
-    ('eigenvalues', CvArr_p, 1), # CvArr* eigenvalues
-    ('eigenvectors', CvArr_p, 1), # CvArr* eigenvectors
+    ('data', CvArr_r, 1), # CvArr* data
+    ('mean', CvArr_r, 1), # CvArr* mean
+    ('eigenvalues', CvArr_r, 1), # CvArr* eigenvalues
+    ('eigenvectors', CvArr_r, 1), # CvArr* eigenvectors
     ('flags', c_int, 1), # int flags
 )
-cvCalcPCA.__doc__ = """void cvCalcPCA( const CvArr* data, CvArr* avg, CvArr* eigenvalues, CvArr* eigenvectors, int flags )
+cvCalcPCA.__doc__ = """void cvCalcPCA( const CvArr data, CvArr avg, CvArr eigenvalues, CvArr eigenvectors, int flags )
 
 Performs Principal Component Analysis of a vector set
 """
 
 # Projects vectors to the specified subspace
 cvProjectPCA = cfunc('cvProjectPCA', _cxDLL, None,
-    ('data', CvArr_p, 1), # CvArr* data
-    ('mean', CvArr_p, 1), # CvArr* mean
-    ('eigenvectors', CvArr_p, 1), # CvArr* eigenvectors
-    ('result', CvArr_p, 1), # CvArr* result
+    ('data', CvArr_r, 1), # CvArr* data
+    ('mean', CvArr_r, 1), # CvArr* mean
+    ('eigenvectors', CvArr_r, 1), # CvArr* eigenvectors
+    ('result', CvArr_r, 1), # CvArr* result
 )
-cvProjectPCA.__doc__ = """void cvProjectPCA( const CvArr* data, const CvArr* avg, const CvArr* eigenvectors, CvArr* result )
+cvProjectPCA.__doc__ = """void cvProjectPCA( const CvArr data, const CvArr avg, const CvArr eigenvectors, CvArr result )
 
 Projects vectors to the specified subspace
 """
 
 # Reconstructs the original vectors from the projection coefficients
 cvBackProjectPCA = cfunc('cvBackProjectPCA', _cxDLL, None,
-    ('proj', CvArr_p, 1), # CvArr* proj
-    ('mean', CvArr_p, 1), # CvArr* mean
-    ('eigenvectors', CvArr_p, 1), # CvArr* eigenvectors
-    ('result', CvArr_p, 1), # CvArr* result
+    ('proj', CvArr_r, 1), # CvArr* proj
+    ('mean', CvArr_r, 1), # CvArr* mean
+    ('eigenvectors', CvArr_r, 1), # CvArr* eigenvectors
+    ('result', CvArr_r, 1), # CvArr* result
 )
-cvBackProjectPCA.__doc__ = """void cvBackProjectPCA( const CvArr* proj, const CvArr* avg, const CvArr* eigenvectors, CvArr* result )
+cvBackProjectPCA.__doc__ = """void cvBackProjectPCA( const CvArr proj, const CvArr avg, const CvArr eigenvectors, CvArr result )
 
 Reconstructs the original vectors from the projection coefficients
 """
 
 # Calculates Mahalonobis distance between two vectors
 cvMahalanobis = cfunc('cvMahalanobis', _cxDLL, c_double,
-    ('vec1', CvArr_p, 1), # const CvArr* vec1
-    ('vec2', CvArr_p, 1), # const CvArr* vec2
-    ('mat', CvArr_p, 1), # CvArr* mat 
+    ('vec1', CvArr_r, 1), # const CvArr* vec1
+    ('vec2', CvArr_r, 1), # const CvArr* vec2
+    ('mat', CvArr_r, 1), # CvArr* mat 
 )
-cvMahalanobis.__doc__ = """double cvMahalanobis(const CvArr* vec1, const CvArr* vec2, CvArr* mat)
+cvMahalanobis.__doc__ = """double cvMahalanobis(const CvArr vec1, const CvArr vec2, CvArr mat)
 
 Calculates Mahalonobis distance between two vectors
 """
@@ -3521,57 +3536,57 @@ cvMahalonobis = cvMahalanobis
 
 # Summarizes array elements
 cvSum = cfunc('cvSum', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr 
+    ('arr', CvArr_r, 1), # const CvArr* arr 
 )
-cvSum.__doc__ = """CvScalar cvSum(const CvArr* arr)
+cvSum.__doc__ = """CvScalar cvSum(const CvArr arr)
 
 Summarizes array elements
 """
 
 # Counts non-zero array elements
 cvCountNonZero = cfunc('cvCountNonZero', _cxDLL, c_int,
-    ('arr', CvArr_p, 1), # const CvArr* arr 
+    ('arr', CvArr_r, 1), # const CvArr* arr 
 )
-cvCountNonZero.__doc__ = """int cvCountNonZero(const CvArr* arr)
+cvCountNonZero.__doc__ = """int cvCountNonZero(const CvArr arr)
 
 Counts non-zero array elements
 """
 
 # Calculates average (mean) of array elements
 cvAvg = cfunc('cvAvg', _cxDLL, CvScalar,
-    ('arr', CvArr_p, 1), # const CvArr* arr
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('arr', CvArr_r, 1), # const CvArr* arr
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvAvg.__doc__ = """CvScalar cvAvg(const CvArr* arr, const CvArr* mask=NULL)
+cvAvg.__doc__ = """CvScalar cvAvg(const CvArr arr, const CvArr mask=NULL)
 
 Calculates average (mean) of array elements
 """
 
 # Calculates average (mean) of array elements
 cvAvgSdv = cfunc('cvAvgSdv', _cxDLL, None,
-    ('arr', CvArr_p, 1), # const CvArr* arr
+    ('arr', CvArr_r, 1), # const CvArr* arr
     ('mean', CvScalar_r, 1), # CvScalar* mean
     ('std_dev', CvScalar_r, 1), # CvScalar* std_dev
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvAvgSdv.__doc__ = """void cvAvgSdv(const CvArr* arr, CvScalar mean, CvScalar std_dev, const CvArr* mask=NULL)
+cvAvgSdv.__doc__ = """void cvAvgSdv(const CvArr arr, CvScalar mean, CvScalar std_dev, const CvArr mask=NULL)
 
 Calculates average (mean) of array elements
 """
 
 # Finds global minimum and maximum in array or subarray
 _cvMinMaxLoc = cfunc('cvMinMaxLoc', _cxDLL, None,
-                    ('arr', CvArr_p, 1),
+                    ('arr', CvArr_r, 1),
                     ('min_val', c_double_p, 2),
                     ('max_val', c_double_p, 2),
                     ('min_loc', CvPoint_r, 1, None),
                     ('max_loc', CvPoint_r, 1, None),
-                    ('mask', IplImage_p, 1, None))
+                    ('mask', CvArr_r, 1, None))
 
                     
 # Finds global minimum and maximum in array or subarray
 def cvMinMax(arr, mask=None):
-    """(double min_val, double max_val) = cvMinMax(const CvArr* arr, const CvArr* mask=NULL)
+    """(double min_val, double max_val) = cvMinMax(const CvArr arr, const CvArr mask=NULL)
 
     Finds global minimum and maximum in array or subarray
     """
@@ -3579,7 +3594,7 @@ def cvMinMax(arr, mask=None):
 
 # Finds global minimum and maximum in array or subarray
 def cvMinMaxLoc(arr, mask=None):
-    """(double min_val, double max_val, CvPoint min_loc, CvPoint max_loc) = cvMinMaxLoc(const CvArr* arr, const CvArr* mask=NULL)
+    """(double min_val, double max_val, CvPoint min_loc, CvPoint max_loc) = cvMinMaxLoc(const CvArr arr, const CvArr mask=NULL)
 
     Finds global minimum and maximum in array or subarray, and their locations
     """
@@ -3603,26 +3618,26 @@ CV_RELATIVE_L2 = (CV_RELATIVE | CV_L2)
 
 # Calculates absolute array norm, absolute difference norm or relative difference norm
 cvNorm = cfunc('cvNorm', _cxDLL, c_double,
-    ('arr1', CvArr_p, 1), # const CvArr* arr1
-    ('arr2', CvArr_p, 1, None), # const CvArr* arr2
+    ('arr1', CvArr_r, 1), # const CvArr* arr1
+    ('arr2', CvArr_r, 1, None), # const CvArr* arr2
     ('norm_type', c_int, 1, CV_L2), # int norm_type
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvNorm.__doc__ = """double cvNorm(const CvArr* arr1, const CvArr* arr2=NULL, int norm_type=CV_L2, const CvArr* mask=NULL)
+cvNorm.__doc__ = """double cvNorm(const CvArr arr1, const CvArr arr2=NULL, int norm_type=CV_L2, const CvArr mask=NULL)
 
 Calculates absolute array norm, absolute difference norm or relative difference norm
 """
 
 # Normalizes array to a certain norm or value range
 cvNormalize = cfunc('cvNormalize', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # const CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # const CvArr* dst
     ('a', c_double, 1, 1), # double a
     ('b', c_double, 1, 0), # double b
     ('norm_type', c_int, 1, CV_L2), # int norm_type
-    ('mask', CvArr_p, 1, None), # const CvArr* mask
+    ('mask', CvArr_r, 1, None), # const CvArr* mask
 )
-cvNormalize.__doc__ = """void cvNormalize( const CvArr* src, CvArr* dst, double a=1, double b=0, int norm_type=CV_L2, const CvArr* mask=NULL )
+cvNormalize.__doc__ = """void cvNormalize( const CvArr src, CvArr dst, double a=1, double b=0, int norm_type=CV_L2, const CvArr mask=NULL )
 
 Normalizes array to a certain norm or value range
 """
@@ -3634,11 +3649,11 @@ CV_REDUCE_MIN = 3
 
 # Reduces matrix to a vector
 cvReduce = cfunc('cvReduce', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # const CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # const CvArr* dst
     ('op', c_int, 1, CV_REDUCE_SUM), # int op
 )
-cvReduce.__doc__ = """void cvReduce( const CvArr* src, CvArr* dst, int op=CV_REDUCE_SUM )
+cvReduce.__doc__ = """void cvReduce( const CvArr src, CvArr dst, int op=CV_REDUCE_SUM )
 
 Reduces matrix to a vector
 """
@@ -3660,12 +3675,12 @@ CV_DXT_MUL_CONJ = 8     # conjugate the second argument of cvMulSpectrums
 
 # Performs forward or inverse Discrete Fourier transform of 1D or 2D floating-point array
 cvDFT = cfunc('cvDFT', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('flags', c_int, 1), # int flags
     ('nonzero_rows', c_int, 1, 0), # int nonzero_rows
 )
-cvDFT.__doc__ = """void cvDFT( const CvArr* src, CvArr* dst, int flags, int nonzero_rows=0 )
+cvDFT.__doc__ = """void cvDFT( const CvArr src, CvArr dst, int flags, int nonzero_rows=0 )
 
 Performs forward or inverse Discrete Fourier transform of 1D or 2D floating-point array
 """
@@ -3674,12 +3689,12 @@ cvFFT = cvDFT
 
 # Performs per-element multiplication of two Fourier spectrums
 cvMulSpectrums = cfunc('cvMulSpectrums', _cxDLL, None,
-    ('src1', CvArr_p, 1), # const CvArr* src1
-    ('src2', CvArr_p, 1), # const CvArr* src2
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src1', CvArr_r, 1), # const CvArr* src1
+    ('src2', CvArr_r, 1), # const CvArr* src2
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('flags', c_int, 1), # int flags 
 )
-cvMulSpectrums.__doc__ = """void cvMulSpectrums(const CvArr* src1, const CvArr* src2, CvArr* dst, int flags)
+cvMulSpectrums.__doc__ = """void cvMulSpectrums(const CvArr src1, const CvArr src2, CvArr dst, int flags)
 
 Performs per-element multiplication of two Fourier spectrums
 """
@@ -3695,11 +3710,11 @@ Returns optimal DFT size for given vector size
 
 # Performs forward or inverse Discrete Cosine transform of 1D or 2D floating-point array
 cvDCT = cfunc('cvDCT', _cxDLL, None,
-    ('src', CvArr_p, 1), # const CvArr* src
-    ('dst', CvArr_p, 1), # CvArr* dst
+    ('src', CvArr_r, 1), # const CvArr* src
+    ('dst', CvArr_r, 1), # CvArr* dst
     ('flags', c_int, 1), # int flags 
 )
-cvDCT.__doc__ = """void cvDCT( const CvArr* src, CvArr* dst, int flags )
+cvDCT.__doc__ = """void cvDCT( const CvArr src, CvArr dst, int flags )
 
 Performs forward or inverse Discrete Cosine transform of 1D or 2D floating-point array
 """
@@ -4101,9 +4116,9 @@ Removes sequence slice
 cvSeqInsertSlice = cfunc('cvSeqInsertSlice', _cxDLL, None,
     ('seq', CvSeq_p, 1), # CvSeq* seq
     ('before_index', c_int, 1), # int before_index
-    ('from_arr', CvArr_p, 1), # const CvArr* from_arr 
+    ('from_arr', CvArr_r, 1), # const CvArr* from_arr 
 )
-cvSeqInsertSlice.__doc__ = """void cvSeqInsertSlice(CvSeq* seq, int before_index, const CvArr* from_arr)
+cvSeqInsertSlice.__doc__ = """void cvSeqInsertSlice(CvSeq* seq, int before_index, const CvArr from_arr)
 
 Inserts array in the middle of sequence
 """
@@ -4675,7 +4690,7 @@ def CV_RGB(r, g, b):
 
 # Draws a line segment connecting two points
 cvLine = cfunc('cvLine', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
+    ('img', CvArr_r, 1), # CvArr* img
     ('pt1', CvPoint, 1), # CvPoint pt1
     ('pt2', CvPoint, 1), # CvPoint pt2
     ('color', CvScalar, 1), # CvScalar color
@@ -4683,14 +4698,14 @@ cvLine = cfunc('cvLine', _cxDLL, None,
     ('line_type', c_int, 1, 8), # int line_type
     ('shift', c_int, 1, 0), # int shift
 )
-cvLine.__doc__ = """void cvLine(CvArr* img, CvPoint pt1, CvPoint pt2, CvScalar color, int thickness=1, int line_type=8, int shift=0)
+cvLine.__doc__ = """void cvLine(CvArr img, CvPoint pt1, CvPoint pt2, CvScalar color, int thickness=1, int line_type=8, int shift=0)
 
 Draws a line segment connecting two points
 """
 
 # Draws simple, thick or filled rectangle
 cvRectangle = cfunc('cvRectangle', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
+    ('img', CvArr_r, 1), # CvArr* img
     ('pt1', CvPoint, 1), # CvPoint pt1
     ('pt2', CvPoint, 1), # CvPoint pt2
     ('color', CvScalar, 1), # CvScalar color
@@ -4698,14 +4713,14 @@ cvRectangle = cfunc('cvRectangle', _cxDLL, None,
     ('line_type', c_int, 1, 8), # int line_type
     ('shift', c_int, 1, 0), # int shift
 )
-cvRectangle.__doc__ = """void cvRectangle(CvArr* img, CvPoint pt1, CvPoint pt2, CvScalar color,                  int thickness=1, int line_type=8, int shift=0)
+cvRectangle.__doc__ = """void cvRectangle(CvArr img, CvPoint pt1, CvPoint pt2, CvScalar color,                  int thickness=1, int line_type=8, int shift=0)
 
 Draws simple, thick or filled rectangle
 """
 
 # Draws a circle
 cvCircle = cfunc('cvCircle', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
+    ('img', CvArr_r, 1), # CvArr* img
     ('center', CvPoint, 1), # CvPoint center
     ('radius', c_int, 1), # int radius
     ('color', CvScalar, 1), # CvScalar color
@@ -4713,14 +4728,14 @@ cvCircle = cfunc('cvCircle', _cxDLL, None,
     ('line_type', c_int, 1, 8), # int line_type
     ('shift', c_int, 1, 0), # int shift
 )
-cvCircle.__doc__ = """void cvCircle(CvArr* img, CvPoint center, int radius, CvScalar color, int thickness=1, int line_type=8, int shift=0)
+cvCircle.__doc__ = """void cvCircle(CvArr img, CvPoint center, int radius, CvScalar color, int thickness=1, int line_type=8, int shift=0)
 
 Draws a circle
 """
 
 # Draws simple or thick elliptic arc or fills ellipse sector
 cvEllipse = cfunc('cvEllipse', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
+    ('img', CvArr_r, 1), # CvArr* img
     ('center', CvPoint, 1), # CvPoint center
     ('axes', CvSize, 1), # CvSize axes
     ('angle', c_double, 1), # double angle
@@ -4731,13 +4746,13 @@ cvEllipse = cfunc('cvEllipse', _cxDLL, None,
     ('line_type', c_int, 1, 8), # int line_type
     ('shift', c_int, 1, 0), # int shift
 )
-cvEllipse.__doc__ = """void cvEllipse(CvArr* img, CvPoint center, CvSize axes, double angle, double start_angle, double end_angle, CvScalar color, int thickness=1, int line_type=8, int shift=0)
+cvEllipse.__doc__ = """void cvEllipse(CvArr img, CvPoint center, CvSize axes, double angle, double start_angle, double end_angle, CvScalar color, int thickness=1, int line_type=8, int shift=0)
 
 Draws simple or thick elliptic arc or fills ellipse sector
 """
 
 def cvEllipseBox(img, box, color, thickness=1, line_type=8, shift=0):
-    """void cvEllipseBox( CvArr* img, CvBox2D box, CvScalar color, int thickness=1, int line_type=8, int shift=0 )
+    """void cvEllipseBox( CvArr img, CvBox2D box, CvScalar color, int thickness=1, int line_type=8, int shift=0 )
     
     Draws simple or thick elliptic arc or fills ellipse sector
     """
@@ -4748,7 +4763,7 @@ def cvEllipseBox(img, box, color, thickness=1, line_type=8, shift=0):
 
 # Fills polygons interior
 _cvFillPoly = cfunc('cvFillPoly', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
+    ('img', CvArr_r, 1), # CvArr* img
     ('pts', ListPOINTER2(CvPoint), 1), # CvPoint** pts
     ('npts', ListPOINTER(c_int), 1), # int* npts
     ('contours', c_int, 1), # int contours
@@ -4758,7 +4773,7 @@ _cvFillPoly = cfunc('cvFillPoly', _cxDLL, None,
 )
 
 def cvFillPoly(img, pts, color, line_type=8, shift=0):
-    """void cvFillPoly(CvArr* img, list_of_list_of_CvPoint pts, CvScalar color, int line_type=8, int shift=0)
+    """void cvFillPoly(CvArr img, list_of_list_of_CvPoint pts, CvScalar color, int line_type=8, int shift=0)
 
     Fills polygons interior
     """
@@ -4766,7 +4781,7 @@ def cvFillPoly(img, pts, color, line_type=8, shift=0):
 
 # Fills convex polygon
 _cvFillConvexPoly = cfunc('cvFillConvexPoly', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
+    ('img', CvArr_r, 1), # CvArr* img
     ('pts', ListPOINTER(CvPoint), 1), # CvPoint* pts
     ('npts', c_int, 1), # int npts
     ('color', CvScalar, 1), # CvScalar color
@@ -4775,7 +4790,7 @@ _cvFillConvexPoly = cfunc('cvFillConvexPoly', _cxDLL, None,
 )
 
 def cvFillConvexPoly(img, pts, color, line_type=8, shift=0):
-    """void cvFillConvexPoly(CvArr* img, list_or_tuple_of_CvPoint pts, CvScalar color, int line_type=8, int shift=0)
+    """void cvFillConvexPoly(CvArr img, list_or_tuple_of_CvPoint pts, CvScalar color, int line_type=8, int shift=0)
 
     Fills convex polygon
     """
@@ -4783,7 +4798,7 @@ def cvFillConvexPoly(img, pts, color, line_type=8, shift=0):
 
 # Draws simple or thick polygons
 _cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
+    ('img', CvArr_r, 1), # CvArr* img
     ('pts', ListPOINTER2(CvPoint), 1), # CvPoint** pts
     ('npts', ListPOINTER(c_int), 1), # int* npts
     ('contours', c_int, 1), # int contours
@@ -4795,7 +4810,7 @@ _cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,
 )
 
 def cvPolyLine(img, pts, is_closed, color, thickness=1, line_type=8, shift=0):
-    """void cvPolyLine(CvArr* img, list_of_list_of_CvPoint pts, int is_closed, CvScalar color, int thickness=1, int line_type=8, int shift=0)
+    """void cvPolyLine(CvArr img, list_of_list_of_CvPoint pts, int is_closed, CvScalar color, int thickness=1, int line_type=8, int shift=0)
 
     Draws simple or thick polygons
     """
@@ -4869,13 +4884,13 @@ def cvFont(scale, thickness=1):
                 
 # Draws text string
 cvPutText = cfunc('cvPutText', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
+    ('img', CvArr_r, 1), # CvArr* img
     ('text', c_char_p, 1), # const char* text
     ('org', CvPoint, 1), # CvPoint org
     ('font', CvFont_r, 1), # const CvFont* font
     ('color', CvScalar, 1), # CvScalar color 
 )
-cvPutText.__doc__ = """void cvPutText(CvArr* img, const char* text, CvPoint org, const CvFont font, CvScalar color)
+cvPutText.__doc__ = """void cvPutText(CvArr img, const char* text, CvPoint org, const CvFont font, CvScalar color)
 
 Draws text string
 """
@@ -4900,7 +4915,7 @@ Retrieves width and height of text string
 
 # Draws contour outlines or interiors in the image
 cvDrawContours = cfunc('cvDrawContours', _cxDLL, None,
-    ('img', CvArr_p, 1), # CvArr* img
+    ('img', CvArr_r, 1), # CvArr* img
     ('contour', CvSeq_p, 1), # CvSeq* contour
     ('external_color', CvScalar, 1), # CvScalar external_color
     ('hole_color', CvScalar, 1), # CvScalar hole_color
@@ -4909,14 +4924,14 @@ cvDrawContours = cfunc('cvDrawContours', _cxDLL, None,
     ('line_type', c_int, 1, 8), # int line_type
     ('offset', CvPoint, 1), # CvPoint offset      
 )
-cvDrawContours.__doc__ = """void cvDrawContours(CvArr* img, CvSeq* contour, CvScalar external_color, CvScalar hole_color, int max_level, int thickness=1, int line_type=8)
+cvDrawContours.__doc__ = """void cvDrawContours(CvArr img, CvSeq* contour, CvScalar external_color, CvScalar hole_color, int max_level, int thickness=1, int line_type=8)
 
 Draws contour outlines or interiors in the image
 """
 
 # Initializes line iterator
 _cvInitLineIterator = cfunc('cvInitLineIterator', _cxDLL, c_int,
-    ('image', CvArr_p, 1), # const CvArr* image
+    ('image', CvArr_r, 1), # const CvArr* image
     ('pt1', CvPoint, 1), # CvPoint pt1
     ('pt2', CvPoint, 1), # CvPoint pt2
     ('line_iterator', CvLineIterator_r, 1), # CvLineIterator* line_iterator
@@ -4925,7 +4940,7 @@ _cvInitLineIterator = cfunc('cvInitLineIterator', _cxDLL, c_int,
 )
 
 def cvInitLineIterator(image, pt1, pt2, connectivity=8, left_to_right=0):
-    """(int, CvLineIterator) cvInitLineIterator(const CvArr* image, CvPoint pt1, CvPoint pt2, int connectivity=8, int left_to_right=0)
+    """(int, CvLineIterator) cvInitLineIterator(const CvArr image, CvPoint pt1, CvPoint pt2, int connectivity=8, int left_to_right=0)
 
     Initializes line iterator
     [ctypes-opencv] *creates* the iterator before initializing
@@ -5433,12 +5448,12 @@ def cvLoadCast(filename, ctype):
 
 # Splits set of vectors by given number of clusters
 cvKMeans2 = cfunc('cvKMeans2', _cxDLL, None,
-    ('samples', CvArr_p, 1), # const CvArr* samples
+    ('samples', CvArr_r, 1), # const CvArr* samples
     ('cluster_count', c_int, 1), # int cluster_count
-    ('labels', CvArr_p, 1), # CvArr* labels
+    ('labels', CvArr_r, 1), # CvArr* labels
     ('termcrit', CvTermCriteria, 1), # CvTermCriteria termcrit 
 )
-cvKMeans2.__doc__ = """void cvKMeans2(const CvArr* samples, int cluster_count, CvArr* labels, CvTermCriteria termcrit)
+cvKMeans2.__doc__ = """void cvKMeans2(const CvArr samples, int cluster_count, CvArr labels, CvTermCriteria termcrit)
 
 Splits set of vectors by given number of clusters
 """
@@ -5739,9 +5754,9 @@ __all__ += [
     'c_void_p_p', 'c_short_p',
     '_cvver', '_cxDLL', '_cvDLL', '_hgDLL',
     'cfunc',
-    '_Structure', 'ListPOINTER', 'ListPOINTER2', 'FlexibleListPOINTER',
+    '_Structure', 'ListPOINTER', 'ListPOINTER2', 'ListByRef',
     'ByRefArg', 'CallableToFunc', 'deref',
-    'sdHack_cvseq', 'sdAdd_autoclean',
+    'sdHack_cvseq',
     'sdHack_contents_getattr', 
 ]
         
