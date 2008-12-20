@@ -1,14 +1,10 @@
 #!/usr/bin/python
 
-from ctypes import c_int
-from opencv.cv import *
-from opencv.highgui import *
+from opencv import *
 import sys
 
 file_name = "baboon.jpg";
 
-_brightness = 100
-_contrast = 100
 Gbrightness = 100
 Gcontrast = 100
 
@@ -98,8 +94,8 @@ if __name__ == "__main__":
     cvNamedWindow("image", 0);
     cvNamedWindow("histogram", 0);
 
-    cvCreateTrackbar("brightness", "image", c_int(_brightness), 200, update_brightness);
-    cvCreateTrackbar("contrast", "image", c_int(_contrast), 200, update_contrast);
+    cvCreateTrackbar("brightness", "image", 100, 200, update_brightness);
+    cvCreateTrackbar("contrast", "image", 100, 200, update_contrast);
 
     update_brightcont();
     cvWaitKey(0);

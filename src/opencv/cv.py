@@ -537,6 +537,77 @@ def cvGoodFeaturesToTrack(image, eig_image, temp_image, max_corner_count, qualit
     return z
 
 #-----------------------------------------------------------------------------
+# Speeded Up Robust Features
+#-----------------------------------------------------------------------------
+
+if _cvver == 110:
+    class CvSURFPoint(_Structure):
+        _fields_ = [
+            ('pt', CvPoint2D32f),
+            ('laplacian', c_int),
+            ('size', c_int),
+            ('dir', c_float),
+            ('hessian', c_float),
+        ]
+
+    def cvSURFPoint(pt, laplacian, size, dir=0, hessian=0):
+        kp = CvSURFPoint()
+        kp.pt = pt
+        kp.laplacian = laplacian
+        kp.size = size
+        kp.dir = dir
+        kp.hessian = hessian
+        return kp
+
+    class CvSURFParams(_Structure):
+        _fields_ = [
+            ('extended', c_int),
+            ('hessianThreshold', c_double),
+            ('nOctaves', c_int),
+            ('nOctaveLayers', c_int),
+        ]
+
+    def cvSURFParams(hessianThreshold, extended=0, nOctaves=3, nOctaveLayers=4):
+        z = CvSURFParams()
+        z.hessianThreshold = hessianThreshold
+        z.extended = extended
+        z.nOctaves = nOctaves
+        z.nOcaveLayers = nOctavelayers
+        return z
+        
+    # Extracts Speeded Up Robust Features from image
+    _cvExtractSURF = cfunc('cvExtractSURF', _cvDLL, None,
+        ('img', CvArr_r, 1), # const CvArr* img
+        ('mask', CvArr_r, 1), # const CvArr* mask
+        ('keypoints', ByRefArg(CvSeq_p), 1), # CvSeq** keypoints
+        ('descriptors', ByRefArg(CvSeq_p), 1), # CvSeq** descriptors
+        ('storage', ByRefArg(CvMemStorage), 1), # CvMemStorage* storage
+        ('params', CvSURFParams, 1), # CvSURFParams params
+    )
+    
+    # Extracts Speeded Up Robust Features from image
+    def cvExtractSURF(img, mask, storage, params):
+        """CvSeq cvExtractSURF( const CvArr img, const CvArr mask, CvMemStorage storage, CvSURFParams params )
+        
+        Extracts Speeded Up Robust Features from image
+        """
+        z = CvSeq_p()
+        _cvExtractSURF(img, mask, z, None, storage, params)
+        return pointee(z, storage)
+        
+    # Extracts Speeded Up Robust Features from image
+    def cvExtractSURF_ReturnDesc(img, mask, storage, params):
+        """(CvSeq keypoints, CvSeq descriptors) = cvExtractSURF( const CvArr img, const CvArr mask, CvMemStorage storage, CvSURFParams params )
+        
+        Extracts Speeded Up Robust Features from image
+        """
+        y = CvSeq_p()
+        z = CvSeq_p()
+        _cvExtractSURF(img, mask, z, y, storage, params)
+        return (pointee(z, storage), pointee(y, storage))
+        
+
+#-----------------------------------------------------------------------------
 # Image Processing: Sampling, Interpolation and Geometrical Transforms
 #-----------------------------------------------------------------------------
 
@@ -2394,6 +2465,83 @@ def cvCalcOpticalFlowPyrLK(prev, curr, prev_pyr, curr_pyr, pref_features, win_si
 
 
 #-----------------------------------------------------------------------------
+# Feature Matching
+#-----------------------------------------------------------------------------
+
+
+if _cvver == 110:
+    
+    # supposed to be a black box
+    class CvFeatureTree(_Structure):    
+        def __del__(self):
+            _cvReleaseFeatureTree(self)
+        
+    CvFeatureTree_p = POINTER(CvFeatureTree)
+    CvFeatureTree_r = ByRefArg(CvFeatureTree)
+        
+    # Constructs a kd-tree of feature vectors
+    _cvCreateFeatureTree = cfunc('cvCreateFeatureTree', _cvDLL, CvFeatureTree_p,
+        ('desc', CvMat_r, 1), # CvMat* desc
+    )
+    
+    def cvCreateFeatureTree(desc):
+        """CvFeatureTree cvCreateFeatureTree(CvMat desc)
+        
+        Constructs a kd-tree of feature vectors
+        """
+        z = pointee(_cvCreateFeatureTree(desc), desc)
+        z.desc = desc
+        return z
+
+    # Destroys a tree of feature vectors
+    # ctypes-opencv: note this cvRelease...() is different from other cvRelease functions
+    _cvReleaseFeatureTree = cfunc('cvCreateFeatureTree', _cvDLL, CvFeatureTree_p,
+        ('tr', ByRefArg(CvFeatureTree), 1), # CvFeatureTree* tr
+    )
+    
+    # Finds approximate k nearest neighbors of given vectors using best-bin-first search
+    _cvFindFeatures = cfunc('cvFindFeatures', _cvDLL, None,
+        ('tr', CvFeatureTree_r, 1), # CvFeatureTree* tr
+        ('desc', CvMat_r, 1), # CvMat* desc
+        ('result', CvMat_r, 1), # CvMat* result
+        ('dist', CvMat_r, 1), # CvMat* dist
+        ('k', c_int, 1, 2), # int k
+        ('emax', c_int, 1, 20), # int emax
+    )
+    
+    def cvFindFeatures(tr, desc, k=2, emax=20):
+        """(CvMat result, CvMat dist) = cvFindFeatures(CvFeatureTree tr, CvMat desc, int k=2, int emax=20)
+        
+        Finds approximate k nearest neighbors of given vectors using best-bin-first search
+        [ctypes-opencv] result and dist are created automatically using cvCreateMat()
+        """
+        m = desc.rows
+        result = cvCreateMat(m, k, CV_32SC1)
+        dist = cvCreateMat(m, k, CV_64FC1)
+        _cvFindFeatures(tr, desc, result, dist, k=k, emax=emax)
+        return (result, dist)
+        
+    # Orthogonal range search
+    _cvFindFeaturesBoxed = cfunc('cvFindFeaturesBoxed', _cvDLL, c_int,
+        ('tr', CvFeatureTree_r, 1), # CvFeatureTree* tr
+        ('bounds_min', CvMat_r, 1), # CvMat* bounds_min
+        ('bounds_max', CvMat_r, 1), # CvMat* bounds_max
+        ('results', CvMat_r, 1), # CvMat* results
+    )
+    
+    def cvFindFeaturesBoxed(tr):
+        """(int nfeatures, CvMat results) = cvFindFeaturesBoxed(CvFeatureTree tr, CvMax bounds_min, CvMax bounds_max)
+        
+        Orthogonal range search
+        [ctypes-opencv] Matrix 'results' is automatically created using cvCreateMat().
+        """
+        z = cvCreateMat(1, tr.desc.rows, CV_32SC1) if bounds_min.rows == 1 else cvCreateMat(tr.desc.rows, 1, CV_32SC1)
+        n = _cvFindFeaturesBoxed(tr, bounds_min, bounds_max, z)
+        return (n, z)
+        
+    
+
+#-----------------------------------------------------------------------------
 # Estimators
 #-----------------------------------------------------------------------------
 
@@ -2516,6 +2664,10 @@ def cvLoadHaarClassifierCascade(directory, orig_window_size):
 
 CV_HAAR_DO_CANNY_PRUNING = 1
 CV_HAAR_SCALE_IMAGE = 2
+if _cvver == 110:
+    CV_HAAR_FIND_BIGGEST_OBJECT = 4 
+    CV_HAAR_DO_ROUGH_SEARCH = 8
+
 
 # Detects objects in the image
 _cvHaarDetectObjects = cfunc('cvHaarDetectObjects', _cvDLL, CvSeq_p,
@@ -2609,9 +2761,119 @@ if _cvver == 110:
         _cvFindHomoGraphy(src_points, dst_points, z, method=method, ransacReprojThreshold=ransacReprojThreshold, mask=mask)
         return z
         
+    CV_CALIB_FIX_FOCAL_LENGTH = 16
     CV_CALIB_FIX_K1 = 32
     CV_CALIB_FIX_K2 = 64
     CV_CALIB_FIX_K3 = 128
+    CV_CALIB_FIX_INTRINSIC = 256
+    CV_CALIB_SAME_FOCAL_LENGTH = 512
+    CV_CALIB_ZERO_DISPARITY = 1024
+    
+    # Finds intrinsic and extrinsic camera parameters using calibration pattern
+    cvCalibrationMatrixValues = cfunc('cvCalibrationMatrixValues', _cvDLL, None,
+        ('calibMatr', CvMat_r, 1), # const CvMat* calibMatr
+        ('imgWidth', c_int, 1), # int imgWidth
+        ('imgHeight', c_int, 1), # int imgHeight
+        ('apertureWidth', c_double, 1, 0), # double apertureWidth
+        ('apertureHeight', c_double, 1, 0), # double apertureHeight
+        ('fovx', c_double_p, 1, None), # double *fovx
+        ('fovy', c_double_p, 1, None), # double *fovy
+        ('focalLength', c_double_p, 1, None), # double focalLength
+        ('principalPoint', CvPoint2D64f_p, 1, None), # CvPoint2D64f* principalPoint
+        ('pixelAspectRatio', c_double_p, 1, None), # double* pixelAspectRatio
+    )
+    cvCalibrationMatrixValues.__doc__ = """void cvCalibrationMatrixValues( const CvMat calibMatr, int imgWidth, int imgHeight, double apertureWidth=0, double apertureHeight=0, double *fovx=NULL, double *fovy=NULL, double *focalLength=NULL, CvPoint2D64f *principalPoint=NULL, double *pixelAspectRatio=NULL )
+    
+    Finds intrinsic and extrinsic camera parameters using calibration pattern
+    """
+    
+    # Calibrates stereo camera
+    cvStereoCalibrate = cfunc('cvStereoCalibrate', _cvDLL, None,
+        ('object_points', CvMat_r, 1), # const CvMat* object_points
+        ('image_points1', CvMat_r, 1), # const CvMat* image_points1
+        ('image_points2', CvMat_r, 1), # const CvMat* image_points2
+        ('point_counts', CvMat_r, 1), # const CvMat* point_counts
+        ('camera_matrix1', CvMat_r, 1), # const CvMat* camera_matrix1
+        ('dist_coeffs1', CvMat_r, 1), # CvMat* dist_coeffs1
+        ('camera_matrix2', CvMat_r, 1), # const CvMat* camera_matrix2
+        ('dist_coeffs2', CvMat_r, 1), # CvMat* dist_coeffs2
+        ('image_size', CvSize, 1), # CvSize image_size
+        ('R', CvMat_r, 1), # CvMat* R
+        ('T', CvMat_r, 1), # CvMat* T
+        ('E', CvMat_r, 1, None), # CvMat* E
+        ('F', CvMat_r, 1, None), # CvMat* F
+        ('term_crit', CvTermCriteria, 1, cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 30, 1e-6)), # CvTermCriteria term_crit
+    )
+    cvStereoCalibrate.__doc__ = """void cvStereoCalibrate( const CvMat object_points, const CvMat image_points1, const CvMat image_points2, const CvMat point_counts, CvMat camera_matrix1, CvMat* dist_coeffs1, CvMat camera_matrix2, CvMat* dist_coeffs2, CvSize image_size, CvMat* R, CvMat* T, CvMat* E=0, CvMat* F=0, CvTermCriteria term_crit=cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,30,1e-6), int flags=CV_CALIB_FIX_INTRINSIC )
+                        
+    Calibrates stereo camera
+    """
+    
+    # Computes rectification transform for stereo camera
+    cvStereoRectify = cfunc('cvStereoRectify', _cvDLL, None,
+        ('camera_matrix1', CvMat_r, 1), # const CvMat* camera_matrix1
+        ('camera_matrix2', CvMat_r, 1), # const CvMat* camera_matrix2
+        ('dist_coeffs1', CvMat_r, 1), # const CvMat* dist_coeffs1
+        ('dist_coeffs2', CvMat_r, 1), # const CvMat* dist_coeffs2
+        ('image_size', CvSize, 1), # CvSize image_size
+        ('R', CvMat_r, 1), # const CvMat* R
+        ('T', CvMat_r, 1), # const CvMat* T
+        ('R1', CvMat_r, 1), # CvMat* R1
+        ('R2', CvMat_r, 1), # CvMat* R2
+        ('P1', CvMat_r, 1), # CvMat* P1
+        ('P2', CvMat_r, 1), # CvMat* P2
+        ('Q', CvMat_r, 1, None), # CvMat* Q
+        ('flags', c_int, 1, CV_CALIB_ZERO_DISPARITY), # int flags
+        
+    )
+    cvStereoRectify.__doc__ = """void cvStereoRectify( const CvMat camera_matrix1, const CvMat camera_matrix2, const CvMat dist_coeffs1, const CvMat dist_coeffs2, CvSize image_size, const CvMat R, const CvMat T, CvMat R1, CvMat R2, CvMat P1, CvMat P2, CvMat* Q=0, int flags=CV_CALIB_ZERO_DISPARITY )
+    
+    Computes rectification transform for stereo camera
+    """
+
+    # Computes rectification transform for uncalibrated stereo camera
+    cvStereoRectifyUncalibrated = cfunc('cvStereoRectifyUncalibrated', _cvDLL, None,
+        ('points1', CvMat_r, 1), # const CvMat* points1
+        ('points2', CvMat_r, 1), # const CvMat* points2
+        ('F', CvMat_r, 1), # const CvMat* F
+        ('image_size', CvSize, 1), # CvSize image_size
+        ('H1', CvMat_r, 1), # CvMat* H1
+        ('H2', CvMat_r, 1), # CvMat* H2
+        ('threshold', c_double, 1, 5), # double threshold
+        
+    )
+    cvStereoRectifyUncalibrated.__doc__ = """void cvStereoRectifyUncalibrated( const CvMat points1, const CvMat points2, const CvMat F, CvSize image_size, CvMat* H1, CvMat* H2, double threshold=5 )
+    
+    Computes rectification transform for uncalibrated stereo camera
+    """
+    
+    # Computes undistortion+rectification transformation map a head of stereo camera
+    cvInitUndistortRectifyMap = cfunc('cvInitUndistortRectifyMap', _cvDLL, None,
+        ('camera_matrix', CvMat_r, 1), # const CvMat* camera_matrix
+        ('dist_coeffs', CvMat_r, 1), # const CvMat* dist_coeffs
+        ('R', CvMat_r, 1), # const CvMat* R
+        ('new_camera_matrix', CvMat_r, 1), # const CvMat* new_camera_matrix
+        ('mapx', CvMat_r, 1), # const CvMat* mapx
+        ('mapy', CvMat_r, 1), # const CvMat* mapy
+    )
+    cvInitUndistortRectifyMap.__doc__ = """void cvInitUndistortRectifyMap( const CvMat* camera_matrix, const CvMat* dist_coeffs, const CvMat* R, const CvMat* new_camera_matrix, CvArr* mapx, CvArr* mapy )
+    
+    Computes undistortion+rectification transformation map a head of stereo camera
+    """
+    
+    # Computes the ideal point coordinates from the observed point coordinates
+    cvUndistortPoints = cfunc('cvUndistortPoints', _cvDLL, None,
+        ('src', CvMat_r, 1), # const CvMat* src
+        ('dst', CvMat_r, 1), # const CvMat* dst
+        ('camera_matrix', CvMat_r, 1), # const CvMat* camera_matrix
+        ('dist_coeffs', CvMat_r, 1), # const CvMat* dist_coeffs
+        ('R', CvMat_r, 1, None), # const CvMat* R
+        ('P', CvMat_r, 1, None), # const CvMat* P
+    )
+    cvUndistortPoints.__doc = """void cvUndistortPoints( const CvMat src, CvMat dst, const CvMat camera_matrix, const CvMat dist_coeffs, const CvMat* R=NULL, const CvMat* P=NULL)
+    
+    Computes the ideal point coordinates from the observed point coordinates
+    """
 
 elif _cvver == 100:
     # Projects 3D points to image plane
@@ -2922,7 +3184,150 @@ elif _cvver == 100:
     
     cvConvertPointsHomogeneous = cvConvertPointsHomogenious
 
+if _cvver == 110:
+    class CvStereoBMState(_Structure):
+        _fields_ = [
+            # pre-filtering (normalization of input images)
+            ('preFilterType', c_int),
+            ('preFilterSize', c_int),
+            ('preFilterCap', c_int),
+            
+            # correspondence using Sum of Absolute Difference (SAD)
+            ('SADWindowSize', c_int),
+            ('minDisparity', c_int),
+            ('numberOfDisparities', c_int),
+            
+            # post-filtering
+            ('textureThreshold', c_int),
+            ('uniquenessRatio', c_int),
+            ('speckleWindowSize', c_int),
+            ('speckleRange', c_int),
 
+            # temporary buffers
+            ('preFilteredImg0', CvMat_p),
+            ('preFilteredImg1', CvMat_p),
+            ('slidingSumBuf', CvMat_p),
+        ]
+        
+        def __del__(self):
+            _cvReleaseStereoBMState(pointer(self))
+            
+    CvStereoBMState_p = POINTER(CvStereoBMState)
+    CvStereoBMState_r = ByRefArg(CvStereoBMState)
+        
+    CV_STEREO_BM_BASIC = 0
+    CV_STEREO_BM_FISH_EYE = 1
+    CV_STEREO_BM_NARROW = 2
+    
+    # Creates block matching stereo correspondence structure
+    _cvCreateStereoBMState = cfunc('cvCreateStereoBMState', _cvDLL, CvStereoBMState_p,
+        ('preset', c_int, 1, CV_STEREO_BM_BASIC), # int preset
+        ('numberOfDisparities', c_int, 1, 0), # int numberOfDisparities
+    )
+    
+    def cvCreateStereoBMState(preset=CV_STEREO_BM_BASIC, numberOfDisparities=0):
+        """CvStereoBMState cvCreateStereoBMState( int preset=CV_STEREO_BM_BASIC, int numberOfDisparities=0 )
+        
+        Creates block matching stereo correspondence structure
+        """
+        return pointee(_cvCreateStereoBMState(preset=preset, numberOfDisparities=numberOfDisparities))
+        
+    # Releases block matching stereo correspondence structure
+    _cvReleaseStereoBMState = cfunc('cvReleaseStereoBMState', _cvDLL, None,
+        ('state', ByRefArg(CvStereoBMState_p), 1), # CvStereoBMState_p** state
+    )
+    
+    # Computes the disparity map using block matching algorithm
+    _cvFindStereoCorrespondenceBM = cfunc('cvFindStereoCorrespondenceBM', _cvDLL, None,
+        ('left', CvArr_r, 1), # const CvArr* left
+        ('right', CvArr_r, 1), # const CvArr* right
+        ('disparity', CvArr_r, 1), # const CvArr* disparity
+        ('state', CvStereoBMState, 1), # const CvStereoBMState* state
+    )    
+    
+    def cvFindStereoCorrespondenceBM(left, right, state):
+        """CvArr disparity = cvFindStereoCorrespondenceBM( const CvArr left, const CvArr right, CvStereoBMState state)
+        
+        Computes the disparity map using block matching algorithm
+        [ctypes-opencv] disparity is created using cvCreateMat()
+        """
+        z = cvCreateMat(left.rows, left.cols, CV_16SC1)
+        _cvFindStereoCorrespondenceBM(left, right, z, state)
+        return z
+    
+    # The structure for graph cuts-based stereo correspondence algorithm
+    class CvStereoGCState(_Structure):
+        _fields_ = [
+            ('Ithreshold', c_int),            
+            ('interactionRadius', c_int),
+            ('K', c_float),
+            ('lambdA', c_float),
+            ('lambdA1', c_float),
+            ('lambdA2', c_float),
+            ('occlusionCost', c_int),
+            ('minDisparity', c_int),
+            ('numberOfDisparities', c_int),
+            ('maxIters', c_int),
+
+            # internal buffers
+            ('left', CvMat),
+            ('right', CvMat),
+            ('dispLeft', CvMat),
+            ('dispRight', CvMat),
+            ('ptrLeft', CvMat),
+            ('ptrRight', CvMat),
+            ('vtxBuf', CvMat),
+            ('edgeBuf', CvMat),
+       ]
+        
+        def __del__(self):
+            _cvReleaseStereoGCState(pointer(self))
+            
+    CvStereoGCState_p = POINTER(CvStereoGCState)
+    CvStereoGCState_r = ByRefArg(CvStereoGCState)
+            
+    # Creates the state of graph cut-based stereo correspondence algorithm
+    _cvCreateStereoGCState = cfunc('cvCreateStereoGCState', _cvDLL, CvStereoGCState_p,
+        ('numberOfDisparities', c_int, 1), # int numberOfDisparities
+        ('maxIters', c_int, 1), # int maxIters
+    )
+    
+    def cvCreateStereoGCState(numberOfDisparities, maxIters):
+        """CvStereoGCState cvCreateStereoGCState( int numberOfDisparities, int maxIters )
+        
+        Creates the state of graph cut-based stereo correspondence algorithm
+        """
+        return pointee(_cvCreateStereoGCState(numberOfDisparities, maxIters))
+        
+    # Releases the state structure of the graph cut-based stereo correspondence algorithm
+    _cvReleaseStereoGCState = cfunc('cvReleaseStereoGCState', _cvDLL, None,
+        ('state', ByRefArg(CvStereoGCState_p), 1), # CvStereoGCState_p** state
+    )
+    
+    # Computes the disparity map using graph cut-based algorithm
+    cvFindStereoCorrespondenceGC = cfunc('cvFindStereoCorrespondenceGC', _cvDLL, None,
+        ('left', CvArr_r, 1), # const CvArr* left
+        ('right', CvArr_r, 1), # const CvArr* right
+        ('dispLeft', CvArr_r, 1), # const CvArr* left
+        ('dispRight', CvArr_r, 1), # const CvArr* right
+        ('state', CvStereoGCState, 1), # const CvStereoGCState* state
+        ('useDisparityGuess', c_int, 1, 0), # const CvStereoGCState* state
+    )
+    cvFindStereoCorrespondenceGC.__doc__ = """cvFindStereoCorrespondenceGC( const CvArr left, const CvArr right, CvArr dispLeft, CvArr dispRight, CvStereoGCState state, int useDisparityGuess=0)
+    
+    Computes the disparity map using graph cut-based algorithm
+    """
+    
+    # Reprojects disparity image to 3D space
+    cvReprojectImageTo3D = cfunc('cvReprojectImageTo3D', _cvDLL, None,
+        ('disparity', CvArr_r, 1), # const CvArr* disparity
+        ('_3dimage', CvArr_r, 1), # CvArr* _3dimage
+        ('Q', CvArr_r, 1), # const CvArr* Q
+    )
+    cvReprojectImageTo3D.__doc__ = """void cvReprojectImageTo3D( const CvArr disparity, CvArr _3dImage, const CvMat Q )
+    
+    Reprojects disparity image to 3D space
+    """
 
 # --- 1 Image Processing -----------------------------------------------------
 

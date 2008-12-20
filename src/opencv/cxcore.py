@@ -158,15 +158,6 @@ class ByRefArg(object):
     def from_param(self, param):
         return None if param is None else byref(param)
 
-class CallableToFunc(object):
-    '''Make the callable argument into a C callback'''
-    def __init__(self, cbacktype):
-        self.cbacktype = cbacktype
-
-    def from_param(self, param):
-        return self.cbacktype(param)
-
-
 def pointee(ptr, *depends_args):
     """Returns None if ptr is NULL else ptr's object with dependency tuple associated"""
     if bool(ptr):
@@ -3123,6 +3114,14 @@ cvSolveCubic.__doc__ = """void cvSolveCubic(const CvArr coeffs, CvArr roots)
 Finds real roots of a cubic equation
 """
 
+if _cvver == 110:
+    # Finds real and complex roots of a polynomial equation with real coefficients
+    cvSolvePoly = cfunc('cvSolvePoly', _cxDLL, None,
+        ('coeffs', CvArr_r, 1), # const CvArr* coeffs
+        ('roots', CvArr_r, 1), # CvArr* roots 
+        ('maxiter', c_int, 1, 10), # int maxiter
+        ('fig', c_int, 1, 10), # int fig
+    )
     
 #-----------------------------------------------------------------------------
 # Matrix operations
@@ -5691,7 +5690,7 @@ __all__ += [
     '_cvver', '_cxDLL', '_cvDLL', '_hgDLL',
     'cfunc',
     '_Structure', '_CvSeqStructure', 'ListPOINTER', 'ListPOINTER2', 'ListByRef',
-    'ByRefArg', 'CallableToFunc', 'pointee',
+    'ByRefArg', 'pointee',
 ]
         
 

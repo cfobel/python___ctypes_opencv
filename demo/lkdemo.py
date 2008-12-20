@@ -144,8 +144,8 @@ if __name__ == '__main__':
                                    20, 0.03))
 
             # release the temporary images
-            cv.cvReleaseImage (eig)
-            cv.cvReleaseImage (temp)
+            del(eig)
+            del(temp)
                                                
         elif len (points [0]) > 0:
             # we have points, so display them

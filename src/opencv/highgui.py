@@ -27,32 +27,49 @@ from cxcore import _cvReleaseImage
 
 CV_WINDOW_AUTOSIZE = 1
 
+_windows_callbacks = {}
+
 # Creates window
-cvNamedWindow = cfunc('cvNamedWindow', _hgDLL, c_int,
+_cvNamedWindow = cfunc('cvNamedWindow', _hgDLL, c_int,
     ('name', c_char_p, 1), # const char* name
     ('flags', c_int, 1, 1), # int flags 
 )
-cvNamedWindow.__doc__ = """int cvNamedWindow(const char* name, int flags)
 
-Creates window
-"""
+def cvNamedWindow(name, flags=1):
+    """int cvNamedWindow(const char* name, int flags)
+
+    Creates window
+    """
+    if _cvNamedWindow(name, flags=flags) > 0 and not name in _windows_callbacks:
+        _windows_callbacks[name] = []
+    
 
 # Destroys a window
-cvDestroyWindow = cfunc('cvDestroyWindow', _hgDLL, None,
+_cvDestroyWindow = cfunc('cvDestroyWindow', _hgDLL, None,
     ('name', c_char_p, 1), # const char* name 
 )
-cvDestroyWindow.__doc__ = """void cvDestroyWindow(const char* name)
 
-Destroys a window
-"""
+def cvDestroyWindow(name):
+    """void cvDestroyWindow(const char* name)
+
+    Destroys a window
+    """
+    _cvDestroyWindow(name)
+    if name in _windows_callbacks:
+        _windows_callbacks.pop(name)
+        
 
 # Destroys all the HighGUI windows
-cvDestroyAllWindows = cfunc('cvDestroyAllWindows', _hgDLL, None,
+_cvDestroyAllWindows = cfunc('cvDestroyAllWindows', _hgDLL, None,
 )
-cvDestroyAllWindows.__doc__ = """void cvDestroyAllWindows(oi)
 
-Destroys all the HighGUI windows
-"""
+def cvDestroyAllWindows():
+    """void cvDestroyAllWindows(void)
+
+    Destroys all the HighGUI windows
+    """
+    _cvDestroyAllWindows()
+    _windows_callbacks.clear()
 
 # Sets window size
 cvResizeWindow = cfunc('cvResizeWindow', _hgDLL, None,
@@ -114,17 +131,20 @@ _cvCreateTrackbar = cfunc('cvCreateTrackbar', _hgDLL, c_int,
     ('window_name', c_char_p, 1), # const char* window_name
     ('value', ByRefArg(c_int), 1), # int* value
     ('count', c_int, 1), # int count
-    ('on_change', CallableToFunc(CvTrackbarCallback), 1, 0), # CvTrackbarCallback on_change 
+    ('on_change', CvTrackbarCallback, 1, None), # CvTrackbarCallback on_change 
 )
 
-def cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=0):
-    """int cvCreateTrackbar( const char* trackbar_name, const char* window_name, c_int_or_int value, int count, CvTrackbarCallback on_change )
+def cvCreateTrackbar(trackbar_name, window_name, starting_value, count, on_change=None):
+    """int cvCreateTrackbar( const char* trackbar_name, const char* window_name, int starting_value, int count, CvTrackbarCallback on_change )
 
     Creates the trackbar and attaches it to the specified window
-    [ctypes-opencv] value can be a c_int or int, if it is a c_int, it holds the current value of the trackbar
     """
-    if not isinstance(value, c_int):
-        value = c_int(value)
+    value = c_int(starting_value)
+    if on_change is None:
+        _windows_callbacks[window_name].append((trackbar_name, value))
+    else:
+        on_change = CvTrackbarCallback(on_change) # convert to C callback function
+        _windows_callbacks[window_name].append((trackbar_name, value, on_change))
     return _cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=on_change)
 
 # Retrieves trackbar position
@@ -175,15 +195,20 @@ CvMouseCallback = CFUNCTYPE(None, # void
     c_void_p) # void* param
 
 # Assigns callback for mouse events
-cvSetMouseCallback = cfunc('cvSetMouseCallback', _hgDLL, None,
+_cvSetMouseCallback = cfunc('cvSetMouseCallback', _hgDLL, None,
     ('window_name', c_char_p, 1), # const char* window_name
-    ('on_mouse', CallableToFunc(CvMouseCallback), 1), # CvMouseCallback on_mouse
+    ('on_mouse', CvMouseCallback, 1), # CvMouseCallback on_mouse
     ('param', c_void_p, 1, None), # void* param
 )
-cvSetMouseCallback.__doc__ = """void cvSetMouseCallback( const char* window_name, CvMouseCallback on_mouse, void* param=NULL )
 
-Assigns callback for mouse events
-"""
+def cvSetMouseCallback(window_name, on_mouse, param=None):
+    """void cvSetMouseCallback( const char* window_name, CvMouseCallback on_mouse, void* param=NULL )
+
+    Assigns callback for mouse events
+    """
+    on_mouse = CvMouseCallback(on_mouse) # convert to C callback function
+    _windows_callbacks[window_name].append(on_mouse)
+    _cvSetMouseCallback(window_name, on_mouse, param=param)
 
 # Waits for a pressed key
 _cvWaitKey = cfunc('cvWaitKey', _hgDLL, c_int,
@@ -366,6 +391,9 @@ CV_CAP_PROP_CONVERT_RGB   =15
 
 def CV_FOURCC(c1,c2,c3,c4):
     return (((ord(c1))&255) + (((ord(c2))&255)<<8) + (((ord(c3))&255)<<16) + (((ord(c4))&255)<<24))
+    
+CV_FOURCC_PROMPT = -1 # Windows only
+CV_FOURCC_DEFAULT = -1 # Linux only
 
 # Gets video capturing properties
 cvGetCaptureProperty = cfunc('cvGetCaptureProperty', _hgDLL, c_double,

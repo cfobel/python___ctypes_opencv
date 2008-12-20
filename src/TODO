@@ -1,3 +1,6 @@
-To provide an interface for machine learning classes. Atm, it's pretty tough.
+Provide an interface for machine learning classes. Atm, it's pretty tough.
 
-TODO: wrap properly cvProjectPoints2(), cvFindHomography(), and cvCalibrateCamera2(), cvFindExtrinsicCameraParams2(), cvRodrigues2(), cvInitUndistortMap(), cvFindChessboardCorners(), cvFindFundamentalMat()
+Wrap properly cvProjectPoints2(), cvFindHomography(), and cvCalibrateCamera2(), cvFindExtrinsicCameraParams2(), cvRodrigues2(), cvInitUndistortMap(), cvFindChessboardCorners(), cvFindFundamentalMat(), cvCalibrationMatrixValues(), cvStereoCalibrate(), cvStereoRectify(), cvStereoRectifyUncalibrated(), cvInitUndistortRectifyMap(), cvUndistortPoints()
+
+Wrap properly cvFindStereoCorrespondenceGC()
+
