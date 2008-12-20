@@ -2327,29 +2327,41 @@ def cvSegmentMotion(mhi, seg_mask, storage, timestamp, seg_thresh):
 
 
 # Finds object center on back projection
-cvMeanShift = cfunc('cvMeanShift', _cvDLL, c_int,
+_cvMeanShift = cfunc('cvMeanShift', _cvDLL, c_int,
     ('prob_image', CvArr_r, 1), # const CvArr* prob_image
     ('window', CvRect, 1), # CvRect window
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
     ('comp', CvConnectedComp_r, 1), # CvConnectedComp* comp 
 )
-cvMeanShift.__doc__ = """int cvMeanShift(const CvArr prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp)
 
-Finds object center on back projection
-"""
+def cvMeanShift(prob_image, window, criteria):
+    """(int niter, CvConnectedComp comp) = cvMeanShift(const CvArr prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp)
+
+    Finds object center on back projection
+    """
+    z = CvConnectedComp()
+    n = _cvMeanShift(prob_image, window, criteria, z)
+    return (n,z)
 
 # Finds object center, size, and orientation
-cvCamShift = cfunc('cvCamShift', _cvDLL, c_int,
+_cvCamShift = cfunc('cvCamShift', _cvDLL, c_int,
     ('prob_image', CvArr_r, 1), # const CvArr* prob_image
     ('window', CvRect, 1), # CvRect window
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
     ('comp', CvConnectedComp_r, 1), # CvConnectedComp* comp
-    ('box', CvBox2D_p, 1), # CvBox2D* box
+    ('box', CvBox2D_r, 1, None), # CvBox2D* box
 )
-cvCamShift.__doc__ = """int cvCamShift(const CvArr prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp, CvBox2D* box=NULL)
 
-Finds object center, size, and orientation
-"""
+def cvCamShift(prob_image, window, criteria):
+    """(int niter, CvConnectedComp comp, CvBox2D box) = cvCamShift(const CvArr prob_image, CvRect window, CvTermCriteria criteria)
+
+    Finds object center, size, and orientation
+    [ctypes-opencv] returns number of iterations, converged component, and circumscribed box
+    """
+    comp = CvConnectedComp()
+    box = CvBox2D()
+    niter = _cvCamShift(prob_image, window, criteria, comp, box)
+    return (niter, comp, box)
 
 CV_VALUE = 1
 CV_ARRAY = 2

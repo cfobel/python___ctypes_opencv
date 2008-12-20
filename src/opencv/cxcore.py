@@ -1178,6 +1178,7 @@ class CvBox2D(_Structure):
                 ('size', CvSize2D32f),
                 ('angle', c_float)]
 CvBox2D_p = POINTER(CvBox2D)
+CvBox2D_r = ByRefArg(CvBox2D)
                 
 class CvLineIterator(_Structure):
     _fields_ = [
