@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# OpenCV's Python demo
+# -- adapted by Minh-Tri Pham to work with ctypes-opencv
 """
 This program is demonstration for face and object detection using haar-like features.
 The program finds faces in a camera image or video stream and displays a red box around them.

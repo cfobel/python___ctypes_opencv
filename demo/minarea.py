@@ -1,8 +1,8 @@
 #!/usr/bin/python 
+# OpenCV's Python demo
+# -- adapted by Minh-Tri Pham to work with ctypes-opencv
 
-from ctypes import c_void_p, addressof, sizeof
-from opencv.cv import *
-from opencv.highgui import *
+from opencv import *
 from random import randint
 
 def minarea_array(img, count):
@@ -29,16 +29,16 @@ def minarea_array(img, count):
 
     
 def minarea_seq(img, count, storage):
-    ptseq = cvCreateSeq( CV_SEQ_KIND_GENERIC | CV_32SC2, sizeof(CvContour), sizeof(CvPoint), storage )
+    seq = cvCreateSeq( CV_SEQ_KIND_GENERIC | CV_32SC2, sizeof(CvContour), sizeof(CvPoint), storage )
     for i in range(count):
         pt0 = cvPoint( randint(img.width/4, img.width*3/4),
                        randint(img.height/4, img.height*3/4) )
-        cvSeqPush( ptseq, c_void_p(addressof(pt0)) )
-    box = cvMinAreaRect2( ptseq )
+        cvSeqPush( seq, pt0 )
+    box = cvMinAreaRect2( seq )
     box_vtx = cvBoxPoints( box )
-    success, center, radius = cvMinEnclosingCircle( ptseq )
+    success, center, radius = cvMinEnclosingCircle( seq )
     cvZero( img )
-    for pt in ptseq.asarray(CvPoint):
+    for pt in seq.asarray(CvPoint):
         cvCircle( img, pt, 2, CV_RGB( 255, 0, 0 ), CV_FILLED, CV_AA, 0 )
 
     box_vtx = [cvPointFrom32f(box_vtx[0]),

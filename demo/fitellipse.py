@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# OpenCV's Python demo
+# -- adapted by Minh-Tri Pham to work with ctypes-opencv
 """
 This program is demonstration for ellipse fitting. Program finds 
 contours and approximate it by ellipses.

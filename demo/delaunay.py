@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# OpenCV's Python demo
+# -- adapted by Minh-Tri Pham to work with ctypes-opencv
 """
 the script demostrates iterative construction of
 delaunay triangulation and voronoi tesselation

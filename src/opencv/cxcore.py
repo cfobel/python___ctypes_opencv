@@ -377,11 +377,11 @@ class IplImage(_Structure):
         return datatype.from_address(addressof(self.imageData.contents)+self.widthStep*y+x*sizeof(datatype))
 
     def __getitem__(self, key):
-        pixel = get_pixel(self, key)
+        pixel = self.get_pixel(key)
         return pixel if len(pixel) > 1 else pixel[0]
         
     def __setitem__(self, key, value):
-        pixel = get_pixel(self, key)
+        pixel = self.get_pixel(key)
 
         if isinstance(value, CvScalar):
             for i in xrange(len(pixel)):
@@ -862,13 +862,14 @@ class _CvSeqStructure(_Structure):
         """Converts this CvSeq into an array of elements of type 'elem_type'."""
         return self.CvArrayFromSequence2(self, elem_type, False)
         
-    def append(self, ptr):
+    def append(self, element):
         """Adds element to sequence end
         
         :Parameters:
-            ptr : a pointer to the element, its content is to be copied        
+            element : an element, whose content is to be copied
+                the element should be an instance of a subclass of _Structure
         """        
-        cvSeqPush(self, ptr)
+        cvSeqPush(self, element)
         
     def vrange(self):
         """
@@ -3741,7 +3742,7 @@ Sets up sequence block size
 # Adds element to sequence end
 cvSeqPush = cfunc('cvSeqPush', _cxDLL, c_void_p,
     ('seq', CvSeq_r, 1), # CvSeq* seq
-    ('element', c_void_p, 1, None), # void* element
+    ('element', CvArr_r, 1, None), # void* element
 )
 cvSeqPush.__doc__ = """char* cvSeqPush(CvSeq seq, void* element=NULL)
 

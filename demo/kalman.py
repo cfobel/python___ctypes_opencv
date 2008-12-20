@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# OpenCV's Python demo
+# -- adapted by Minh-Tri Pham to work with ctypes-opencv
 """ 
    Tracking of rotating point.
    Rotation speed is constant.

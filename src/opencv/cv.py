@@ -1837,11 +1837,11 @@ Calculates area of the whole contour or contour section
 
 # Calculates contour perimeter or curve length
 cvArcLength = cfunc('cvArcLength', _cvDLL, c_double,
-    ('curve', c_void_p, 1), # const void* curve
+    ('curve', CvSeq_r, 1), # const void* curve
     ('slice', CvSlice, 1), # CvSlice slice
     ('is_closed', c_int, 1), # int is_closed
 )
-cvArcLength.__doc__ = """double cvArcLength(const void* curve, CvSlice slice=CV_WHOLE_SEQ, int is_closed=-1)
+cvArcLength.__doc__ = """double cvArcLength(const CvSeq curve, CvSlice slice=CV_WHOLE_SEQ, int is_closed=-1)
 
 Calculates contour perimeter or curve length
 """

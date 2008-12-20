@@ -1,17 +1,14 @@
 #!/usr/bin/python
-from opencv.cv import *
-from opencv.highgui import *
+# OpenCV's Python demo
+# -- adapted by Minh-Tri Pham to work with ctypes-opencv
+from opencv import *
 from random import randint
 MAX_CLUSTERS=5
 
 if __name__ == "__main__":
 
-    color_tab = [
-        CV_RGB(255,0,0),
-        CV_RGB(0,255,0),
-        CV_RGB(100,100,255),
-        CV_RGB(255,0,255),
-        CV_RGB(255,255,0)];
+    color_tab = [CV_RGB(255,0,0),CV_RGB(0,255,0),CV_RGB(100,100,255),
+        CV_RGB(255,0,255),CV_RGB(255,255,0)];
     img = cvCreateImage( cvSize( 500, 500 ), 8, 3 );
     rng = cvRNG(-1);
 
@@ -33,8 +30,11 @@ if __name__ == "__main__":
             if k != cluster_count:
                 last = (k+1)*sample_count/cluster_count
 
+            if first >= last:
+                continue
+                
             point_chunk = cvGetRows(points, first, last)
-                        
+            
             cvRandArr( rng, point_chunk, CV_RAND_NORMAL,
                        cvScalar(center.x,center.y,0,0),
                        cvScalar(img.width*0.1,img.height*0.1,0,0));

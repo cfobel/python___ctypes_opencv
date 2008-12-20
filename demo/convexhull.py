@@ -1,4 +1,6 @@
 #! /usr/bin/env python
+# OpenCV's Python demo
+# -- adapted by Minh-Tri Pham to work with ctypes-opencv
 
 print "OpenCV Python version of convexhull"
 

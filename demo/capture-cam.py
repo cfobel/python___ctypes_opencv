@@ -1,10 +1,11 @@
 #! /usr/bin/env python
+# OpenCV's Python demo
+# -- adapted by Minh-Tri Pham to work with ctypes-opencv
 
 import sys
 
 # import the necessary things for OpenCV
-from opencv import cv
-from opencv import highgui
+from opencv import *
 
 # the codec existing in cvcapp.cpp,
 # need to have a better way to specify them in the future
@@ -29,10 +30,10 @@ if __name__ == '__main__':
     print "OpenCV Python capture video"
 
     # first, create the necessary window
-    highgui.cvNamedWindow ('Camera', highgui.CV_WINDOW_AUTOSIZE)
+    cvNamedWindow ('Camera', CV_WINDOW_AUTOSIZE)
 
     # move the new window to a better place
-    highgui.cvMoveWindow ('Camera', 10, 10)
+    cvMoveWindow ('Camera', 10, 10)
 
     try:
         # try to get the device number from the command line
@@ -46,11 +47,11 @@ if __name__ == '__main__':
 
     if len (sys.argv) == 1:
         # no argument on the command line, try to use the camera
-        capture = highgui.cvCreateCameraCapture (device)
+        capture = cvCreateCameraCapture (device)
     else:
         # we have an argument on the command line,
         # we can assume this is a file name, so open it
-        capture = highgui.cvCreateFileCapture (sys.argv [1])            
+        capture = cvCreateFileCapture (sys.argv [1])            
 
     # check that capture device is OK
     if not capture:
@@ -58,19 +59,19 @@ if __name__ == '__main__':
         sys.exit (1)
 
     # capture the 1st frame to get some propertie on it
-    frame = highgui.cvQueryFrame (capture)
+    frame = cvQueryFrame (capture)
 
     # get size of the frame
-    frame_size = cv.cvGetSize (frame)
+    frame_size = cvGetSize (frame)
 
     # get the frame rate of the capture device
-    fps = highgui.cvGetCaptureProperty (capture, highgui.CV_CAP_PROP_FPS)
+    fps = cvGetCaptureProperty (capture, CV_CAP_PROP_FPS)
     if fps == 0:
         # no fps getted, so set it to 30 by default
         fps = 30
 
     # create the writer
-    writer = highgui.cvCreateVideoWriter ("captured.avi", highgui.CV_FOURCC('X','v','i','D'),
+    writer = cvCreateVideoWriter ("captured.avi", CV_FOURCC('X','v','i','D'),
                                           fps, frame_size, True)
 
     # check the writer is OK
@@ -82,19 +83,19 @@ if __name__ == '__main__':
         # do forever
 
         # 1. capture the current image
-        frame = highgui.cvQueryFrame (capture)
+        frame = cvQueryFrame (capture)
         if frame is None:
             # no image captured... end the processing
             break
 
         # write the frame to the output file
-        highgui.cvWriteFrame (writer, frame)
+        cvWriteFrame (writer, frame)
 
         # display the frames to have a visual output
-        highgui.cvShowImage ('Camera', frame)
+        cvShowImage ('Camera', frame)
 
         # handle events
-        k = highgui.cvWaitKey (5)
+        k = cvWaitKey (5)
 
         if k == '\x1b':
             # user has press the ESC key, so exit
