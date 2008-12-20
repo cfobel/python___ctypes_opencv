@@ -53,7 +53,7 @@ Topic :: Software Development :: Libraries :: Python Modules
 
 
 setup(name = 'ctypes-opencv',
-	version = '0.3.0',
+	version = '0.5.0',
 	description = DOCLINES[0],
 	author = 'Minh-Tri Pham',
 	author_email = 'pmtri80@gmail.com',

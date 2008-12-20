@@ -6,6 +6,19 @@ Change Log
 ==========
 
 
+ctypes-opencv-0.5.0 development release
+---------------------------------------
+
+- Major change that breaks backward compatibility: frequent use of variables as pointers to structures are changed to references to structures instead. This allows code to be more secured, more user-friendly, and run slightly faster.
+
+- Fixed many bugs
+- Fixed a major bug in callback functions that may, with high probability, crash the user's program. After this fix, ctypes-opencv is very hard to crash, unless a user deliberately tries to do so.
+- Added functions: cvInitSparseMatIterator() and cvGetNextSparseNode()
+- Added function cvMixChannels()
+- Created a few more useful functions
+- Added three more demos: camshiftdemo.py, squares.py, and watershed.py
+- Added full interface for OpenCV 1.1 functionality
+
 ctypes-opencv-0.3.0 development release
 ---------------------------------------
 
