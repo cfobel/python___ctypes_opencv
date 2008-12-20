@@ -5690,7 +5690,7 @@ __all__ += [
     '_cvver', '_cxDLL', '_cvDLL', '_hgDLL',
     'cfunc',
     '_Structure', '_CvSeqStructure', 'ListPOINTER', 'ListPOINTER2', 'ListByRef',
-    'ByRefArg', 'pointee',
+    'ByRefArg', 'pointee', 'sizeof',
 ]
         
 
