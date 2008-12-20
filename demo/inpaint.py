@@ -68,7 +68,7 @@ if __name__=="__main__":
             cvCopy( img0, img );
             cvShowImage( "image", img );
 
-        if( c == 'i' or c == '\012' ):
+        if( c == 'i' or c == '\r' ):
             cvNamedWindow( "inpainted image", 1 );
             cvInpaint( img, inpaint_mask, inpainted, 3, CV_INPAINT_TELEA );
             cvShowImage( "inpainted image", inpainted );
