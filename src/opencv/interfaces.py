@@ -23,29 +23,46 @@ from cxcore import *
 # Helpers for access to images for other GUI packages
 #=============================================================================
 
-def cvImageAsString(img):
-    return string_at(img[0].imageData, img[0].imageSize)
-cvImageAsBuffer = cvImageAsString
-
-# Added by Minh-Tri Pham
-def cvCvMatAsBuffer(mat):
-    return string_at(mat[0].data.ptr, mat[0].step * mat[0].rows)
-
 #-----------------------------------------------------------------------------
-# wx
+# wx -- by Gary Bishop
 #-----------------------------------------------------------------------------
 try:
     import wx
-    del(wx)
 
-    def cvImageAsBitmap(img, flip=True):
+    def cvIplImageAsBitmap(img, flip=True):
         sz = cvGetSize(img)
         flags = CV_CVTIMG_SWAP_RB
         if flip:
             flags |= CV_CVTIMG_FLIP
         cvConvertImage(img, img, flags)
-        bitmap = wx.BitmapFromBuffer(sz.width, sz.height, cvImageAsBuffer(img))
+        bitmap = wx.BitmapFromBuffer(sz.width, sz.height, img.data_as_string())
         return bitmap
+except ImportError:
+    pass
+
+#-----------------------------------------------------------------------------
+# pil -- by Jérémy Bethmont
+#-----------------------------------------------------------------------------
+try:
+    import PIL
+
+    def pil_to_ipl(im_pil):
+        im_ipl = cvCreateImage(cvSize(im_pil.size[0], im_pil.size[1]),
+IPL_DEPTH_8U, 3)
+        data = im_pil.tostring('raw', 'RGB', im_pil.size[0] * 3)
+        cvSetData(im_ipl, cast(data, POINTER(c_byte)), im_pil.size[0] * 3)
+        cvCvtColor(im_ipl, im_ipl, CV_RGB2BGR)
+        return im_ipl
+
+    def ipl_to_pil(im_ipl):
+        size = (im_ipl.width, im_ipl.height)
+        data = im_ipl.data_as_string()
+        im_pil = PIL.Image.fromstring(
+                    "RGB", size, data,
+                    'raw', "BGR", im_ipl.widthStep
+        )
+        return im_pil
+
 except ImportError:
     pass
 
@@ -69,25 +86,25 @@ try:
     }
 
     def cvIplImageAsNDarray(img):
-        """Convert a POINTER(IplImage) into ndarray
+        """Convert an IplImage into ndarray
         
         Input:
-            img: a POINTER(IplImage)
+            img: an instance of IplImage
         Output:
             img2: an ndarray
         """
-        if not isinstance(img,POINTER(IplImage)):
-            raise TypeError('img is not of type POINTER(IplImage)')
+        if not isinstance(img,IplImage):
+            raise TypeError('img is not of type IplImage')
             
         from numpy import frombuffer, dtype
         
-        dtypename = _dict_opencvdepth2dtype[img.contents.depth]
-        data = frombuffer(cvImageAsBuffer(img),dtype=dtypename)
+        dtypename = _dict_opencvdepth2dtype[img.depth]
+        data = frombuffer(cvIplImageAsBuffer(img),dtype=dtypename)
         
-        w = img.contents.width
-        ws = img.contents.widthStep / dtype(dtypename).itemsize
-        h = img.contents.height
-        nc = img.contents.nChannels
+        w = img.width
+        ws = img.widthStep / dtype(dtypename).itemsize
+        h = img.height
+        nc = img.nChannels
 
         if nc > 1:
             return data.reshape(h,ws)[:,:w*nc].reshape(h,w,nc)

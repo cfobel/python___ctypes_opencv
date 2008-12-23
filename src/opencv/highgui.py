@@ -251,7 +251,7 @@ def cvLoadImage(filename, iscolor=1):
     """
     z = pointee(_cvLoadImage(filename, iscolor))
     if z is not None:
-        z._owner = 2 # both header and data
+        z._owner = 3 # both header and data
     return z
 
 # Saves an image to the file

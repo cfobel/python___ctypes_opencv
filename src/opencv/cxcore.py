@@ -367,6 +367,10 @@ IPL_BORDER_REFLECT_101    = 4
 # img[3:4] is *invalid*
 # img[3] is *invalid*
 class IplImage(_Structure):
+    def data_as_string(self):
+        return string_at(self.imageData, self.imageSize)        
+    data_as_buffer = data_as_string
+
     def get_pixel(self, key):
         if not isinstance(key, tuple) or len(key) != 2 or not isinstance(key[0], int) or not isinstance(key[1], int):
             raise KeyError("Key (%s) is not a tuple of 2 integers." % str(key))
@@ -406,7 +410,9 @@ class IplImage(_Structure):
     def __del__(self):
         if self._owner == 1: # own header only
             _cvReleaseImageHeader(pointer(self))
-        elif self._owner == 2: # own header and data
+        elif self._owner == 2: # own data but not header
+            _cvReleaseData(self)
+        elif self._owner == 3: # own header and data
             _cvReleaseImage(pointer(self))
 
     def __repr__(self):
@@ -630,6 +636,10 @@ CvMatCols_p = POINTER(CvMatCols)
 #        <do something with column y>
 #    would iterate on the columns of mat (y = cvGetCols(mat, i, i+1)).
 class CvMat(_Structure):
+    def data_as_string(self):
+        return string_at(self.data.ptr, self.step * self.rows)        
+    data_as_buffer = data_as_string
+
     def get_pixel_or_slice2d(self, key):
         if not isinstance(key, tuple):
             key = (key, slice(None))
@@ -1716,7 +1726,7 @@ def cvCreateImage(size, depth, channels):
     Creates header and allocates data
     """
     z = pointee(_cvCreateImage(size, depth, channels))
-    z._owner = 2 # both header and data
+    z._owner = 3 # both header and data
     return z
 
 # Makes a full copy of image (widthStep may differ)
@@ -1730,7 +1740,7 @@ def cvCloneImage(image):
     Makes a full copy of image (widthStep may differ)
     """
     z = pointee(_cvCloneImage(image))
-    z._owner = 2 # as a clone, z owns both header and data
+    z._owner = 3 # as a clone, z owns both header and data
     return z
 
 # Sets channel of interest to given value
@@ -2455,35 +2465,56 @@ Fill destination array with tiled source array
 # Manipulating the data of a CvArr
 #-----------------------------------------------------------------------------
 
+# Minh-Tri's note: OpenCV's CvMat has a reference counter for its data pointer.
+# So there's no need to worry about memory leak when setting/releasing data.
+# However, IplImage does not. Thus, I implemented a guard against this leak.
 
 # Allocates array data
-cvCreateData = cfunc('cvCreateData', _cxDLL, None,
+_cvCreateData = cfunc('cvCreateData', _cxDLL, None,
     ('arr', CvArr_r, 1), # CvArr* arr 
 )
-cvCreateData.__doc__ = """void cvCreateData(CvArr arr)
 
-Allocates array data
-"""
+def cvCreateData(arr):
+    """void cvCreateData(CvArr arr)
+
+    Allocates array data
+    """
+    _cvCreateData(arr)
+    if isinstance(arr, IplImage):
+        arr._owner |= 2 # now arr owns data
 
 # Releases array data
-cvReleaseData = cfunc('cvReleaseData', _cxDLL, None,
+_cvReleaseData = cfunc('cvReleaseData', _cxDLL, None,
     ('arr', CvArr_r, 1), # CvArr* arr 
 )
-cvReleaseData.__doc__ = """void cvReleaseData(CvArr arr)
 
-Releases array data
-"""
+def cvReleaseData(arr):
+    """void cvReleaseData(CvArr arr)
+
+    Releases array data
+    """
+    _cvReleaseData(arr)
+    if isinstance(arr, IplImage):
+        arr._owner &= ~2 # arr does not own data anymore
 
 # Assigns user data to the array header
-cvSetData = cfunc('cvSetData', _cxDLL, None,
+_cvSetData = cfunc('cvSetData', _cxDLL, None,
     ('arr', CvArr_r, 1), # CvArr* arr
     ('data', c_void_p, 1), # void* data
     ('step', c_int, 1), # int step 
 )
-cvSetData.__doc__ = """void cvSetData(CvArr arr, void* data, int step)
 
-Assigns user data to the array header
-"""
+def cvSetData(arr, data, step):
+    """void cvSetData(CvArr arr, void* data, int step)
+
+    Assigns user data to the array header
+    """
+    if isinstance(arr, IplImage):
+        if arr._owner & 2:
+            cvReleaseData(arr) # release old data if arr owns it
+        _cvSetData(arr, data, step)
+    else:
+        _cvSetData(arr, data, step)
 
 # Retrieves low-level information about the array
 cvGetRawData = cfunc('cvGetRawData', _cxDLL, None,
