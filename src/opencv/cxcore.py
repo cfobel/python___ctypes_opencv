@@ -38,20 +38,24 @@ c_short_p = POINTER(c_short)
 # ----Load the DLLs ----------------------------------------------------------
 # modified a little bit by Minh-Tri Pham
 def detect_opencv():
+    from ctypes.util import find_library
     if os.name == 'posix' and sys.platform.startswith('linux'):
         try:
-            cxDLL = cdll.LoadLibrary('libcxcore.so.1')
-            cvDLL = cdll.LoadLibrary('libcv.so.1')
-            hgDLL = cdll.LoadLibrary('libhighgui.so.1')
-            cvver = 100
+            cxDLL = cdll.LoadLibrary(find_library('libcxcore.so.2'))
+            cvDLL = cdll.LoadLibrary(find_library('libcv.so.2'))
+            hgDLL = cdll.LoadLibrary(find_library('libhighgui.so.2'))
         except:
-            raise ImportError("Cannot import OpenCV's .so files. Make sure you have their paths included in your PATH variable.")
+            try:
+                cxDLL = cdll.LoadLibrary(find_library('libcxcore.so.1'))
+                cvDLL = cdll.LoadLibrary(find_library('libcv.so.1'))
+                hgDLL = cdll.LoadLibrary(find_library('libhighgui.so.1'))
+            except:
+                raise ImportError("Cannot import OpenCV's .so files. Make sure you have their paths included in your PATH variable.")
     elif os.name == 'posix' and sys.platform.startswith('darwin'):
-        try:
-            cxDLL = cdll.LoadLibrary('libcxcore.dylib')
-            cvDLL = cdll.LoadLibrary('libcv.dylib')
-            hgDLL = cdll.LoadLibrary('libhighgui.dylib')
-            cvver = 100
+        try: # improved by Jérémy Bethmont
+            cxDLL = cdll.LoadLibrary(find_library('libcxcore.dylib'))
+            cvDLL = cdll.LoadLibrary(find_library('libcv.dylib'))
+            hgDLL = cdll.LoadLibrary(find_library('libhighgui.dylib'))
         except:
             raise ImportError("Cannot import OpenCV's .dylib files. Make sure you have their paths included in your PATH variable.")
     elif os.name == 'nt':
@@ -59,21 +63,28 @@ def detect_opencv():
             cxDLL = cdll.cxcore110
             cvDLL = cdll.cv110
             hgDLL = cdll.highgui110
-            cvver = 110
         except:
             try:
                 cxDLL = cdll.cxcore100
                 cvDLL = cdll.cv100
                 hgDLL = cdll.highgui100
-                cvver = 100
             except:
                 raise ImportError("Cannot import OpenCV's .DLL files. Make sure you have their paths included in your PATH variable.")
     else:
-        raise NotImplementedError("Your OS is not supported.")
+        raise NotImplementedError("Your OS is not supported. Or you can rewrite this detect_opencv() function to support it.")
 
-    return cvver, cxDLL, cvDLL, hgDLL
+    return cxDLL, cvDLL, hgDLL
 
-_cvver, _cxDLL, _cvDLL, _hgDLL = detect_opencv()    
+_cxDLL, _cvDLL, _hgDLL = detect_opencv()    
+
+def detect_version():
+    try:
+        _cvDLL.cvExtractSURF
+        return 110
+    except AttributeError:
+        return 100
+
+_cvver = detect_version()        
 #------
 
 # make function prototypes a bit easier to declare

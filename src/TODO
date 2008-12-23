@@ -4,3 +4,4 @@ Wrap properly cvProjectPoints2(), cvFindHomography(), and cvCalibrateCamera2(), 
 
 Wrap properly cvFindStereoCorrespondenceGC()
 
+Make sure cvSetData() properly handles freed data properly

@@ -16,11 +16,7 @@
 # ----------------------------------------------------------------------------
 """ctypes-opencv - A Python wrapper for OpenCV using ctypes
 
-ctypes-opencv is a Python module which encapsulates the functionality of 
-Intel's Open Source Computer Vision Library (OpenCV). The Open Computer 
-Vision Library is a collection of algorithms and sample code for various 
-computer vision problems. The goal of ctypes-opencv is to give one Python 
-access to all documented functionality of OpenCV.
+ctypes-opencv is a Python package which encapsulates the functionality of Intel's Open Source Computer Vision Library (OpenCV). The Open Computer Vision Library is a collection of algorithms and sample code for various computer vision problems. The goal of ctypes-opencv is to provide Python access to all documented functionality of OpenCV.  
 """
 
 DOCLINES = __doc__.split("\n")
@@ -29,9 +25,6 @@ from distutils.core import setup
 
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
-Environment :: Console
-Environment :: MacOS X
-Environment :: Win32 (MS Windows)
 Intended Audience :: Developers
 Intended Audience :: End Users/Desktop
 Intended Audience :: Information Technology

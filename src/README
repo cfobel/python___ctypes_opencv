@@ -5,14 +5,14 @@ ctypes-opencv - A Python wrapper for OpenCV using ctypes
 ctypes-opencv is a Python package which encapsulates the functionality of Intel's Open Source Computer Vision Library (OpenCV). The Open Computer Vision Library is a collection of algorithms and sample code for various computer vision problems. The goal of ctypes-opencv is to provide Python access to all documented functionality of OpenCV. 
 
 :Author: Minh-Tri Pham <pmtri80@gmail.com>
-:Version: 0.3.0 (devel)
+:Version: 0.5.0 (devel)
 :Released: December 2008 (dev)
 :License: New BSD License
 
 Availability
 ============
 
-   To get the lastest version, see:
+   To get the latest version, see:
    http://code.google.com/p/ctypes-opencv/
 
 Requirements
@@ -22,7 +22,7 @@ The following packages must be installed on your platforms:
  - OpenCV 1.0 or above
  - Python 2.5 or above
 
-ctypes-opencv detects the existence of OpenCV by detecting its shared libraries. It uses the shared libraries to provide the Python interface. ctypes-opencv uses packages 'ctypes' and 'partial', which are available in Python since version 2.5. ctypes-opencv works with Python 2.6, too.
+ctypes-opencv detects the existence of OpenCV installation by detecting OpenCV's shared libraries. It uses these shared libraries to provide an interface in Python. This is done via package 'ctypes', which is available in Python since version 2.5. Being a pure Python package, ctypes-opencv works with Python 2.6, too.
 
 Installation
 ============
