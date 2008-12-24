@@ -52,7 +52,7 @@ def detect_opencv():
             except:
                 raise ImportError("Cannot import OpenCV's .so files. Make sure you have their paths included in your PATH variable.")
     elif os.name == 'posix' and sys.platform.startswith('darwin'):
-        try: # improved by Jérémy Bethmont
+        try: # improved by Jeremy Bethmont
             cxDLL = cdll.LoadLibrary(find_library('libcxcore.dylib'))
             cvDLL = cdll.LoadLibrary(find_library('libcv.dylib'))
             hgDLL = cdll.LoadLibrary(find_library('libhighgui.dylib'))
@@ -196,9 +196,9 @@ def pointee(ptr, *depends_args):
 
 if cvVersion == 110:
     CV_MAJOR_VERSION    = 1
-    CV_MINOR_VERSION    = 0
+    CV_MINOR_VERSION    = 1
     CV_SUBMINOR_VERSION = 0
-    CV_VERSION          = "1.0.0"
+    CV_VERSION          = "1.1.0"
 elif cvVersion == 100:
     CV_MAJOR_VERSION    = 1
     CV_MINOR_VERSION    = 0
