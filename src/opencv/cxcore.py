@@ -84,7 +84,7 @@ def detect_version():
     except AttributeError:
         return 100
 
-_cvver = detect_version()        
+cvVersion = detect_version()        
 #------
 
 # make function prototypes a bit easier to declare
@@ -188,12 +188,12 @@ def pointee(ptr, *depends_args):
 # Begin of cxcore/cvver.h
 #=============================================================================
 
-if _cvver == 110:
+if cvVersion == 110:
     CV_MAJOR_VERSION    = 1
     CV_MINOR_VERSION    = 0
     CV_SUBMINOR_VERSION = 0
     CV_VERSION          = "1.0.0"
-elif _cvver == 100:
+elif cvVersion == 100:
     CV_MAJOR_VERSION    = 1
     CV_MINOR_VERSION    = 0
     CV_SUBMINOR_VERSION = 0
@@ -3160,7 +3160,7 @@ cvSolveCubic.__doc__ = """void cvSolveCubic(const CvArr coeffs, CvArr roots)
 Finds real roots of a cubic equation
 """
 
-if _cvver == 110:
+if cvVersion == 110:
     # Finds real and complex roots of a polynomial equation with real coefficients
     cvSolvePoly = cfunc('cvSolvePoly', _cxDLL, None,
         ('coeffs', CvArr_r, 1), # const CvArr* coeffs
@@ -5733,7 +5733,7 @@ __all__ = [x for x in locals().keys() \
 __all__ += [
     'c_int_p', 'c_int8_p', 'c_ubyte_p', 'c_float_p', 'c_double_p', 
     'c_void_p_p', 'c_short_p',
-    '_cvver', '_cxDLL', '_cvDLL', '_hgDLL',
+    '_cxDLL', '_cvDLL', '_hgDLL',
     'cfunc',
     '_Structure', '_CvSeqStructure', 'ListPOINTER', 'ListPOINTER2', 'ListByRef',
     'ByRefArg', 'pointee', 'sizeof',

@@ -540,7 +540,7 @@ def cvGoodFeaturesToTrack(image, eig_image, temp_image, max_corner_count, qualit
 # Speeded Up Robust Features
 #-----------------------------------------------------------------------------
 
-if _cvver == 110:
+if cvVersion == 110:
     class CvSURFPoint(_Structure):
         _fields_ = [
             ('pt', CvPoint2D32f),
@@ -2481,7 +2481,7 @@ def cvCalcOpticalFlowPyrLK(prev, curr, prev_pyr, curr_pyr, pref_features, win_si
 #-----------------------------------------------------------------------------
 
 
-if _cvver == 110:
+if cvVersion == 110:
     
     # supposed to be a black box
     class CvFeatureTree(_Structure):    
@@ -2676,7 +2676,7 @@ def cvLoadHaarClassifierCascade(directory, orig_window_size):
 
 CV_HAAR_DO_CANNY_PRUNING = 1
 CV_HAAR_SCALE_IMAGE = 2
-if _cvver == 110:
+if cvVersion == 110:
     CV_HAAR_FIND_BIGGEST_OBJECT = 4 
     CV_HAAR_DO_ROUGH_SEARCH = 8
 
@@ -2729,7 +2729,7 @@ Runs cascade of boosted classifier at given image location
 #-----------------------------------------------------------------------------
 
 
-if _cvver == 110:
+if cvVersion == 110:
     # Projects 3D points to image plane
     cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
         ('object_points', CvMat_r, 1), # const CvMat* object_points
@@ -2887,7 +2887,7 @@ if _cvver == 110:
     Computes the ideal point coordinates from the observed point coordinates
     """
 
-elif _cvver == 100:
+elif cvVersion == 100:
     # Projects 3D points to image plane
     cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
         ('object_points', CvMat_r, 1), # const CvMat* object_points
@@ -3114,7 +3114,7 @@ Calculates homography matrix for oblong planar object (e.g. arm)
 #-----------------------------------------------------------------------------
 
 
-if _cvver == 110:
+if cvVersion == 110:
     CV_FM_7POINT = 1
     CV_FM_8POINT = 2
     CV_FM_LMEDS_ONLY = CV_LMEDS
@@ -3137,7 +3137,7 @@ if _cvver == 110:
     Calculates fundamental matrix from corresponding points in two images
     """
 
-elif _cvver == 100:
+elif cvVersion == 100:
     CV_FM_7POINT = 1
     CV_FM_8POINT = 2
     CV_FM_LMEDS_ONLY = 4
@@ -3173,7 +3173,7 @@ For points in one image of stereo pair computes the corresponding epilines in th
 """
 
 # Convert points to/from homogeneous coordinates
-if _cvver == 110:
+if cvVersion == 110:
     cvConvertPointsHomogeneous = cfunc('cvConvertPointsHomogeneous', _cvDLL, None,
         ('src', CvMat_r, 1), # const CvMat* src
         ('dst', CvMat_r, 1), # CvMat* dst 
@@ -3184,7 +3184,7 @@ if _cvver == 110:
     """
     
     cvConvertPointsHomogenious = cvConvertPointsHomogeneous
-elif _cvver == 100:
+elif cvVersion == 100:
     cvConvertPointsHomogenious = cfunc('cvConvertPointsHomogenious', _cvDLL, None,
         ('src', CvMat_r, 1), # const CvMat* src
         ('dst', CvMat_r, 1), # CvMat* dst 
@@ -3196,7 +3196,7 @@ elif _cvver == 100:
     
     cvConvertPointsHomogeneous = cvConvertPointsHomogenious
 
-if _cvver == 110:
+if cvVersion == 110:
     class CvStereoBMState(_Structure):
         _fields_ = [
             # pre-filtering (normalization of input images)

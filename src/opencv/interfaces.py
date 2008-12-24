@@ -82,8 +82,8 @@ try:
     from_memory = pythonapi.PyBuffer_FromReadWriteMemory
     from_memory.restype = py_object
     
-    def as_numpy_2darray(ctypes_data, width_step, width, height, dtypename, nchannels=1):
-        buf = from_memory(ctypes_data, width_step*height)
+    def as_numpy_2darray(ctypes_ptr, width_step, width, height, dtypename, nchannels=1):
+        buf = from_memory(ctypes_ptr, width_step*height)
         arr = NP.frombuffer(buf, dtype=dtypename, count=width*nchannels*height)
         esize = NP.dtype(dtypename).itemsize
         if nchannels > 1:
