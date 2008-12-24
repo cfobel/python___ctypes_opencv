@@ -111,6 +111,12 @@ min_val,max_val,min_loc,max_loc = cvMinMaxLoc(img)
         aflags.append((arg[2], arg[0]) + arg[3:])
     return CFUNCTYPE(result, *atypes)((name, dll), tuple(aflags))
     
+def default_errcheck(result, func, args):
+    if not result:
+        raise WinError('Calling function '+str(func)+' was not successful.')
+    return args
+
+    
 # hack the ctypes.Structure class to include printing the fields
 class _Structure(Structure):
     def __repr__(self):
@@ -5734,7 +5740,7 @@ __all__ += [
     'c_int_p', 'c_int8_p', 'c_ubyte_p', 'c_float_p', 'c_double_p', 
     'c_void_p_p', 'c_short_p',
     '_cxDLL', '_cvDLL', '_hgDLL',
-    'cfunc',
+    'cfunc', 'default_errcheck',
     '_Structure', '_CvSeqStructure', 'ListPOINTER', 'ListPOINTER2', 'ListByRef',
     'ByRefArg', 'pointee', 'sizeof',
 ]

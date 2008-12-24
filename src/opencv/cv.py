@@ -2754,7 +2754,7 @@ if cvVersion == 110:
     CV_LMEDS = 4
     CV_RANSAC = 8    
 
-    _cvFindHomography = cfunc('cvFindHomography', _cvDLL, None,
+    _cvFindHomography = cfunc('cvFindHomography', _cvDLL, c_int,
         ('src_points', CvMat_r, 1), # const CvMat* src_points
         ('dst_points', CvMat_r, 1), # const CvMat* dst_points
         ('homography', CvMat_r, 1), # CvMat* homography 
@@ -2769,10 +2769,13 @@ if cvVersion == 110:
         Finds perspective transformation between two planes
         [ctypes-opencv] a 3x3 matrix is created
         [ctypes-opencv] Internally, OpenCV creates a temporary mask if 'mask' is not given. Thus, a mask is explicitly created and passed to OpenCV's cvFindHomography instead.
+        [ctypes-opencv] A WinError is raised if calling the function is not successful.
         """
         z = cvCreateMat(3, 3, CV_64FC1)
         mask = cvCreateMat(dst_points.height, dst_points.width, CV_8U)
-        _cvFindHomoGraphy(src_points, dst_points, z, method=method, ransacReprojThreshold=ransacReprojThreshold, mask=mask)
+        result = _cvFindHomoGraphy(src_points, dst_points, z, method=method, ransacReprojThreshold=ransacReprojThreshold, mask=mask)
+        if not result:
+            raise WinError("Calling cvFindHomography() was not successful.")
         return (z, mask)
         
     CV_CALIB_FIX_FOCAL_LENGTH = 16
