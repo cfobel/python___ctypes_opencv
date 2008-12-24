@@ -572,7 +572,7 @@ if cvVersion == 110:
         z.hessianThreshold = hessianThreshold
         z.extended = extended
         z.nOctaves = nOctaves
-        z.nOcaveLayers = nOctavelayers
+        z.nOctaveLayers = nOctaveLayers
         return z
         
     # Extracts Speeded Up Robust Features from image
@@ -2773,7 +2773,7 @@ if cvVersion == 110:
         """
         z = cvCreateMat(3, 3, CV_64FC1)
         mask = cvCreateMat(dst_points.height, dst_points.width, CV_8U)
-        result = _cvFindHomoGraphy(src_points, dst_points, z, method=method, ransacReprojThreshold=ransacReprojThreshold, mask=mask)
+        result = _cvFindHomography(src_points, dst_points, z, method=method, ransacReprojThreshold=ransacReprojThreshold, mask=mask)
         if not result:
             raise WinError("Calling cvFindHomography() was not successful.")
         return (z, mask)

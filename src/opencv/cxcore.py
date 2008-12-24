@@ -3898,7 +3898,7 @@ Returns POINTER to sequence element by its index
 """
 
 def CV_GET_SEQ_ELEM(TYPE, seq, index):
-    result = cvGetSeqElem(seq)
+    result = cvGetSeqElem(seq, index)
     return cast(result, POINTER(TYPE))
 
 # Returns index of concrete sequence element
