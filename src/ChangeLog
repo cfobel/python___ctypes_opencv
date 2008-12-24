@@ -9,6 +9,9 @@ Change Log
 ctypes-opencv-0.5.1 development release
 ---------------------------------------
 
+- Added functions to convert between PIL' Image and IplImage (i.e. 'pil_to_ipl' and 'ipl_to_pil'), contributed by Jérémy Bethmont
+- Improved detection of OpenCV's libraries, , contributed by Jérémy Bethmont
+- Improved detection of OpenCV's version
 - Fixed a bug with cvCvMatAsNDarray() and renamed it to CvMat.as_numpy_array()
 - Fixed a bug with cvImageAsNDarray() and renamed it to IplImage.as_numpy_array()
 - Added small notices to each demo
