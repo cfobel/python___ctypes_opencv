@@ -141,13 +141,13 @@ try:
             strides += [esize]
             size += [nc]
             
-        buf = from_memory(ctypes_data, strides[0]*size[0])
+        buf = from_memory(self.data.ptr, strides[0]*size[0])
         arr = NP.frombuffer(buf, dtype=dtypename, count=NP.prod(size)).reshape(size)
         arr.strides = tuple(strides)
             
         return arr
         
-    CvMatND.as_numpy_array = _cvmat_as_numpy_array
+    CvMatND.as_numpy_array = _cvmatnd_as_numpy_array
 except ImportError:
     pass
 
