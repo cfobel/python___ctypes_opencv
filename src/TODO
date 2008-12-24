@@ -1,6 +1,6 @@
 Provide an interface for machine learning classes. Atm, it's pretty tough. Perhaps, Boost.Python is the right choice.
 
-Wrap properly (i.e. pythonic) cvProjectPoints2(), cvFindHomography(), cvCalibrateCamera2(), cvFindExtrinsicCameraParams2(), cvRodrigues2(), cvInitUndistortMap(), cvFindChessboardCorners(), cvFindFundamentalMat(), cvCalibrationMatrixValues(), cvStereoCalibrate(), cvStereoRectify(), cvStereoRectifyUncalibrated(), cvInitUndistortRectifyMap(), and cvUndistortPoints().
+Wrap properly (i.e. pythonic) cvProjectPoints2(), cvCalibrateCamera2(), cvFindExtrinsicCameraParams2(), cvRodrigues2(), cvInitUndistortMap(), cvFindChessboardCorners(), cvFindFundamentalMat(), cvCalibrationMatrixValues(), cvStereoCalibrate(), cvStereoRectify(), cvStereoRectifyUncalibrated(), cvInitUndistortRectifyMap(), and cvUndistortPoints().
 
 Wrap properly cvFindStereoCorrespondenceGC()
 

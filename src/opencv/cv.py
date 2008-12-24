@@ -2764,14 +2764,16 @@ if cvVersion == 110:
     )
 
     def cvFindHomography(src_points, dst_points, method=0, ransacReprojThreshold=0, mask=None):
-        """CvMat cvFindHomography(const CvMat src_points, const CvMat dst_points, int method=0, double ransacReprojThreshold=0, CvMat_p mask=None)
+        """(CvMat homography, CvMat mask) = cvFindHomography(const CvMat src_points, const CvMat dst_points, int method=0, double ransacReprojThreshold=0)
 
         Finds perspective transformation between two planes
         [ctypes-opencv] a 3x3 matrix is created
+        [ctypes-opencv] Internally, OpenCV creates a temporary mask if 'mask' is not given. Thus, a mask is explicitly created and passed to OpenCV's cvFindHomography instead.
         """
         z = cvCreateMat(3, 3, CV_64FC1)
+        mask = cvCreateMat(dst_points.height, dst_points.width, CV_8U)
         _cvFindHomoGraphy(src_points, dst_points, z, method=method, ransacReprojThreshold=ransacReprojThreshold, mask=mask)
-        return z
+        return (z, mask)
         
     CV_CALIB_FIX_FOCAL_LENGTH = 16
     CV_CALIB_FIX_K1 = 32
@@ -2921,7 +2923,7 @@ elif cvVersion == 100:
         [ctypes-opencv] a 3x3 matrix is created
         """
         z = cvCreateMat(3, 3, CV_64FC1)
-        _cvFindHomoGraphy(src_points, dst_points, z)
+        _cvFindHomography(src_points, dst_points, z)
         return z
 
 CV_CALIB_USE_INTRINSIC_GUESS = 1
