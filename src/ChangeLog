@@ -6,6 +6,15 @@ Change Log
 ==========
 
 
+ctypes-opencv-0.5.1 development release
+---------------------------------------
+
+- Fixed a bug with cvCvMatAsNDarray() and renamed it to CvMat.as_numpy_array()
+- Fixed a bug with cvImageAsNDarray() and renamed it to IplImage.as_numpy_array()
+- Added small notices to each demo
+- Improved cvSetData()
+- Fixed a few more small bugs
+
 ctypes-opencv-0.5.0 development release
 ---------------------------------------
 

@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
 # OpenCV's Python demo
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
 from opencv import *
@@ -22,9 +23,7 @@ if __name__ == "__main__":
         
         # generate random sample from multigaussian distribution
         for k in range(cluster_count):
-            center = CvPoint();
-            center.x = cvRandInt(rng)%img.width;
-            center.y = cvRandInt(rng)%img.height;
+            center = CvPoint(cvRandInt(rng)%img.width, cvRandInt(rng)%img.height)
             first = k*sample_count/cluster_count
             last = sample_count
             if k != cluster_count:

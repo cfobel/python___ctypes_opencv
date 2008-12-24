@@ -23,31 +23,38 @@ from cxcore import *
 # Helpers for access to images for other GUI packages
 #=============================================================================
 
+__all__ = []
+
 #-----------------------------------------------------------------------------
 # wx -- by Gary Bishop
 #-----------------------------------------------------------------------------
+# modified a bit by Minh-Tri Pham
 try:
     import wx
 
-    def cvIplImageAsBitmap(img, flip=True):
-        sz = cvGetSize(img)
+    def cvIplImageAsBitmap(self, flip=True):
+        sz = cvGetSize(self)
         flags = CV_CVTIMG_SWAP_RB
         if flip:
             flags |= CV_CVTIMG_FLIP
-        cvConvertImage(img, img, flags)
-        bitmap = wx.BitmapFromBuffer(sz.width, sz.height, img.data_as_string())
+        cvConvertImage(self, self, flags)
+        bitmap = wx.BitmapFromBuffer(sz.width, sz.height, self.data_as_string())
         return bitmap
+        
+    IplImage.as_wx_bitmap = cvIplImageAsBitmap
+        
+    __all__ += ['cvIplImageAsBitmap']
 except ImportError:
     pass
 
 #-----------------------------------------------------------------------------
-# pil -- by Jérémy Bethmont
+# PIL -- by Jérémy Bethmont
 #-----------------------------------------------------------------------------
 try:
     import PIL
 
     def pil_to_ipl(im_pil):
-        im_ipl = cvCreateImage(cvSize(im_pil.size[0], im_pil.size[1]),
+        im_ipl = cvCreateImageHeader(cvSize(im_pil.size[0], im_pil.size[1]),
 IPL_DEPTH_8U, 3)
         data = im_pil.tostring('raw', 'RGB', im_pil.size[0] * 3)
         cvSetData(im_ipl, cast(data, POINTER(c_byte)), im_pil.size[0] * 3)
@@ -63,18 +70,33 @@ IPL_DEPTH_8U, 3)
         )
         return im_pil
 
+    __all__ += ['ipl_to_pil', 'pil_to_ipl']
 except ImportError:
     pass
 
 #-----------------------------------------------------------------------------
 # numpy's ndarray -- by Minh-Tri Pham
 #-----------------------------------------------------------------------------
-
 try:
-    import numpy
-    del(numpy)
+    import numpy as NP
+
+    # create a read/write buffer from memory
+    from_memory = pythonapi.PyBuffer_FromReadWriteMemory
+    from_memory.restype = py_object
     
-    _dict_opencvdepth2dtype = {
+    def as_numpy_2darray(ctypes_data, width_step, width, height, dtypename, nchannels=1):
+        buf = from_memory(ctypes_data, width_step*height)
+        arr = NP.frombuffer(buf, dtype=dtypename, count=width*nchannels*height)
+        esize = NP.dtype(dtypename).itemsize
+        if nchannels > 1:
+            arr = arr.reshape(height, width, nchannels)
+            arr.strides = (width_step, esize*nchannels, esize)
+        else:
+            arr = arr.reshape(height, width)
+            arr.strides = (width_step, esize)
+        return arr
+        
+    ipldepth2dtype = {
         IPL_DEPTH_1U: 'bool',
         IPL_DEPTH_8U: 'uint8',
         IPL_DEPTH_8S: 'int8',
@@ -85,33 +107,13 @@ try:
         IPL_DEPTH_64F: 'float64',
     }
 
-    def cvIplImageAsNDarray(img):
-        """Convert an IplImage into ndarray
-        
-        Input:
-            img: an instance of IplImage
-        Output:
-            img2: an ndarray
-        """
-        if not isinstance(img,IplImage):
-            raise TypeError('img is not of type IplImage')
+    def _iplimage_as_numpy_array(self):
+        """Converts an IplImage into ndarray"""
+        return as_numpy_2darray(self.imageData, self.widthStep, self.width, self.height, ipldepth2dtype[self.depth], self.nChannels)
             
-        from numpy import frombuffer, dtype
-        
-        dtypename = _dict_opencvdepth2dtype[img.depth]
-        data = frombuffer(cvIplImageAsBuffer(img),dtype=dtypename)
-        
-        w = img.width
-        ws = img.widthStep / dtype(dtypename).itemsize
-        h = img.height
-        nc = img.nChannels
+    IplImage.as_numpy_array = _iplimage_as_numpy_array
 
-        if nc > 1:
-            return data.reshape(h,ws)[:,:w*nc].reshape(h,w,nc)
-        else:
-            return data.reshape(h,ws)[:,:w]
-
-    _dict_opencvmat2dtype = {
+    matdepth2dtype = {
         CV_8U: 'uint8',
         CV_8S: 'int8',
         CV_16U: 'uint16',
@@ -121,70 +123,11 @@ try:
         CV_64F: 'float64',
     }
 
-    def cvCvMatAsNDarray(mat):
-        """Convert a POINTER(CvMat) into ndarray
-
-        Input:
-            mat: a POINTER(CvMat)
-        Output:
-            mat2: an ndarray
-        """
-        if not isinstance(mat,POINTER(CvMat)):
-            raise TypeError('mat is not of type POINTER(CvMat)')
-
-        from numpy import frombuffer, dtype
+    def _cvmat_as_numpy_array(self):
+        """Converts a CvMat into ndarray"""
+        return as_numpy_2darray(self.data.ptr, self.step, self.cols, self.rows, matdepth2dtype[CV_MAT_DEPTH(self.type)], CV_MAT_CN(self.type))
         
-        typedepth = mat[0].type & 0x0FFF
-        thetype = typedepth & ((1 << CV_CN_SHIFT)-1)
-        nc = (typedepth >> CV_CN_SHIFT) + 1
-        dtypename = _dict_opencvmat2dtype[thetype]
-        data = frombuffer(cvCvMatAsBuffer(mat),dtype=dtypename)
-
-        w = mat[0].cols
-        ws = mat[0].step / dtype(dtypename).itemsize
-        h = mat[0].rows
-
-        if nc > 1:
-            return data.reshape(h,ws)[:,:w*nc].reshape(h,w,nc)
-        else:
-            return data.reshape(h,ws)[:,:w]
-
-    
-    # from numpy.ctypeslib import as_array
-    
-    # James,
-
-    # you can use the function PyBuffer_FromMemory or PyBuffer_FromReadWriteMemory
-    # if you want to have write access to the memory space from python. I
-    # use the following
-    # python function:
-
-    # def array_from_memory(pointer,shape,dtype):
-        # import ctypes as C
-        # import numpy as np
-        # from_memory = C.pythonapi.PyBuffer_FromReadWriteMemory
-        # from_memory.restype = C.py_object
-        # arr = np.empty(shape=shape,dtype=dtype)
-        # arr.data = from_memory(pointer,arr.nbytes)
-        # return arr
-
-    # Kilian
-
-    
+    CvMat.as_numpy_array = _cvmat_as_numpy_array
 except ImportError:
     pass
-
-
-
-
-#=============================================================================
-# Wrap up all the functions and constants into __all__
-#=============================================================================
-__all__ = [x for x in locals().keys() \
-    if  x.startswith('CV') or \
-        x.startswith('cv') or \
-        x.startswith('Cv') or \
-        x.startswith('IPL') or \
-        x.startswith('Ipl') or \
-        x.startswith('ipl')]
 

@@ -4,4 +4,3 @@ Wrap properly (i.e. pythonic) cvProjectPoints2(), cvFindHomography(), cvCalibrat
 
 Wrap properly cvFindStereoCorrespondenceGC()
 
-Make sure cvSetData() properly handles freed data.

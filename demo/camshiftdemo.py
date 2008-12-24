@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 # OpenCV's C demo
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
 
