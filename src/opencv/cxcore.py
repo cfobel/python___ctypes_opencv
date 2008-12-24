@@ -406,6 +406,8 @@ class IplImage(_Structure):
                 pixel[i] = value[i]
         else:
             pixel[0] = value
+            
+    _owner = 0 # default: owns nothing
         
     def __del__(self):
         if self._owner == 1: # own header only
@@ -2176,12 +2178,12 @@ Return POINTER to the particular array element
 
 cvPtrND = cfunc('cvPtrND', _cxDLL, c_void_p,
     ('arr', CvArr_r, 1), # const CvArr* arr
-    ('idx', c_int_p, 1), # int* idx
+    ('idx', ListPOINTER(c_int), 1), # int* idx
     ('type', c_int_p, 1, None), # int* type
     ('create_node', c_int, 1, 1), # int create_node
     ('precalc_hashval', POINTER(c_uint32), 1, None), # unsigned* precalc_hashval
 )
-cvPtrND.__doc__ = """uchar* cvPtrND(const CvArr arr, int* idx, int* type=NULL, int create_node=1, int* precalc_hashval=NULL)
+cvPtrND.__doc__ = """uchar* cvPtrND(const CvArr arr, list_or_tuple_of_int idx, int* type=NULL, int create_node=1, int* precalc_hashval=NULL)
 
 Return POINTER to the particular array element
 """
@@ -2220,9 +2222,9 @@ Return the particular array element
 
 cvGetND = cfunc('cvGetND', _cxDLL, CvScalar,
     ('arr', CvArr_r, 1), # const CvArr* arr
-    ('idx', c_int_p, 1), # int* idx 
+    ('idx', ListPOINTER(c_int), 1), # int* idx 
 )
-cvGetND.__doc__ = """CvScalar cvGetND(const CvArr arr, int* idx)
+cvGetND.__doc__ = """CvScalar cvGetND(const CvArr arr, list_or_tuple_of_int idx)
 
 Return the particular array element
 """
@@ -2260,9 +2262,9 @@ Return the particular element of single-channel array
 
 cvGetRealND = cfunc('cvGetRealND', _cxDLL, c_double,
     ('arr', CvArr_r, 1), # const CvArr* arr
-    ('idx', c_int_p, 1), # int* idx 
+    ('idx', ListPOINTER(c_int), 1), # int* idx 
 )
-cvGetRealND.__doc__ = """double cvGetRealND(const CvArr arr, int* idx)
+cvGetRealND.__doc__ = """double cvGetRealND(const CvArr arr, list_or_tuple_of_int idx)
 
 Return the particular element of single-channel array
 """
@@ -2303,10 +2305,10 @@ Change the particular array element
 
 cvSetND = cfunc('cvSetND', _cxDLL, None,
     ('arr', CvArr_r, 1), # CvArr* arr
-    ('idx', c_int_p, 1), # int* idx
+    ('idx', ListPOINTER(c_int), 1), # int* idx
     ('value', CvScalar, 1), # CvScalar value 
 )
-cvSetND.__doc__ = """void cvSetND(CvArr arr, int* idx, CvScalar value)
+cvSetND.__doc__ = """void cvSetND(CvArr arr, list_or_tuple_of_int idx, CvScalar value)
 
 Change the particular array element
 """
@@ -2347,10 +2349,10 @@ Change the particular array element
 
 cvSetRealND = cfunc('cvSetRealND', _cxDLL, None,
     ('arr', CvArr_r, 1), # CvArr* arr
-    ('idx', c_int_p, 1), # int* idx
+    ('idx', ListPOINTER(c_int), 1), # int* idx
     ('value', c_double, 1), # double value 
 )
-cvSetRealND.__doc__ = """void cvSetRealND(CvArr arr, int* idx, double value)
+cvSetRealND.__doc__ = """void cvSetRealND(CvArr arr, list_or_tuple_of_int idx, double value)
 
 Change the particular array element
 """
@@ -2358,9 +2360,9 @@ Change the particular array element
 # Clears the particular array element
 cvClearND = cfunc('cvClearND', _cxDLL, None,
     ('arr', CvArr_r, 1), # CvArr* arr
-    ('idx', c_int_p, 1), # int* idx 
+    ('idx', ListPOINTER(c_int), 1), # int* idx 
 )
-cvClearND.__doc__ = """void cvClearND(CvArr arr, int* idx)
+cvClearND.__doc__ = """void cvClearND(CvArr arr, list_or_tuple_of_int idx)
 
 Clears the particular array element
 """

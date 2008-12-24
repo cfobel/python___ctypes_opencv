@@ -33,13 +33,11 @@ try:
     import wx
 
     def cvIplImageAsBitmap(self, flip=True):
-        sz = cvGetSize(self)
         flags = CV_CVTIMG_SWAP_RB
         if flip:
             flags |= CV_CVTIMG_FLIP
         cvConvertImage(self, self, flags)
-        bitmap = wx.BitmapFromBuffer(sz.width, sz.height, self.data_as_string())
-        return bitmap
+        return wx.BitmapFromBuffer(self.width, self.height, self.data_as_string())
         
     IplImage.as_wx_bitmap = cvIplImageAsBitmap
         
@@ -128,6 +126,28 @@ try:
         return as_numpy_2darray(self.data.ptr, self.step, self.cols, self.rows, matdepth2dtype[CV_MAT_DEPTH(self.type)], CV_MAT_CN(self.type))
         
     CvMat.as_numpy_array = _cvmat_as_numpy_array
+    
+    def _cvmatnd_as_numpy_array(self):
+        """Converts a CvMatND into ndarray"""
+        nc = CV_MAT_CN(self.type)
+        dtypename = matdepth2dtype[CV_MAT_DEPTH(self.type)]
+        esize = NP.dtype(dtypename).itemsize
+        
+        sd = self.dim[:self.dims]
+        strides = [x.step for x in sd]
+        size = [x.size for x in sd]
+        
+        if nc > 1:
+            strides += [esize]
+            size += [nc]
+            
+        buf = from_memory(ctypes_data, strides[0]*size[0])
+        arr = NP.frombuffer(buf, dtype=dtypename, count=NP.prod(size)).reshape(size)
+        arr.strides = tuple(strides)
+            
+        return arr
+        
+    CvMatND.as_numpy_array = _cvmat_as_numpy_array
 except ImportError:
     pass
 
