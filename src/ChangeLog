@@ -5,10 +5,15 @@ ctypes-opencv - A Python wrapper for OpenCV using ctypes
 Change Log
 ==========
 
-
 ctypes-opencv-0.5.1 development release
 ---------------------------------------
 
+- Added a demo for extracting SURF features, i.e. find_obj.py
+- Improved wrapper for cvFindHomography() of version 1.1
+- Added a default_errcheck() function
+- Renamed from _cvver to cvVersion
+- Updated cvPtrND(), cvGetND(), cvSetND(), cvGetRealND(), cvSetRealND(), cvClearND()
+- Added CvMatND.as_numpy_array()
 - Added functions to convert between PIL' Image and IplImage (i.e. 'pil_to_ipl' and 'ipl_to_pil'), contributed by Jérémy Bethmont
 - Improved detection of OpenCV's libraries, , contributed by Jérémy Bethmont
 - Improved detection of OpenCV's version
