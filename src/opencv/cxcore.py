@@ -1928,12 +1928,12 @@ def cvGetSubRect(*args):
     Returns matrix header corresponding to the rectangular sub-array of input image or matrix
     """
     arr = args[0]
-    if isinstance(args[1], CvRect): # no submat given
-        z = CvMat()
-        _cvGetSubRect(arr, z, args[1])
-    else:
+    if isinstance(args[1], CvMat): # submat is given
         z = args[1]
         _cvGetSubRect(arr, z, args[2])
+    else:
+        z = CvMat()
+        _cvGetSubRect(arr, z, args[1])
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
 
@@ -1948,13 +1948,18 @@ _cvGetRows = cfunc('cvGetRows', _cxDLL, CvMat_p,
     ('delta_row', c_int, 1, 1), # int delta_row
 )
 
-def cvGetRows(arr, start_row, end_row, delta_row=1):
-    """CvMat cvGetRows(const CvArr arr, int start_row, int end_row, int delta_row=1)
+def cvGetRows(*args, delta_row=1):
+    """CvMat cvGetRows(const CvArr arr[, CvMat submat], int start_row, int end_row, int delta_row=1)
 
     Returns array row or row span
     """
-    z = CvMat()
-    _cvGetRows(arr, z, start_row, end_row, delta_row)
+    arr = args[0]
+    if isinstance(args[1], CvMat): # submat is given
+        z = args[1]
+        _cvGetRows(arr, z, args[2], args[3], delta_row)
+    else:
+        z = CvMat()
+        _cvGetRows(arr, z, args[1], args[2], delta_row)
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
     
@@ -1969,13 +1974,18 @@ _cvGetCols = cfunc('cvGetCols', _cxDLL, CvMat_p,
     ('end_col', c_int, 1), # int end_col 
 )
 
-def cvGetCols(arr, start_col, end_col):
-    """CvMat cvGetCols(const CvArr arr, int start_col, int end_col)
+def cvGetCols(*args):
+    """CvMat cvGetCols(const CvArr arr[, CvMat submat], int start_col, int end_col)
 
     Returns array column or column span
     """
-    z = CvMat()
-    _cvGetCols(arr, z, start_col, end_col)
+    arr = args[0]
+    if isinstance(args[1], CvMat): # submat is given
+        z = args[1]
+        _cvGetCols(arr, z, args[2], args[3])
+    else:
+        z = CvMat()
+        _cvGetCols(arr, z, args[1], args[2])
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
     
@@ -1989,13 +1999,18 @@ _cvGetDiag = cfunc('cvGetDiag', _cxDLL, CvMat_p,
     ('diag', c_int, 1, 0), # int diag
 )
 
-def cvGetDiag(arr, diag=0):
-    """CvMat cvGetDiag(const CvArr arr, int diag=0)
+def cvGetDiag(*args, diag=0):
+    """CvMat cvGetDiag(const CvArr arr[, CvMat submat], int diag=0)
 
     Returns one of array diagonals
     """
-    z = CvMat()
-    _cvGetDiag(arr, z, diag=diag)
+    arr = args[0]
+    if isinstance(args[1], CvMat): # submat is given
+        z = args[1]
+        _cvGetDiag(arr, z, diag=diag)
+    else:
+        z = CvMat()
+        _cvGetDiag(arr, z, diag=diag)
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
 
