@@ -44,31 +44,24 @@ c_short_p = POINTER(c_short)
 # ----Load the DLLs ----------------------------------------------------------
 # modified a little bit by Minh-Tri Pham
 # fixed and improved by Jeremy Bethmont and David Bolen
-# Jeremy's note: default OpenCV libraries are located in /opt/local/lib when they are installed with macports
+# Jeremy's note: default OpenCV libraries are located in /opt/local/lib when 
+# they are installed with macports. They cannot be loaded with LoadLibrary alone.
 def detect_opencv():
     def find_lib(name):
         z = find_library(name)
         if z is None:
-            raise ImportError("Library %s not found." % name)
+            raise ImportError("OpenCV's shared library '%s' is not found. Make sure you have its path included in your PATH variable." % name)
         return z
         
     if os.name == 'posix':
-        if sys.platform.startswith('darwin'):
-            suffix = 'dylib'
+        try:
+            cxDLL = cdll.LoadLibrary(find_lib('cxcore'))
+            cvDLL = cdll.LoadLibrary(find_lib('cv'))
+            hgDLL = cdll.LoadLibrary(find_lib('highgui'))
+        except ImportError, e:
+            raise e
         else:
-            suffix = 'so'
-
-        try: # standard way
-            cxDLL = cdll.LoadLibrary('libcxcore.%s' % suffix)
-            cvDLL = cdll.LoadLibrary('libcv.%s' % suffix)
-            hgDLL = cdll.LoadLibrary('libhighgui.%s' % suffix)            
-        except:
-            try: # non-standard way, e.g. macports
-                cxDLL = cdll.LoadLibrary(find_lib('cxcore'))
-                cvDLL = cdll.LoadLibrary(find_lib('cv'))
-                hgDLL = cdll.LoadLibrary(find_lib('highgui'))
-            except:
-                raise ImportError("Cannot import OpenCV's .%s files. Make sure you have their paths included in your PATH variable." % suffix)
+            raise ImportError("Cannot import OpenCV's shared libraries.")
 
     elif os.name == 'nt':
         try:
