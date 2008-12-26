@@ -27,7 +27,7 @@ except ImportError:
 
 
 # ----------------------------------------------------------------------------
-# Begin of code contribution by David Bolen
+# Begin of code section contributed by David Bolen
 # ----------------------------------------------------------------------------
 #
 # Publish an optional "cv" namespace to provide access to names in this package
@@ -76,5 +76,5 @@ cv = nsp
 del nsp
 
 # ----------------------------------------------------------------------------
-# End of code contribution by David Bolen
+# End of code section contributed by David Bolen
 # ----------------------------------------------------------------------------

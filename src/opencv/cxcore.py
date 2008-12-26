@@ -1227,15 +1227,25 @@ CvLineIterator_r = ByRefArg(CvLineIterator)
 #-----------------------------------------------------------------------------
 
 # A container for 1-,2-,3- or 4-tuples of numbers
+# improved by David Bolen
 class CvScalar(_Structure):
     _fields_ = [("val", c_double * 4)]
     def __init__(self, *vals):
         '''Enable initialization with multiple parameters instead of just a tuple'''
-        if len(vals) == 1:
-            super(CvScalar, self).__init__((vals[0],0,0,0))
-            # super(CvScalar, self).__init__(vals[0])
-        else:
-            super(CvScalar, self).__init__(vals)
+        super(CvScalar, self).__init__(vals + (0.0,) * (4-len(vals)))
+
+    # Normal _Structure printing isn't as helpful for Scalar as its only field
+    # is the value array which doesn't display its contents.  So generate our
+    # own display including field values (shortening tail 0's for common cases)
+    def __repr__(self):
+        vals = list(self.val)
+        while vals and not vals[-1]:
+            vals.pop()
+        if not vals:
+            vals = [0.0]
+        return self.__class__.__name__ + \
+               '(' + ', '.join([str(x) for x in vals]) + ')'
+
 CvScalar_p = POINTER(CvScalar)
 CvScalar_r = ByRefArg(CvScalar)
 
@@ -1246,7 +1256,6 @@ def cvRealScalar(val0):
     return CvScalar(val0)
     
 def cvScalarAll(val0123):
-    val0123 = c_double(val0123)
     return CvScalar(val0123, val0123, val0123, val0123)
 
     
