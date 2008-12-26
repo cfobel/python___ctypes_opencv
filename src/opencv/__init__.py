@@ -24,3 +24,57 @@ try:
     from ml import *
 except ImportError:
     pass
+
+
+# ----------------------------------------------------------------------------
+# Begin of code contribution by David Bolen
+# ----------------------------------------------------------------------------
+#
+# Publish an optional "cv" namespace to provide access to names in this package
+# minus any "cv"/"cv_" prefix.  For example, "cv.Foo" instead of "cvFoo".
+# Names without a "cv" prefix remain intact in the new namespace.
+#
+# Names for which this would result in an invalid identifier (such as constant
+# names beginning with numbers) retain a leading underscore (e.g., cv._32F)
+#
+# In cases (such as CV_SVD) where a structure would overlap a function (cvSVD)
+# or where a factory function overlaps the data type (cvPoint2D3f/CvPoint2D3f)
+# the structure or data type retains/receives a leading underscore.
+#
+
+class namespace(object):
+    pass
+
+nsp = namespace()
+
+
+# Process names in reverse order so functions/factories cvXXX will show up
+# before structures (CvXXX) or constants (CV_) and thus functions/factories
+# get preference.
+
+for sym, val in sorted(locals().items(), reverse=True):
+    if sym.startswith('__'):
+        continue
+
+    if sym.lower().startswith('cv'):
+        if sym[2:3] == '_' and not sym[3:4].isdigit():
+            sym = sym[3:]
+        else:
+            sym = sym[2:]
+
+    # Use underscore to distinguish conflicts
+    if hasattr(nsp, sym):
+        sym = '_' + sym
+
+    # If still have a conflict, punt
+    if not hasattr(nsp, sym):
+        setattr(nsp, sym, val)
+    else:
+        print 'Warning: cv namespace collision:', sym, getattr(nsp, sym)
+
+cv = nsp
+del nsp
+
+# ----------------------------------------------------------------------------
+# End of code contribution by David Bolen
+# ----------------------------------------------------------------------------
