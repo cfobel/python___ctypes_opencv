@@ -41,14 +41,14 @@ def detect_opencv():
     from ctypes.util import find_library
     if os.name == 'posix' and sys.platform.startswith('linux'):
         try:
-            cxDLL = cdll.LoadLibrary(find_library('libcxcore.so.2'))
-            cvDLL = cdll.LoadLibrary(find_library('libcv.so.2'))
-            hgDLL = cdll.LoadLibrary(find_library('libhighgui.so.2'))
+            cxDLL = cdll.LoadLibrary('libcxcore.so.2')
+            cvDLL = cdll.LoadLibrary('libcv.so.2')
+            hgDLL = cdll.LoadLibrary('libhighgui.so.2')
         except:
             try:
-                cxDLL = cdll.LoadLibrary(find_library('libcxcore.so.1'))
-                cvDLL = cdll.LoadLibrary(find_library('libcv.so.1'))
-                hgDLL = cdll.LoadLibrary(find_library('libhighgui.so.1'))
+                cxDLL = cdll.LoadLibrary('libcxcore.so.1')
+                cvDLL = cdll.LoadLibrary('libcv.so.1')
+                hgDLL = cdll.LoadLibrary('libhighgui.so.1')
             except:
                 raise ImportError("Cannot import OpenCV's .so files. Make sure you have their paths included in your PATH variable.")
     elif os.name == 'posix' and sys.platform.startswith('darwin'):

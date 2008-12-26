@@ -19,3 +19,8 @@ from cxcore import *
 from cv import *
 from highgui import *
 from interfaces import *
+
+try:
+    from ml import *
+except ImportError:
+    pass
