@@ -16,6 +16,7 @@
 # ----------------------------------------------------------------------------
 
 import os, sys
+from ctypes.util import find_library
 from ctypes import *
 from math import floor, ceil, pi
 
@@ -42,27 +43,33 @@ c_short_p = POINTER(c_short)
 
 # ----Load the DLLs ----------------------------------------------------------
 # modified a little bit by Minh-Tri Pham
+# fixed and improved by Jeremy Bethmont and David Bolen
+# Jeremy's note: default OpenCV libraries are located in /opt/local/lib when they are installed with macports
 def detect_opencv():
-    from ctypes.util import find_library
-    if os.name == 'posix' and sys.platform.startswith('linux'):
-        try:
-            cxDLL = cdll.LoadLibrary('libcxcore.so.2')
-            cvDLL = cdll.LoadLibrary('libcv.so.2')
-            hgDLL = cdll.LoadLibrary('libhighgui.so.2')
+    def find_lib(name):
+        z = find_library(name)
+        if z is None:
+            raise ImportError("Library %s not found." % name)
+        return z
+        
+    if os.name == 'posix':
+        if sys.platform.startswith('darwin'):
+            suffix = 'dylib'
+        else:
+            suffix = 'so'
+
+        try: # standard way
+            cxDLL = cdll.LoadLibrary('libcxcore.%s' % suffix)
+            cvDLL = cdll.LoadLibrary('libcv.%s' % suffix)
+            hgDLL = cdll.LoadLibrary('libhighgui.%s' % suffix)            
         except:
-            try:
-                cxDLL = cdll.LoadLibrary('libcxcore.so.1')
-                cvDLL = cdll.LoadLibrary('libcv.so.1')
-                hgDLL = cdll.LoadLibrary('libhighgui.so.1')
+            try: # non-standard way, e.g. macports
+                cxDLL = cdll.LoadLibrary(find_lib('cxcore'))
+                cvDLL = cdll.LoadLibrary(find_lib('cv'))
+                hgDLL = cdll.LoadLibrary(find_lib('highgui'))
             except:
-                raise ImportError("Cannot import OpenCV's .so files. Make sure you have their paths included in your PATH variable.")
-    elif os.name == 'posix' and sys.platform.startswith('darwin'):
-        try: # improved by Jeremy Bethmont
-            cxDLL = cdll.LoadLibrary(find_library('libcxcore.dylib'))
-            cvDLL = cdll.LoadLibrary(find_library('libcv.dylib'))
-            hgDLL = cdll.LoadLibrary(find_library('libhighgui.dylib'))
-        except:
-            raise ImportError("Cannot import OpenCV's .dylib files. Make sure you have their paths included in your PATH variable.")
+                raise ImportError("Cannot import OpenCV's .%s files. Make sure you have their paths included in your PATH variable." % suffix)
+
     elif os.name == 'nt':
         try:
             cxDLL = cdll.cxcore110
@@ -75,6 +82,7 @@ def detect_opencv():
                 hgDLL = cdll.highgui100
             except:
                 raise ImportError("Cannot import OpenCV's .DLL files. Make sure you have their paths included in your PATH variable.")
+
     else:
         raise NotImplementedError("Your OS is not supported. Or you can rewrite this detect_opencv() function to support it.")
 
