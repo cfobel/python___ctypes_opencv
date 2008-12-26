@@ -19,6 +19,11 @@ import os, sys
 from ctypes import *
 from math import floor, ceil, pi
 
+# Use xrange if available (pre-3.0)
+try:
+    range = xrange
+except NameError:
+    pass
 
 
 #=============================================================================
@@ -162,10 +167,10 @@ class ListPOINTER2(object):
                 if isinstance(v, (list,tuple)):
                     val[i] = (self.etype * len(v))(*v)
                 else:
-                    raise TypeError, 'nested list or tuple required at %d' % i
+                    raise TypeError('nested list or tuple required at %d' % i)
             return val
         else:
-            raise TypeError, 'list or tuple required'
+            raise TypeError('list or tuple required')
 
 class ByRefArg(object):
     '''Just like a POINTER but accept an argument and pass it byref'''
@@ -405,10 +410,10 @@ class IplImage(_Structure):
         pixel = self.get_pixel(key)
 
         if isinstance(value, CvScalar):
-            for i in xrange(len(pixel)):
+            for i in range(len(pixel)):
                 pixel[i] = value.val[i]
         elif getattr(value, '__getitem__', None) is not None:
-            for i in xrange(len(pixel)):
+            for i in range(len(pixel)):
                 pixel[i] = value[i]
         else:
             pixel[0] = value
@@ -707,9 +712,9 @@ class CvMat(_Structure):
             if isinstance(value, CvMat):
                 cvCopy(value, z)
             elif isinstance(value, tuple) or isinstance(value, list):
-                for y in xrange(z.rows):
+                for y in range(z.rows):
                     vy = value[y]
-                    for x in xrange(z.cols):
+                    for x in range(z.cols):
                         z[y,x] = vy[x]
             else:
                 if not isinstance(value, CvScalar):
@@ -718,7 +723,7 @@ class CvMat(_Structure):
         else:
             y = getattr(value, '__getitem__', None)
             if y:
-                for i in xrange(len(z)):
+                for i in range(len(z)):
                     z[i] = value[i]
             else:
                 z[0] = value
@@ -730,11 +735,11 @@ class CvMat(_Structure):
         self.__setitem__(slice(i,j), value)
         
     def __iter__(self):
-        for i in xrange(self.rows):
+        for i in range(self.rows):
             yield cvGetRows(self, i, i+1)
         
     def colrange(self):
-        for i in xrange(self.cols):
+        for i in range(self.cols):
             yield cvGetCols(self, i, i+1)
             
     _owner = False
@@ -880,7 +885,7 @@ class _CvSeqStructure(_Structure):
         __setslice__ = slicing_disabled
             
         def __iter__(self):
-            for i in xrange(self.seq.total):
+            for i in range(self.seq.total):
                 yield self.__getitem__(i)
 
     def asarrayptr(self, elem_type):
@@ -1874,7 +1879,7 @@ def cvCreateMatFromCvPoint2D32fList(points):
     """
     cols = len(points)
     z = cvCreateMat(1, cols, CV_32FC2)
-    for i in xrange(cols):
+    for i in range(cols):
         x = points[i]
         y = z[0,i]
         y[0] = x.x
@@ -1888,7 +1893,7 @@ def cvCreateMatFromCvPointList(points):
     """
     cols = len(points)
     z = cvCreateMat(1, cols, CV_32SC2)
-    for i in xrange(cols):
+    for i in range(cols):
         x = points[i]
         y = z[0,i]
         y[0] = x.x
@@ -2112,7 +2117,7 @@ def cvGetNextSparseNode(mat_iterator):
         return pointee(mat_iterator.node, mat_iterator.mat)
 
     mat_iterator.curidx += 1
-    for idx in xrange(mat_iterator.curidx, mat_iterator.mat[0].hashsize):
+    for idx in range(mat_iterator.curidx, mat_iterator.mat[0].hashsize):
         node = cast(mat_iterator.mat[0].hashtable, POINTER(CvSparseNode_p))[idx]
         if bool(node):
             mat_iterator.curidx = idx
@@ -4919,7 +4924,7 @@ cvDrawContours = cfunc('cvDrawContours', _cxDLL, None,
     ('max_level', c_int, 1), # int max_level
     ('thickness', c_int, 1, 1), # int thickness
     ('line_type', c_int, 1, 8), # int line_type
-    ('offset', CvPoint, 1), # CvPoint offset      
+    ('offset', CvPoint, 1, CvPoint(0,0)), # CvPoint offset      
 )
 cvDrawContours.__doc__ = """void cvDrawContours(CvArr img, CvSeq contour, CvScalar external_color, CvScalar hole_color, int max_level, int thickness=1, int line_type=8)
 
@@ -5413,7 +5418,7 @@ cvSave = cfunc('cvSave', _cxDLL, None,
     ('struct_ptr', c_void_p, 1), # const void* struct_ptr
     ('name', c_char_p, 1, None), # const char* name
     ('comment', c_char_p, 1, None), # const char* comment
-    ('attributes', CvAttrList, 1), # CvAttrList attributes
+    ('attributes', CvAttrList, 1, CvAttrList()), # CvAttrList attributes
 )
 cvSave.__doc__ = """void cvSave(const char* filename, const void* struct_ptr, const char* name=NULL, const char* comment=NULL, CvAttrList attributes=cvAttrList())
 

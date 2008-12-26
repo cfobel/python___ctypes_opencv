@@ -16,8 +16,13 @@
 # ----------------------------------------------------------------------------
 
 from ctypes import *
-from cxcore import *
+from opencv.cxcore import *
 
+# Use xrange if available (pre-3.0)
+try:
+    range = xrange
+except NameError:
+    pass
 
 #=============================================================================
 # Begin of of cv/cvtypes.h
@@ -498,7 +503,7 @@ def cvFindCornerSubPix(image, corners, win, zero_zone, criteria):
     mat = cvCreateMatFromCvPoint2D32fList(corners)
     n = len(corners)
     _cvFindCornerSubPix(image, mat.data.ptr, n, win, zero_zone, criteria)
-    for i in xrange(n):
+    for i in range(n):
         x = mat[0,i]
         y = corners[i]
         y.x = x[0]
@@ -531,7 +536,7 @@ def cvGoodFeaturesToTrack(image, eig_image, temp_image, max_corner_count, qualit
     count = c_int(max_corner_count)
     _cvGoodFeaturesToTrack(image, eig_image, temp_image, corners.data.ptr, count, quality_level, min_distance, mask, block_size, use_harris, k)
     z = []
-    for i in xrange(count.value):
+    for i in range(count.value):
         x = corners[0,i]
         z.append(CvPoint2D32f(x[0], x[1]))
     return z
@@ -753,8 +758,8 @@ cvRemap = cfunc('cvRemap', _cvDLL, None,
     ('dst', CvArr_r, 1), # CvArr* dst
     ('mapx', CvArr_r, 1), # const CvArr* mapx
     ('mapy', CvArr_r, 1), # const CvArr* mapy
-    ('flags', c_int, 1), # int flags
-    ('fillval', CvScalar, 1), # CvScalar fillval
+    ('flags', c_int, 1, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS), # int flags
+    ('fillval', CvScalar, 1, cvScalarAll(0)), # CvScalar fillval
 )
 cvRemap.__doc__ = """void cvRemap(const CvArr src, CvArr dst, const CvArr mapx, const CvArr mapy, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
 
@@ -767,7 +772,7 @@ cvLogPolar = cfunc('cvLogPolar', _cvDLL, None,
     ('dst', CvArr_r, 1), # CvArr* dst
     ('center', CvPoint2D32f, 1), # CvPoint2D32f center
     ('M', c_double, 1), # double M
-    ('flags', c_int, 1), # int flags
+    ('flags', c_int, 1, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS), # int flags
 )
 cvLogPolar.__doc__ = """void cvLogPolar(const CvArr src, CvArr dst, CvPoint2D32f center, double M, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS)
 
@@ -1980,7 +1985,7 @@ def cvConvexHull2(input, orientation=CV_CLOCKWISE, return_points=0):
     point_mat = cvCreateMatFromCvPointList(input)
     _cvConvexHull2(point_mat, hull_mat, orientation, return_points)
     
-    return [hull_mat[0,i] for i in xrange(hull_mat.cols)]
+    return [hull_mat[0,i] for i in range(hull_mat.cols)]
 
 # Tests contour convex
 cvCheckContourConvexity = cfunc('cvCheckContourConvexity', _cvDLL, c_int,
