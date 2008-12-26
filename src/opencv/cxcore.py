@@ -5439,8 +5439,8 @@ Loads object from file
 
 # Load and cast to given type
 def cvLoadCast(filename, ctype):
-    '''Use cvLoad and then cast the result to ctype'''
-    return cast(cvLoad(filename), POINTER(ctype))
+    '''Use cvLoad and then create a ctype object of the results'''
+    return ctype.from_address(cvLoad(filename))
    
     
 #-----------------------------------------------------------------------------
