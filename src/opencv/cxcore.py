@@ -1916,51 +1916,45 @@ def cvCloneMat(mat):
     return z
 
 # Returns matrix header corresponding to the rectangular sub-array of input image or matrix
-cvGetSubRect_ = cfunc('cvGetSubRect', _cxDLL, CvArr_p,
+_cvGetSubRect = cfunc('cvGetSubRect', _cxDLL, CvArr_p,
     ('arr', CvArr_r, 1), # const CvArr* arr
     ('submat', CvMat_r, 1), # CvMat* submat
     ('rect', CvRect, 1), # CvRect rect 
 )
-cvGetSubRect_.__doc__ = """POINTER(CvArr) cvGetSubRect(const CvArr arr, CvMat submat, CvRect rect)
 
-Returns matrix header corresponding to the rectangular sub-array of input image or matrix
-"""
-
-# Returns matrix header corresponding to the rectangular sub-array of input image or matrix
-def cvGetSubRect(arr, rect):
-    """CvMat cvGetSubRect(const CvArr arr, CvRect rect)
+def cvGetSubRect(*args):
+    """CvMat cvGetSubRect(const CvArr arr[, CvMat submat], CvRect rect)
 
     Returns matrix header corresponding to the rectangular sub-array of input image or matrix
     """
-    z = CvMat()
-    cvGetSubRect_(arr, z, rect)
+    arr = args[0]
+    if isinstance(args[1], CvRect): # no submat given
+        z = CvMat()
+        _cvGetSubRect(arr, z, args[1])
+    else:
+        z = args[1]
+        _cvGetSubRect(arr, z, args[2])
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
 
-cvGetSubArr_ = cvGetSubRect_
 cvGetSubArr = cvGetSubRect
 
 # Returns array row or row span
-cvGetRows_ = cfunc('cvGetRows', _cxDLL, CvMat_p,
+_cvGetRows = cfunc('cvGetRows', _cxDLL, CvMat_p,
     ('arr', CvArr_r, 1), # const CvArr* arr
     ('submat', CvMat_r, 1), # CvMat* submat
     ('start_row', c_int, 1), # int start_row
     ('end_row', c_int, 1), # int end_row
     ('delta_row', c_int, 1, 1), # int delta_row
 )
-cvGetRows_.__doc__ = """POINTER(CvMat) cvGetRows(const CvArr arr, int start_row, int end_row, int delta_row=1)
 
-Returns array row or row span
-"""
-
-# Returns array row or row span
 def cvGetRows(arr, start_row, end_row, delta_row=1):
     """CvMat cvGetRows(const CvArr arr, int start_row, int end_row, int delta_row=1)
 
     Returns array row or row span
     """
     z = CvMat()
-    cvGetRows_(arr, z, start_row, end_row, delta_row)
+    _cvGetRows(arr, z, start_row, end_row, delta_row)
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
     
