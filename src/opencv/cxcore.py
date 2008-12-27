@@ -2030,7 +2030,7 @@ def cvCreateMatND(*args, **kwds):
     if isinstance(args[0], int):
         z = pointee(_cvCreateMatND(*args, **kwds))
     else:
-        z = pointee(_cvCreateMatND(len(sizes), *args, **kwds))
+        z = pointee(_cvCreateMatND(len(args[0]), *args, **kwds))
     z._owner = True
     return z
 
@@ -4105,12 +4105,13 @@ _cvMakeSeqHeaderForArray = cfunc('cvMakeSeqHeaderForArray', _cxDLL, CvSeq_p,
 )
 
 def cvMakeSeqHeaderForArray(seq_type, header_size, elem_size, elements, total, block):
-    """CvSeq cvMakeSeqHeaderForArray(int seq_type, int header_size, int elem_size, void* elements, int total,  CvSeqBlock block)
+    """CvSeq cvMakeSeqHeaderForArray(int seq_type, int header_size, int elem_size, void* elements, int total, CvSeqBlock block)
 
     Constructs sequence from array
     """
     z = CvSeq()
     _cvMakeSeqHeaderForArray(seq_type, header_size, elem_size, elements, total, z, block)
+    # potential crash: z should link to elements
     return z
 
 # Makes separate header for the sequence slice
@@ -4243,22 +4244,19 @@ _cvSetAdd = cfunc('cvSetAdd', _cxDLL, c_int,
 )
 
 # Occupies a node in the set
-def cvSetAdd(set_header, elem=None):
-    """int cvSetAdd(CvSet set_header, CvSetElem elem=None)
+def cvSetAdd(set_header, elem=None, inserted_elem_ptr=None):
+    """int[, CvSetElem inserted_elem] = cvSetAdd(CvSet set_header, CvSetElem elem=None, CvSetElem_p inserted_elem_ptr=None)
 
     Occupies a node in the set
+    [ctypes-opencv] inserted_elem_ptr can be:
+        None: the inserted element is not returned
+        True: returns the inserted element
+        an instance of CvSetElem_p: this holds the address of the inserted element instead
     """
-    return _cvSetAdd(set_header, elem=elem)
-
-# Occupies a node in the set, return the index and a reference to the inserted node
-def cvSetAdd_ReturnRef(set_header, elem=None):
-    """(int, CvSetElem inserted_elem) = cvSetAdd_ReturnRef(CvSet set_header, CvSetElem elem=None)
-
-    Occupies a node in the set, return the index and a reference to the inserted node
-    """
+    if not inserted_elem_ptr is True:
+        return _cvSetAdd(set_header, elem=elem, inserted_elem=inserted_elem_ptr)
     z = CvSetElem_p()
-    i = _cvSetAdd(set_header, elem=elem, inserted_elem=z)
-    return (i, pointee(z, set_header))
+    return (_cvSetAdd(set_header, elem=elem, inserted_elem=z), pointee(z, set_header))
 
 # Adds element to set (fast variant)
 def cvSetNew(set_header):
@@ -4268,11 +4266,11 @@ def cvSetNew(set_header):
     [ctypes-opencv] Warning: I have not tested this function.
     [ctypes-opencv] returns None if not successful
     """
-    elem = set_header[0].free_elems
+    elem = set_header.free_elems
     if elem:
-        set_header[0].free_elems = elem[0].next_free
+        set_header.free_elems = elem[0].next_free
         elem[0].flags &= CV_SET_ELEM_IDX_MASK
-        set_header[0].active_count += 1
+        set_header.active_count += 1
     else:
         cvSetAdd( set_header, None, elem )
     return pointee(elem)
