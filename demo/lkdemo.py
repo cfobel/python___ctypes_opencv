@@ -122,19 +122,12 @@ if __name__ == '__main__':
         if need_to_init:
             # we want to search all the good points
 
-            # create the wanted images
-            eig = cvCreateImage (cvGetSize (grey), 32, 1)
-            temp = cvCreateImage (cvGetSize (grey), 32, 1)
-
             # the default parameters
             quality = 0.01
             min_distance = 10
 
             # search the good points
-            points [1] = cvGoodFeaturesToTrack (
-                grey, eig, temp,
-                MAX_COUNT,
-                quality, min_distance, None, 3, 0, 0.04)
+            points[1] = cvGoodFeaturesToTrack(grey, MAX_COUNT, quality, min_distance)
 
             # refine the corner locations
             cvFindCornerSubPix (
@@ -143,10 +136,6 @@ if __name__ == '__main__':
                 cvSize (win_size, win_size), cvSize (-1, -1),
                 cvTermCriteria (CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
                                    20, 0.03))
-
-            # release the temporary images
-            del(eig)
-            del(temp)
                                                
         elif len (points [0]) > 0:
             # we have points, so display them

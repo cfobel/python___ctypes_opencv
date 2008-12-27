@@ -527,24 +527,51 @@ _cvGoodFeaturesToTrack = cfunc('cvGoodFeaturesToTrack', _cvDLL, None,
     ('mask', CvArr_r, 1, None), # const CvArr* mask
     ('block_size', c_int, 1, 3), # int block_size
     ('use_harris', c_int, 1, 0), # int use_harris
-    ('k', c_double, 1, 0), # double k
+    ('k', c_double, 1, 0.04), # double k
 )
 
-def cvGoodFeaturesToTrack(image, eig_image, temp_image, max_corner_count, quality_level, min_distance, mask=None, block_size=3, use_harris=0, k=0):
-    """list_of_CvPoint2D32f cvGoodFeaturesToTrack(const CvArr image, CvArr eig_image, CvArr temp_image, int max_corner_count, double quality_level, double min_distance, const CvArr mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
+def cvGoodFeaturesToTrack(image, *args, **kwds):
+    """[list_of_CvPoint2D32f corners] = cvGoodFeaturesToTrack(const CvArr image[, CvArr eig_image, CvArr temp_image][, list_of_CvPoint2D32f corners], int_or_c_int corner_count, double quality_level, double min_distance, const CvArr mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
 
     Determines strong corners on image
-    [ctypes-opencv] 'max_corner_count' is the maximum number of corners to detect
-    [ctypes-opencv] Returns a list of detected points
+    [ctypes-opencv] If both 'eig_image' and 'temp_image' are omitted, they are automatically created.
+    [ctypes-opencv] If 'corners' is omitted, it is created with detected corners and returned as output.
+    [ctypes-opencv] 'corner_count' holds the maximum number of corners to be detected as input. If it is an instance of c_int, upon return, it holds the number of detected corners.
+    
     """
-    corners = cvCreateMat(1, max_corner_count, CV_32FC2)
-    count = c_int(max_corner_count)
-    _cvGoodFeaturesToTrack(image, eig_image, temp_image, corners.data.ptr, count, quality_level, min_distance, mask, block_size, use_harris, k)
-    z = []
+    
+    if not isinstance(args[0], CvMat) and not isinstance(args[0], IplImage): # no temp variables
+        eig_image = cvCreateMat(image.height, image.width, CV_32FC1)
+        temp_image = cvCreateMat(image.height, image.width, CV_32FC1)
+    else:
+        eig_image = args[0]
+        temp_image = args[1]
+        args = args[2:]
+        
+    if isinstance(args[0], int): # no corners given, and no fill out number of corners
+        corners = None
+        count = c_int(args[0])
+        args = args[1:]
+    elif isinstance(args[0], c_int): # no corners given, but fill out number of corners
+        corners = None
+        count = args[0]
+        args = args[1:]
+    else: # corners given
+        corners = args[0]
+        count = c_int(args[1]) if isinstance(args[1], int) else args[1]
+        args = args[2:]
+    pts = cvCreateMat(1, count.value, CV_32FC2)
+
+    _cvGoodFeaturesToTrack(image, eig_image, temp_image, pts.data.ptr, count, *args, **kwds)
+    
+    data_fl = pts.data.fl
+    if corners is None:
+        return [cvPoint2D32f(data_fl[i*2], data_fl[i*2+1]) for i in range(count.value)]
+            
     for i in range(count.value):
-        x = corners[0,i]
-        z.append(CvPoint2D32f(x[0], x[1]))
-    return z
+        x = corners[i]
+        x.x = data_fl[i*2]
+        x.y = data_fl[i*2+1]
 
 #-----------------------------------------------------------------------------
 # Speeded Up Robust Features
