@@ -3561,30 +3561,54 @@ Calculates average (mean) of array elements
 # Finds global minimum and maximum in array or subarray
 _cvMinMaxLoc = cfunc('cvMinMaxLoc', _cxDLL, None,
                     ('arr', CvArr_r, 1),
-                    ('min_val', c_double_p, 2),
-                    ('max_val', c_double_p, 2),
+                    ('min_val', ByRefArg(c_double), 1),
+                    ('max_val', ByRefArg(c_double), 1),
                     ('min_loc', CvPoint_r, 1, None),
                     ('max_loc', CvPoint_r, 1, None),
                     ('mask', CvArr_r, 1, None))
-
                     
 # Finds global minimum and maximum in array or subarray
-def cvMinMax(arr, mask=None):
-    """(double min_val, double max_val) = cvMinMax(const CvArr arr, const CvArr mask=NULL)
-
-    Finds global minimum and maximum in array or subarray
-    """
-    return _cvMinMaxLoc(arr, mask=mask)
-
-# Finds global minimum and maximum in array or subarray
-def cvMinMaxLoc(arr, mask=None):
-    """(double min_val, double max_val, CvPoint min_loc, CvPoint max_loc) = cvMinMaxLoc(const CvArr arr, const CvArr mask=NULL)
+def cvMinMaxLoc(arr, min_val=True, max_val=True, min_loc=None, max_loc=None, mask=None):
+    """[double min_val][, double max_val][, CvPoint min_loc][, CvPoint max_loc] = cvMinMaxLoc(const CvArr arr, c_double min_val=True, c_double max_val=True, CvPoint min_loc=None, CvPoint max_loc=None, const CvArr mask=None)
 
     Finds global minimum and maximum in array or subarray, and their locations
+    [ctypes-opencv] Depending on the input arguments, the returning object may be None, a single output argument, or a tuple of output arguments.
+    [ctypes-opencv] min_val can be:
+        True: returns the minimum value
+        an instance of c_double: this holds the minimum value instead
+    [ctypes-opencv] max_val can be:
+        True: returns the maximum value
+        an instance of c_double: this holds the maximum value instead
+    [ctypes-opencv] min_loc can be:
+        None: the location of the minimum value is not returned
+        True: returns the location of the minimum value
+        an instance of CvPoint: this holds the location of the minimum value instead
+    [ctypes-opencv] max_loc can be:
+        None: the location of the maximum value is not returned
+        True: returns the location of the maximum value
+        an instance of CvPoint: this holds the location of the maximum value instead
     """
-    min_loc = CvPoint()
-    max_loc = CvPoint()
-    return _cvMinMaxLoc(arr, min_loc=min_loc, max_loc=max_loc, mask=mask)+(min_loc, max_loc)
+    min_val_p = c_double() if min_val is True else min_val
+    max_val_p = c_double() if max_val is True else max_val
+    min_loc_p = CvPoint() if min_loc is True else min_loc
+    max_loc_p = CvPoint() if max_loc is True else max_loc
+    
+    _cvMinMaxLoc(arr, min_val=min_val_p, max_val=max_val_p, min_loc=min_loc_p, max_loc=max_loc_p, mask=mask)
+    
+    res = []
+    if min_val is True:
+        res.append(min_val_p.value)
+    if max_val is True:
+        res.append(max_val_p.value)
+    if min_loc is True:
+        res.append(min_loc_p)
+    if max_loc is True:
+        res.append(max_loc_p)
+        
+    if len(res) > 1:
+        return tuple(res)
+    if len(res) == 1:
+        return res[0]
 
 CV_C = 1
 CV_L1 = 2
