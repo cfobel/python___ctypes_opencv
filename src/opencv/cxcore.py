@@ -4348,22 +4348,19 @@ _cvGraphAddVtx = cfunc('cvGraphAddVtx', _cxDLL, c_int,
 )
 
 # Adds vertex to graph
-def cvGraphAddVtx(graph, vtx=None):
-    """int cvGraphAddVtx(CvGraph graph, const CvGraphVtx vtx=None)
+def cvGraphAddVtx(graph, vtx=None, inserted_vtx_ptr=None):
+    """int[, CvGraphVtx inserted_vtx] = cvGraphAddVtx(CvGraph graph, const CvGraphVtx vtx=None, CvGraphVtx_p inserted_vtx_ptr=None)
 
     Adds vertex to graph
+    [ctypes-opencv] inserted_vtx_ptr can be:
+        None: the inserted vertex is not returned
+        True: returns the inserted vertex
+        an instance of CvGraphVtx_p: this holds the address of the inserted vertex instead
     """
-    return _cvGraphAddVtx(graph, vtx=vtx)
-
-# Adds vertex to graph, returning the index of and a reference to the inserted vertex
-def cvGraphAddVtx_ReturnRef(graph, vtx=None):
-    """(int, CvGraphVtx inserted_vtx) = cvGraphAddVtx_ReturnRef(CvGraph graph, const CvGraphVtx vtx=None)
-
-    Adds vertex to graph, returning the index of and a reference to the inserted vertex
-    """
+    if inserted_vtx_ptr is not True:
+        return _cvGraphAddVtx(graph, vtx=vtx, inserted_vtx=inserted_vtx_ptr)
     z = CvGraphVtx_p()
-    i = _cvGraphAddVtx(graph, vtx=vtx, inserted_vtx=z)
-    return (i, pointee(z, graph))
+    return (_cvGraphAddVtx(graph, vtx=vtx, inserted_vtx=z), pointee(z, graph))
 
 # Removes vertex from graph
 cvGraphRemoveVtx = cfunc('cvGraphRemoveVtx', _cxDLL, c_int,
