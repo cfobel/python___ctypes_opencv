@@ -2097,14 +2097,14 @@ _cvCreateSparseMat = cfunc('cvCreateSparseMat', _cxDLL, CvSparseMat_p,
     ('type', c_int, 1), # int type 
 )
 
-def cvCreateSparseMat(*args):
+def cvCreateSparseMat(*args, **kwds):
     """CvSparseMat cvCreateSparseMat([int dims, ]list_or_tuple_of_int sizes, int type)
 
     Creates sparse array
     """
     if isinstance(args[0], int):
-        return pointee(_cvCreateSparseMat(*args))
-    return pointee(_cvCreateSparseMat(len(args[0]), *args))
+        return pointee(_cvCreateSparseMat(*args, **kwds))
+    return pointee(_cvCreateSparseMat(len(args[0]), *args, **kwds))
 
 # Creates full copy of sparse array
 _cvCloneSparseMat = cfunc('cvCloneSparseMat', _cxDLL, CvSparseMat_p,
@@ -2175,10 +2175,14 @@ _cvGetDims = cfunc('cvGetDims', _cxDLL, c_int,
     ('sizes', c_int_p, 1, None), # int* sizes
 )
 
-_cvGetDimSize = cfunc('cvGetDimSize', _cxDLL, c_int,
+cvGetDimSize = cfunc('cvGetDimSize', _cxDLL, c_int,
     ('arr', CvArr_r, 1), # const CvArr* arr
     ('index', c_int, 1), # int index 
 )
+cvGetDimSize.__doc__ = """int cvGetDimSize(const CvArr arr, int index)
+
+Return the size of a particular dimension
+"""
 
 # Return a tuple of array dimensions
 def cvGetDims(arr):
