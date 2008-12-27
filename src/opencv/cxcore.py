@@ -3972,22 +3972,19 @@ _cvSeqElemIdx = cfunc('cvSeqElemIdx', _cxDLL, c_int,
 )
 
 # Returns index of concrete sequence element
-def cvSeqElemIdx(seq, element):
-    """int cvSeqElemIdx(const CvSeq seq, const void* element)
+def cvSeqElemIdx(seq, element, block_ptr=None):
+    """int index[, CvSeqBlock block] = cvSeqElemIdx(const CvSeq seq, const void* element, CvSeqBlock_p block_ptr=None)
 
     Returns index of concrete sequence element
+    [ctypes-opencv] block_ptr can be:
+        None: the associated block is not returned
+        True: returns the associated block
+        an instance of CvSeqBlock_p: this holds the address of the associated block instead
     """
-    return _cvSeqElemIdx(seq, element)
-
-# Returns index of concrete sequence element and the associated block
-def cvSeqElemIdx_ReturnBlock(seq, element):
-    """(int, CvSeqBlock block) = cvSeqElemIdx(const CvSeq seq, const void* element)
-
-    Returns index of concrete sequence element and the associated block
-    """
-    block = CvSeqBlock_p()
-    z = _cvSeqElemIdx(seq, element, block)
-    return (z, pointee(block, seq))
+    if block_ptr is not True:
+        return _cvSeqElemIdx(seq, element, block_ptr)
+    block_ptr = CvSeqBlock_p()
+    return (_cvSeqElemIdx(seq, element, block_ptr), pointee(block_ptr, seq))
 
 # Initializes process of writing data to sequence
 _cvStartAppendToSeq = cfunc('cvStartAppendToSeq', _cxDLL, None,
