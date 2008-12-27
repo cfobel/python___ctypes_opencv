@@ -4607,7 +4607,7 @@ _cvReleaseGraphScanner = cfunc('cvReleaseGraphScanner', _cxDLL, None,
 _cvCreateGraphScanner = cfunc('cvCreateGraphScanner', _cxDLL, CvGraphScanner_p,
     ('graph', CvGraph_r, 1), # CvGraph* graph
     ('vtx', CvGraphVtx_r, 1, None), # CvGraphVtx* vtx
-    ('mask', c_int, 1), # int mask
+    ('mask', c_int, 1, CV_GRAPH_ALL_ITEMS), # int mask
 )
 
 # Creates structure for depth-first graph traversal
@@ -4809,12 +4809,18 @@ _cvFillPoly = cfunc('cvFillPoly', _cxDLL, None,
     ('shift', c_int, 1, 0), # int shift
 )
 
-def cvFillPoly(img, pts, color, line_type=8, shift=0):
-    """void cvFillPoly(CvArr img, list_of_list_of_CvPoint pts, CvScalar color, int line_type=8, int shift=0)
+def cvFillPoly(img, pts, *args, **kwds):
+    """void cvFillPoly(CvArr img, list_of_list_of_CvPoint pts[, list_of_int npts, int contours], CvScalar color, int line_type=8, int shift=0)
 
     Fills polygons interior
+    [ctypes-opencv] if both npts and contours are omitted, then:
+        npts = [len(x) for x in pts]
+        contours = len(pts)
     """
-    _cvFillPoly(img, pts, [len(x) for x in pts], len(pts), color, line_type, shift)
+    if isinstance(args[0], CvScalar): # both npts and contours are omitted
+        _cvFillPoly(img, pts, [len(x) for x in pts], *args, **kwds)
+    else:
+        _cvFillPoly(img, pts, *args, **kwds)
 
 # Fills convex polygon
 _cvFillConvexPoly = cfunc('cvFillConvexPoly', _cxDLL, None,
