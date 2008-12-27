@@ -7,8 +7,7 @@ print "OpenCV Python version of lkdemo"
 import sys
 
 # import the necessary things for OpenCV
-from opencv import cv
-from opencv import highgui
+from opencv import *
 
 #############################################################################
 # some "constants"
@@ -40,9 +39,9 @@ def on_mouse (event, x, y, flags, param):
         # not initialized, so skip
         return
 
-    if event == highgui.CV_EVENT_LBUTTONDOWN:
+    if event == CV_EVENT_LBUTTONDOWN:
         # user has click, so memorize it
-        pt = cv.cvPoint (x, y)
+        pt = cvPoint (x, y)
         add_remove_pt = True
 
 #############################################################################
@@ -62,12 +61,12 @@ if __name__ == '__main__':
 
     if len (sys.argv) == 1:
         # no argument on the command line, try to use the camera
-        capture = highgui.cvCreateCameraCapture (device)
+        capture = cvCreateCameraCapture (device)
 
     else:
         # we have an argument on the command line,
         # we can assume this is a file name, so open it
-        capture = highgui.cvCreateFileCapture (sys.argv [1])            
+        capture = cvCreateFileCapture (sys.argv [1])            
 
     # check that capture device is OK
     if not capture:
@@ -83,66 +82,66 @@ if __name__ == '__main__':
           "To add/remove a feature point click it\n"
 
     # first, create the necessary windows
-    highgui.cvNamedWindow ('LkDemo', highgui.CV_WINDOW_AUTOSIZE)
+    cvNamedWindow ('LkDemo', CV_WINDOW_AUTOSIZE)
 
     # register the mouse callback
-    highgui.cvSetMouseCallback ('LkDemo', on_mouse, None)
+    cvSetMouseCallback ('LkDemo', on_mouse, None)
 
     while 1:
         # do forever
 
         # 1. capture the current image
-        frame = highgui.cvQueryFrame (capture)
+        frame = cvQueryFrame (capture)
         if frame is None:
             # no image captured... end the processing
             break
 
         if image is None:
             # create the images we need
-            image = cv.cvCreateImage (cv.cvGetSize (frame), 8, 3)
+            image = cvCreateImage (cvGetSize (frame), 8, 3)
             image.origin = 0
-            grey = cv.cvCreateImage (cv.cvGetSize (frame), 8, 1)
-            prev_grey = cv.cvCreateImage (cv.cvGetSize (frame), 8, 1)
-            pyramid = cv.cvCreateImage (cv.cvGetSize (frame), 8, 1)
-            prev_pyramid = cv.cvCreateImage (cv.cvGetSize (frame), 8, 1)
+            grey = cvCreateImage (cvGetSize (frame), 8, 1)
+            prev_grey = cvCreateImage (cvGetSize (frame), 8, 1)
+            pyramid = cvCreateImage (cvGetSize (frame), 8, 1)
+            prev_pyramid = cvCreateImage (cvGetSize (frame), 8, 1)
             points = [[], []]
 
         # copy the frame, so we can draw on it
         if frame.origin:
-            cv.cvFlip(frame, image)
+            cvFlip(frame, image)
         else:
-            cv.cvCopy (frame, image)
+            cvCopy (frame, image)
 
         # create a grey version of the image
-        cv.cvCvtColor (image, grey, cv.CV_BGR2GRAY)
+        cvCvtColor (image, grey, CV_BGR2GRAY)
 
         if night_mode:
             # night mode: only display the points
-            cv.cvSetZero (image)
+            cvSetZero (image)
 
         if need_to_init:
             # we want to search all the good points
 
             # create the wanted images
-            eig = cv.cvCreateImage (cv.cvGetSize (grey), 32, 1)
-            temp = cv.cvCreateImage (cv.cvGetSize (grey), 32, 1)
+            eig = cvCreateImage (cvGetSize (grey), 32, 1)
+            temp = cvCreateImage (cvGetSize (grey), 32, 1)
 
             # the default parameters
             quality = 0.01
             min_distance = 10
 
             # search the good points
-            points [1] = cv.cvGoodFeaturesToTrack (
+            points [1] = cvGoodFeaturesToTrack (
                 grey, eig, temp,
                 MAX_COUNT,
                 quality, min_distance, None, 3, 0, 0.04)
 
             # refine the corner locations
-            cv.cvFindCornerSubPix (
+            cvFindCornerSubPix (
                 grey,
                 points [1],
-                cv.cvSize (win_size, win_size), cv.cvSize (-1, -1),
-                cv.cvTermCriteria (cv.CV_TERMCRIT_ITER | cv.CV_TERMCRIT_EPS,
+                cvSize (win_size, win_size), cvSize (-1, -1),
+                cvTermCriteria (CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
                                    20, 0.03))
 
             # release the temporary images
@@ -153,12 +152,12 @@ if __name__ == '__main__':
             # we have points, so display them
 
             # calculate the optical flow
-            points [1], status = cv.cvCalcOpticalFlowPyrLK (
+            points [1], status = cvCalcOpticalFlowPyrLK (
                 prev_grey, grey, prev_pyramid, pyramid,
                 points [0], 
-                cv.cvSize (win_size, win_size), 3,
+                cvSize (win_size, win_size), 3,
                 None,
-                cv.cvTermCriteria (cv.CV_TERMCRIT_ITER|cv.CV_TERMCRIT_EPS,
+                cvTermCriteria (CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,
                                    20, 0.03),
                 flags)
 
@@ -190,8 +189,8 @@ if __name__ == '__main__':
                 new_points.append (the_point)
                 
                 # draw the current point
-                cv.cvCircle (image, cv.cvPointFrom32f(the_point),
-                             3, cv.cvScalar (0, 255, 0, 0),
+                cvCircle (image, cvPointFrom32f(the_point),
+                             3, cvScalar (0, 255, 0, 0),
                              -1, 8, 0)
 
             # set back the points we keep
@@ -199,14 +198,14 @@ if __name__ == '__main__':
             
         if add_remove_pt:
             # we want to add a point
-            points [1].append (cv.cvPointTo32f (pt))
+            points [1].append (cvPointTo32f (pt))
 
             # refine the corner locations
-            points [1][-1] = cv.cvFindCornerSubPix (
+            points [1][-1] = cvFindCornerSubPix (
                 grey,
                 [points [1][-1]],
-                cv.cvSize (win_size, win_size), cv.cvSize (-1, -1),
-                cv.cvTermCriteria (cv.CV_TERMCRIT_ITER | cv.CV_TERMCRIT_EPS,
+                cvSize (win_size, win_size), cvSize (-1, -1),
+                cvTermCriteria (CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
                                    20, 0.03))[0]
 
             # we are no more in "add_remove_pt" mode
@@ -219,10 +218,10 @@ if __name__ == '__main__':
         need_to_init = False
         
         # we can now display the image
-        highgui.cvShowImage ('LkDemo', image)
+        cvShowImage ('LkDemo', image)
 
         # handle events
-        c = highgui.cvWaitKey (10)
+        c = cvWaitKey (10)
 
         if c == '\x1b':
             # user has press the ESC key, so exit

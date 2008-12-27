@@ -1954,13 +1954,13 @@ def cvGetRows(*args, **kwds):
     Returns array row or row span
     """
     arr = args[0]
-    kwds.setdefault('delta_row', 1)
+    delta_row = kwds.get('delta_row', 1)
     if isinstance(args[1], CvMat): # submat is given
         z = args[1]
-        _cvGetRows(arr, z, args[2], args[3], delta_row=kwds['delta_row'])
+        _cvGetRows(arr, z, args[2], args[3], delta_row=delta_row)
     else:
         z = CvMat()
-        _cvGetRows(arr, z, args[1], args[2], delta_row=kwds['delta_row'])
+        _cvGetRows(arr, z, args[1], args[2], delta_row=delta_row)
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
     
@@ -2006,13 +2006,13 @@ def cvGetDiag(*args, **kwds):
     Returns one of array diagonals
     """
     arr = args[0]
-    kwds.setdefault('diag', 0)
+    diag = kwds.get('diag', 0)
     if isinstance(args[1], CvMat): # submat is given
         z = args[1]
-        _cvGetDiag(arr, z, diag=kwds['diag'])
+        _cvGetDiag(arr, z, diag=diag)
     else:
         z = CvMat()
-        _cvGetDiag(arr, z, diag=kwds['diag'])
+        _cvGetDiag(arr, z, diag=diag)
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
 
