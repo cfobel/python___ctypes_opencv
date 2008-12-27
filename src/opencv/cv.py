@@ -1275,13 +1275,16 @@ _cvPyrSegmentation = cfunc('cvPyrSegmentation', _cvDLL, None,
     ('threshold2', c_double, 1), # double threshold2 
 )
 
-def cvPyrSegmentation(src, dst, storage, level, threshold1, threshold2):
-    """CvSeq cvPyrSegmentation(CvArr src, CvArr dst, CvMemStorage storage, int level, double threshold1, double threshold2)
+def cvPyrSegmentation(src, dst, storage, *args, **kwds):
+    """CvSeq cvPyrSegmentation(CvArr src, CvArr dst, CvMemStorage storage[, CvSeq_p comp_ptr], int level, double threshold1, double threshold2)
 
     Implements image segmentation by pyramids
+    [ctypes-opencv] If 'comp' is given, it is filled with the address of 'comp' as output. Otherwise, 'comp' is returned.
     """
+    if isinstance(args[0], CvSeq_p): # comp_ptr is given
+        return _cvPyrSegmentation(src, dst, storage, *args, **kwds)    
     comp = CvSeq_p()
-    _cvPyrSegmentation(src, dst, storage, comp, level, threshold1, threshold2)
+    _cvPyrSegmentation(src, dst, storage, comp, *args, **kwds)
     comp._depends = (storage,)
     return comp
 
