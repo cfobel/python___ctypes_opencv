@@ -136,9 +136,9 @@ if __name__ == '__main__':
     params = cvSURFParams(500, 1)
 
     tt = float(cvGetTickCount())
-    objectKeypoints, objectDescriptors = cvExtractSURF_ReturnDesc( object, None, storage, params )
+    objectKeypoints, objectDescriptors = cvExtractSURF( object, None, storage, params )
     print "Object Descriptors: %d\n" % objectDescriptors.total
-    imageKeypoints, imageDescriptors = cvExtractSURF_ReturnDesc( image, None, storage, params )
+    imageKeypoints, imageDescriptors = cvExtractSURF( image, None, storage, params )
     print "Image Descriptors: %d\n" % imageDescriptors.total
     tt = float(cvGetTickCount()) - tt
     print "Extraction time = %gms\n" % (tt/(cvGetTickFrequency()*1000.))

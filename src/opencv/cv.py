@@ -623,26 +623,28 @@ if cvVersion == 110:
     )
     
     # Extracts Speeded Up Robust Features from image
-    def cvExtractSURF(img, mask, storage, params):
-        """CvSeq cvExtractSURF( const CvArr img, const CvArr mask, CvMemStorage storage, CvSURFParams params )
+    def cvExtractSURF(img, mask, *args, **kwds):
+        """[CvSeq keypoints, [CvSeq descriptors]] = cvExtractSURF(const CvArr img, const CvArr mask[[, CvSeq_p keypoints_ptr], CvSeq_p descriptors_ptr], CvMemStorage storage, CvSURFParams params)
         
         Extracts Speeded Up Robust Features from image
+        [ctypes-opencv] If both 'keypoints_ptr' and 'descriptors_ptr' are omitted, both 'keypoints' and 'descriptors' are returned with output filled.
+        [ctypes-opencv] If only 'keypoints_ptr' is omitted, only 'keypoints' is returned with output filled, while 'descriptors_ptr' has its pointee filled with output if it is not None.
+        [ctypes-opencv] If neither 'keypoints_ptr' nor 'descriptors_ptr' is omitted, 'keypoints_ptr' has its pointee filled with output, while 'descriptors_ptr' has its pointee filled with output if it is not None.
         """
-        z = CvSeq_p()
-        _cvExtractSURF(img, mask, z, None, storage, params)
-        return pointee(z, storage)
+        if isinstance(args[0], CvMemStorage): # no keypoints_ptr nor descriptors_ptr
+            y = CvSeq_p()
+            z = CvSeq_p()
+            _cvExtractSURF(img, mask, z, y, *args, **kwds)
+            return (pointee(z, args[0]), pointee(y, args[0]))
         
-    # Extracts Speeded Up Robust Features from image
-    def cvExtractSURF_ReturnDesc(img, mask, storage, params):
-        """(CvSeq keypoints, CvSeq descriptors) = cvExtractSURF( const CvArr img, const CvArr mask, CvMemStorage storage, CvSURFParams params )
-        
-        Extracts Speeded Up Robust Features from image
-        """
-        y = CvSeq_p()
-        z = CvSeq_p()
-        _cvExtractSURF(img, mask, z, y, storage, params)
-        return (pointee(z, storage), pointee(y, storage))
-        
+        if isinstance(args[1], CvMemStorage): # got descriptors_ptr but no keypoints_ptr
+            z = CvSeq_p()
+            _cvExtractSURF(img, mask, z, *args, **kwds)
+            return pointee(z, args[1])
+
+        # got both pointers
+        _cvExtractSURF(img, mask, *args, **kwds)
+                
 
 #-----------------------------------------------------------------------------
 # Image Processing: Sampling, Interpolation and Geometrical Transforms
