@@ -2428,26 +2428,30 @@ _cvGetMat = cfunc('cvGetMat', _cxDLL, CvMat_p,
     ('allowND', c_int, 1, 0), # int allowND
 )
 
-def cvGetMat(arr, allowND=0):
-    """CvMat cvGetMat(const CvArr arr, int allowND=0)
-
-    Returns matrix header for arbitrary array
-    """
-    z = CvMat()
-    _cvGetMat(arr, z, allowND=allowND)
+def _cvGetMatWithHeader(arr, header, coi=None, allowND=0):
+    if coi is True:
+        coi = c_int()
+        z = _cvGetMat(arr, header, coi=coi, allowND=allowND)
+        z._depends = (arr,)
+        return (z, coi.value)
+    z = _cvGetMat(arr, header, coi=coi, allowND=allowND)
     z._depends = (arr,)
     return z
+        
 
-def cvGetMatWithCoi(arr, allowND=0):
-    """(CvMat, int coi) = cvGetMatWithCoi(const CvArr arr, int allowND=0)
+def cvGetMat(arr, *args, **kwds):
+    """CvMat mat[, int coi] = cvGetMat(const CvArr arr[, CvMat header], c_int coi=None, int allowND=0)
 
-    Returns matrix header for arbitrary array, and the COI
+    Returns matrix header for arbitrary array
+    [ctypes-opencv] If header is omitted, it is automatically created.
+    [ctypes-opencv] coi can be:
+        an instance of c_int: its value will hold the output coi
+        True: the returning object is a tuple of CvMat and the output coi
+        None: no output coi is returned
     """
-    coi = c_int()
-    z = CvMat()
-    _cvGetMat(arr, z, coi=coi, allowND=allowND)
-    z._depends = (arr,)
-    return (z, coi.value)
+    if isinstance(args[0], CvMat): # header is given
+        return _cvGetMatWithHeader(arr, *args, **kwds)
+    return _cvGetMatWithHeader(arr, CvMat(), *args, **kwds)
 
 # Returns image header for arbitrary array
 _cvGetImage = cfunc('cvGetImage', _cxDLL, IplImage_p,
