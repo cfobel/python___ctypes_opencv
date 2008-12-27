@@ -2429,18 +2429,14 @@ _cvGetMat = cfunc('cvGetMat', _cxDLL, CvMat_p,
 )
 
 def _cvGetMatWithHeader(arr, header, coi=None, allowND=0):
-    if coi is True:
-        coi = c_int()
-        z = _cvGetMat(arr, header, coi=coi, allowND=allowND)
-        z._depends = (arr,)
-        return (z, coi.value)
-    z = _cvGetMat(arr, header, coi=coi, allowND=allowND)
-    z._depends = (arr,)
-    return z
+    if coi is not True:
+        return pointee(_cvGetMat(arr, header, coi=coi, allowND=allowND), arr)
+    coi = c_int()
+    return (pointee(_cvGetMat(arr, header, coi=coi, allowND=allowND), arr), coi.value)
         
 
 def cvGetMat(arr, *args, **kwds):
-    """CvMat mat[, int coi] = cvGetMat(const CvArr arr[, CvMat header], c_int coi=None, int allowND=0)
+    """CvMat mat[, int output_coi] = cvGetMat(const CvArr arr[, CvMat header], c_int coi=None, int allowND=0)
 
     Returns matrix header for arbitrary array
     [ctypes-opencv] If header is omitted, it is automatically created.
@@ -2459,17 +2455,15 @@ _cvGetImage = cfunc('cvGetImage', _cxDLL, IplImage_p,
     ('image_header', IplImage_r, 1), # IplImage* image_header 
 )
 
-def cvGetImage(arr):
-    """IplImage cvGetImage(const CvArr arr)
+def cvGetImage(arr, *args, **kwds):
+    """IplImage cvGetImage(const CvArr arr[, IplImage image_header])
 
     Returns image header for arbitrary array
-    [ctypes-opencv] returns None if arr cannot be converted into IplImage
+    [ctypes-opencv] If image_header is omitted, it is automatically created.
     """
-    z = IplImage()
-    _cvGetImage(arr, z)
-    z._owner = 0 # owns nothing, no need to call cvReleaseImage...() at deconstruction
-    z._depends = (arr,) # make sure arr is deleted after z is deleted
-    return z
+    if isinstance(args[0], IplImage):
+        return pointee(_cvGetImage(arr, *args, **kwds), arr)
+    return pointee(_cvGetImage(arr, IplImage(), *args, **kwds), arr)
 
 
 #-----------------------------------------------------------------------------
