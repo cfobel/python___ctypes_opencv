@@ -1922,20 +1922,15 @@ _cvGetSubRect = cfunc('cvGetSubRect', _cxDLL, CvArr_p,
     ('rect', CvRect, 1), # CvRect rect 
 )
 
-def cvGetSubRect(*args):
+def cvGetSubRect(arr, *args, **kwds):
     """CvMat cvGetSubRect(const CvArr arr[, CvMat submat], CvRect rect)
 
     Returns matrix header corresponding to the rectangular sub-array of input image or matrix
     """
-    arr = args[0]
-    if isinstance(args[1], CvMat): # submat is given
-        z = args[1]
-        _cvGetSubRect(arr, z, args[2])
-    else:
-        z = CvMat()
-        _cvGetSubRect(arr, z, args[1])
-    z._depends = (arr,) # make sure submat is deleted before arr is deleted
-    return z
+    if isinstance(args[0], CvMat): # submat is given
+        return pointee(_cvGetSubRect(arr, *args, **kwds), arr, args[0])
+    z = CvMat()
+    return pointee(_cvGetSubRect(arr, z, *args, **kwds), arr, z)
 
 cvGetSubArr = cvGetSubRect
 
@@ -1954,13 +1949,9 @@ def cvGetRows(arr, *args, **kwds):
     Returns array row or row span
     """
     if isinstance(args[0], CvMat): # submat is given
-        z = args[0]
-        _cvGetRows(arr, *args, **kwds)
-    else:
-        z = CvMat()
-        _cvGetRows(arr, z, *args, **kwds)
-    z._depends = (arr,) # make sure submat is deleted before arr is deleted
-    return z
+        return pointee(_cvGetRows(arr, *args, **kwds), arr, args[0])
+    z = CvMat()
+    return pointee(_cvGetRows(arr, z, *args, **kwds), arr, z)
     
 def cvGetRow(arr, row):
     return cvGetRows(arr, row, row+1)
@@ -1979,13 +1970,9 @@ def cvGetCols(arr, *args, **kwds):
     Returns array column or column span
     """
     if isinstance(args[0], CvMat): # submat is given
-        z = args[0]
-        _cvGetCols(arr, *args, **kwds)
-    else:
-        z = CvMat()
-        _cvGetCols(arr, z, *args, **kwds)
-    z._depends = (arr,) # make sure submat is deleted before arr is deleted
-    return z
+        return pointee(_cvGetCols(arr, *args, **kwds), arr, args[0])
+    z = CvMat()
+    return pointee(_cvGetCols(arr, z, *args, **kwds), arr, z)
     
 def cvGetCol(arr, col):
     return cvGetCols(arr, col, col+1)
@@ -2003,13 +1990,9 @@ def cvGetDiag(arr, *args, **kwds):
     Returns one of array diagonals
     """
     if isinstance(args[0], CvMat): # submat is given
-        z = args[0]
-        _cvGetDiag(arr, *args, **kwds)
-    else:
-        z = CvMat()
-        _cvGetDiag(arr, z, *args, **kwds)
-    z._depends = (arr,) # make sure submat is deleted before arr is deleted
-    return z
+        return pointee(_cvGetDiag(arr, *args, **kwds), arr, args[0])
+    z = CvMat()
+    return pointee(_cvGetDiag(arr, z, *args, **kwds), arr, z)
 
 # Creates new matrix header
 _cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, CvMatND_p,
@@ -2022,7 +2005,7 @@ def cvCreateMatNDHeader(*args, **kwds):
     """CvMatND cvCreateMatNDHeader([int dims, ]list_or_tuple_of_int sizes, int type)
 
     Creates new matrix header
-    [ctypes-opencv] returns None if CvMatND is not created
+    [ctypes-opencv] dims=len(sizes) if it is omitted
     """
     if isinstance(args[0], int): # dims is given
         z = pointee(_cvCreateMatNDHeader(*args, **kwds))
@@ -2042,7 +2025,7 @@ def cvCreateMatND(*args, **kwds):
     """CvMatND cvCreateMatND([int dims, ]list_or_tuple_of_int sizes, int type)
 
     Creates multi-dimensional dense array
-    [ctypes-opencv] returns None if CvMatND is not created
+    [ctypes-opencv] dims=len(sizes) if it is omitted
     """
     if isinstance(args[0], int):
         z = pointee(_cvCreateMatND(*args, **kwds))
@@ -2064,6 +2047,7 @@ def cvInitMatNDHeader(mat, *args, **kwds):
     """CvMatND cvInitMatNDHeader(CvMatND mat[, int dims], list_or_tuple_of_int sizes, int type, void* data=NULL)
 
     Initializes multi-dimensional array header
+    [ctypes-opencv] dims=len(sizes) if it is omitted
     """
     if isinstance(args[0], int):
         _cvInitMatNDHeader(mat, *args, **kwds)
@@ -2430,9 +2414,9 @@ _cvGetMat = cfunc('cvGetMat', _cxDLL, CvMat_p,
 
 def _cvGetMatWithHeader(arr, header, coi=None, allowND=0):
     if coi is not True:
-        return pointee(_cvGetMat(arr, header, coi=coi, allowND=allowND), arr)
+        return pointee(_cvGetMat(arr, header, coi=coi, allowND=allowND), arr, header)
     coi = c_int()
-    return (pointee(_cvGetMat(arr, header, coi=coi, allowND=allowND), arr), coi.value)
+    return (pointee(_cvGetMat(arr, header, coi=coi, allowND=allowND), arr, header), coi.value)
         
 
 def cvGetMat(arr, *args, **kwds):
@@ -2462,8 +2446,9 @@ def cvGetImage(arr, *args, **kwds):
     [ctypes-opencv] If image_header is omitted, it is automatically created.
     """
     if isinstance(args[0], IplImage):
-        return pointee(_cvGetImage(arr, *args, **kwds), arr)
-    return pointee(_cvGetImage(arr, IplImage(), *args, **kwds), arr)
+        return pointee(_cvGetImage(arr, *args, **kwds), arr, args[0])
+    z = IplImage()
+    return pointee(_cvGetImage(arr, z, *args, **kwds), arr, z)
 
 
 #-----------------------------------------------------------------------------
@@ -2493,15 +2478,15 @@ _cvReshape = cfunc('cvReshape', _cxDLL, CvMat_p,
     ('new_rows', c_int, 1, 0), # int new_rows
 )
 
-def cvReshape(arr, new_cn, new_rows=0):
-    """CvMat cvReshape(const CvArr arr, int new_cn, int new_rows=0)
+def cvReshape(arr, *args, **kwds):
+    """CvMat cvReshape(const CvArr arr[, CvMat header], int new_cn, int new_rows=0)
 
     Changes shape of matrix/image without copying data
     """
+    if isinstance(args[0], CvMat): # header is given
+        return pointee(_cvReshape(arr, *args, **kwds), arr, args[0])
     z = CvMat()
-    _cvReshape(arr, z, new_cn, new_rows=new_rows)
-    z._depends = (arr,)
-    return z
+    return pointee(_cvReshape(arr, z, *args, **kwds), arr, z)
 
 # Fill destination array with tiled source array
 cvRepeat = cfunc('cvRepeat', _cxDLL, None,
