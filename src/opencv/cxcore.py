@@ -2103,12 +2103,14 @@ _cvCreateSparseMat = cfunc('cvCreateSparseMat', _cxDLL, CvSparseMat_p,
     ('type', c_int, 1), # int type 
 )
 
-def cvCreateSparseMat(sizes, cvmat_type):
-    """CvSparseMat cvCreateSparseMat(list_or_tuple_of_int sizes, int type)
+def cvCreateSparseMat(*args):
+    """CvSparseMat cvCreateSparseMat([int dims, ]list_or_tuple_of_int sizes, int type)
 
     Creates sparse array
     """
-    return pointee(_cvCreateSparseMat(len(sizes), sizes, cvmat_type))
+    if isinstance(args[0], int):
+        return pointee(_cvCreateSparseMat(*args))
+    return pointee(_cvCreateSparseMat(len(args[0]), *args))
 
 # Creates full copy of sparse array
 _cvCloneSparseMat = cfunc('cvCloneSparseMat', _cxDLL, CvSparseMat_p,
