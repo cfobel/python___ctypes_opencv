@@ -2004,7 +2004,7 @@ def cvGetDiag(arr, *args, **kwds):
     """
     if isinstance(args[0], CvMat): # submat is given
         z = args[0]
-        _cvGetDiag(arr, z, *args, **kwds)
+        _cvGetDiag(arr, *args, **kwds)
     else:
         z = CvMat()
         _cvGetDiag(arr, z, *args, **kwds)
@@ -2018,16 +2018,16 @@ _cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, CvMatND_p,
     ('type', c_int, 1), # int type 
 )
 
-def cvCreateMatNDHeader(*args):
+def cvCreateMatNDHeader(*args, **kwds):
     """CvMatND cvCreateMatNDHeader([int dims, ]list_or_tuple_of_int sizes, int type)
 
     Creates new matrix header
     [ctypes-opencv] returns None if CvMatND is not created
     """
-    if isinstance(args[0], int):
-        z = pointee(_cvCreateMatNDHeader(*args))
+    if isinstance(args[0], int): # dims is given
+        z = pointee(_cvCreateMatNDHeader(*args, **kwds))
     else:
-        z = pointee(_cvCreateMatNDHeader(len(args[0]), *args))
+        z = pointee(_cvCreateMatNDHeader(len(args[0]), *args, **kwds))
     z._owner = True
     return z
 
@@ -2038,16 +2038,16 @@ _cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, CvMatND_p,
     ('type', c_int, 1), # int type 
 )
 
-def cvCreateMatND(*args):
+def cvCreateMatND(*args, **kwds):
     """CvMatND cvCreateMatND([int dims, ]list_or_tuple_of_int sizes, int type)
 
     Creates multi-dimensional dense array
     [ctypes-opencv] returns None if CvMatND is not created
     """
     if isinstance(args[0], int):
-        z = pointee(_cvCreateMatND(*args))
+        z = pointee(_cvCreateMatND(*args, **kwds))
     else:
-        z = pointee(_cvCreateMatND(len(sizes), *args))
+        z = pointee(_cvCreateMatND(len(sizes), *args, **kwds))
     z._owner = True
     return z
 
@@ -2060,18 +2060,17 @@ _cvInitMatNDHeader = cfunc('cvInitMatNDHeader', _cxDLL, CvMatND_p,
     ('data', c_void_p, 1, None), # void* data
 )
 
-def cvInitMatNDHeader(*args, **kwds):
+def cvInitMatNDHeader(mat, *args, **kwds):
     """CvMatND cvInitMatNDHeader(CvMatND mat[, int dims], list_or_tuple_of_int sizes, int type, void* data=NULL)
 
     Initializes multi-dimensional array header
     """
-    data = kwds.get('data', None)
-    if isinstance(args[1], int):
-        _cvInitMatNDHeader(*args, data=data)
+    if isinstance(args[0], int):
+        _cvInitMatNDHeader(mat, *args, **kwds)
     else:
-        _cvInitMatNDHeader(args[0], len(args[1]), *args[1:], data=data)
-    if data is not None:
-        mat._depends = (data,)
+        _cvInitMatNDHeader(mat, len(args[0]), *args, **kwds)
+    # if data is not None: # potential crash here!!!
+        # mat._depends = (data,)
     return mat
     
 _cvCloneMatND = cfunc('cvCloneMatND', _cxDLL, CvMatND_p,
