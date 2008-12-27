@@ -1948,18 +1948,19 @@ _cvGetRows = cfunc('cvGetRows', _cxDLL, CvMat_p,
     ('delta_row', c_int, 1, 1), # int delta_row
 )
 
-def cvGetRows(*args, delta_row=1):
+def cvGetRows(*args, **kwds):
     """CvMat cvGetRows(const CvArr arr[, CvMat submat], int start_row, int end_row, int delta_row=1)
 
     Returns array row or row span
     """
     arr = args[0]
+    kwds.setdefault('delta_row', 1)
     if isinstance(args[1], CvMat): # submat is given
         z = args[1]
-        _cvGetRows(arr, z, args[2], args[3], delta_row)
+        _cvGetRows(arr, z, args[2], args[3], delta_row=kwds['delta_row'])
     else:
         z = CvMat()
-        _cvGetRows(arr, z, args[1], args[2], delta_row)
+        _cvGetRows(arr, z, args[1], args[2], delta_row=kwds['delta_row'])
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
     
@@ -1999,18 +2000,19 @@ _cvGetDiag = cfunc('cvGetDiag', _cxDLL, CvMat_p,
     ('diag', c_int, 1, 0), # int diag
 )
 
-def cvGetDiag(*args, diag=0):
+def cvGetDiag(*args, **kwds):
     """CvMat cvGetDiag(const CvArr arr[, CvMat submat], int diag=0)
 
     Returns one of array diagonals
     """
     arr = args[0]
+    kwds.setdefault('diag', 0)
     if isinstance(args[1], CvMat): # submat is given
         z = args[1]
-        _cvGetDiag(arr, z, diag=diag)
+        _cvGetDiag(arr, z, diag=kwds['diag'])
     else:
         z = CvMat()
-        _cvGetDiag(arr, z, diag=diag)
+        _cvGetDiag(arr, z, diag=kwds['diag'])
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
 
