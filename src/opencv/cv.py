@@ -627,9 +627,9 @@ if cvVersion == 110:
         """[CvSeq keypoints, [CvSeq descriptors]] = cvExtractSURF(const CvArr img, const CvArr mask[[, CvSeq_p keypoints_ptr], CvSeq_p descriptors_ptr], CvMemStorage storage, CvSURFParams params)
         
         Extracts Speeded Up Robust Features from image
-        [ctypes-opencv] If both 'keypoints_ptr' and 'descriptors_ptr' are omitted, both 'keypoints' and 'descriptors' are returned with output filled.
-        [ctypes-opencv] If only 'keypoints_ptr' is omitted, only 'keypoints' is returned with output filled, while 'descriptors_ptr' has its pointee filled with output if it is not None.
-        [ctypes-opencv] If neither 'keypoints_ptr' nor 'descriptors_ptr' is omitted, 'keypoints_ptr' has its pointee filled with output, while 'descriptors_ptr' has its pointee filled with output if it is not None.
+        [ctypes-opencv] If both 'keypoints_ptr' and 'descriptors_ptr' are omitted, both 'keypoints' and 'descriptors' are returned.
+        [ctypes-opencv] If only 'keypoints_ptr' is omitted, only 'keypoints' is returned, while 'descriptors_ptr' is filled with the address of 'descriptors' if it is not None.
+        [ctypes-opencv] If neither 'keypoints_ptr' nor 'descriptors_ptr' is omitted, 'keypoints_ptr' is filled with the address of 'keypoints', while 'descriptors_ptr' is filled with the address of 'descriptors' if it is not None.
         """
         if isinstance(args[0], CvMemStorage): # no keypoints_ptr nor descriptors_ptr
             y = CvSeq_p()
@@ -1194,14 +1194,16 @@ _cvFindContours = cfunc('cvFindContours', _cvDLL, c_int,
 )
 
 # Finds contours in binary image
-def cvFindContours(image, storage, header_size=sizeof(CvContour), mode=CV_RETR_LIST, method=CV_CHAIN_APPROX_SIMPLE, offset=cvPoint(0,0)):
-    """(int ncontours, CvSeq first_contour) = cvFindContours(CvArr image, CvMemStorage storage, int header_size=sizeof(CvContour), int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
+def cvFindContours(image, storage, *args, **kwds):
+    """int ncontours[, CvSeq first_contour] = cvFindContours(CvArr image, CvMemStorage storage[, CvSeq_p first_contour_ptr], int header_size=sizeof(CvContour), int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
 
     Finds contours in binary image
+    [ctypes-opencv] If 'first_contour_ptr' is given, it is filled with the address of 'first_contour'. Otherwise, 'first_contour' is returned.
     """
+    if isinstance(args[0], CvSeq_p): # first_contour_ptr is given
+        return _cvFindContours(image, storage, *args, **kwds)
     first = CvSeq_p()
-    nc = _cvFindContours(image, storage, first, header_size, mode, method, offset)
-    return nc, pointee(first, storage)
+    return (_cvFindContours(image, storage, first, *args, **kwds), pointee(first, storage))
 
 # Initializes contour scanning process
 _cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
