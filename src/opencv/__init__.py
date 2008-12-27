@@ -58,19 +58,21 @@ for sym, val in sorted(locals().items(), reverse=True):
 
     if sym.lower().startswith('cv'):
         if sym[2:3] == '_' and not sym[3:4].isdigit():
-            sym = sym[3:]
+            sname = sym[3:]
         else:
-            sym = sym[2:]
+            sname = sym[2:]
+    else:
+        sname = sym
 
     # Use underscore to distinguish conflicts
-    if hasattr(nsp, sym):
-        sym = '_' + sym
+    if hasattr(nsp, sname):
+        sname = '_' + sname
 
-    # If still have a conflict, punt
-    if not hasattr(nsp, sym):
-        setattr(nsp, sym, val)
+    # If still have a conflict, punt and just install full name
+    if not hasattr(nsp, sname):
+        setattr(nsp, sname, val)
     else:
-        print 'Warning: cv namespace collision:', sym, getattr(nsp, sym)
+        setattr(nsp, sym, val)
 
 cv = nsp
 del nsp

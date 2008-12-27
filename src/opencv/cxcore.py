@@ -58,8 +58,8 @@ def detect_opencv():
             cxDLL = cdll.LoadLibrary(find_lib('cxcore'))
             cvDLL = cdll.LoadLibrary(find_lib('cv'))
             hgDLL = cdll.LoadLibrary(find_lib('highgui'))
-        except ImportError, e:
-            raise e
+        except ImportError:
+            raise
         else:
             raise ImportError("Cannot import OpenCV's shared libraries.")
 
