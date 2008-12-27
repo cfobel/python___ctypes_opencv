@@ -4392,22 +4392,19 @@ _cvGraphAddEdge = cfunc('cvGraphAddEdge', _cxDLL, c_int,
 )
 
 # Adds edge to graph
-def cvGraphAddEdge(graph, start_idx, end_idx, edge=None):
-    """int cvGraphAddEdge(CvGraph graph, int start_idx, int end_idx, const CvGraphEdge edge=None)
+def cvGraphAddEdge(graph, start_idx, end_idx, edge=None, inserted_edge_ptr=None):
+    """int[, CvGraphEdge inserted_edge] = cvGraphAddEdge(CvGraph graph, int start_idx, int end_idx, const CvGraphEdge edge=None, CvGraphEdge_p inserted_edge_ptr=None)
 
     Adds edge to graph
+    [ctypes-opencv] inserted_edge_ptr can be:
+        None: the inserted edge is not returned
+        True: returns the inserted edge
+        an instance of CvGraphEdge_p: this holds the address of the inserted edge instead
     """
-    return _cvGraphAddEdge(graph, start_idx, end_idx, edge=edge)
-
-# Adds edge to graph, returning the index of and a reference to the inserted edge
-def cvGraphAddEdge_ReturnRef(graph, start_idx, end_idx, edge=None):
-    """(int, CvGraphEdge inserted_edge) = cvGraphAddEdge_ReturnRef(CvGraph graph, int start_idx, int end_idx, const CvGraphEdge edge=None)
-
-    Adds edge to graph, returning the index of and a reference to the inserted edge
-    """
+    if inserted_edge_ptr is not True:
+        return _cvGraphAddEdge(graph, start_idx, end_idx, edge=edge, inserted_edge=inserted_edge_ptr)
     z = CvGraphEdge_p()
-    i = _cvGraphAddEdge(graph, start_idx, end_idx, edge=edge, inserted_edge=z)
-    return (i, pointee(z, graph))
+    return (_cvGraphAddEdge(graph, start_idx, end_idx, edge=edge, inserted_edge=z), pointee(z, graph))
 
 # Adds edge to graph by pointer
 _cvGraphAddEdgeByPtr = cfunc('cvGraphAddEdgeByPtr', _cxDLL, c_int,
@@ -4419,22 +4416,19 @@ _cvGraphAddEdgeByPtr = cfunc('cvGraphAddEdgeByPtr', _cxDLL, c_int,
 )
 
 # Adds edge to graph by pointer
-def cvGraphAddEdgeByPtr(graph, start_vtx, end_vtx, edge=None):
-    """int cvGraphAddEdgeByPtr(CvGraph graph, CvGraphVtx start_vtx, CvGraphVtx end_vtx, const CvGraphEdge edge=None)
+def cvGraphAddEdgeByPtr(graph, start_vtx, end_vtx, edge=None, inserted_edge_ptr=None):
+    """int[, CvGraphEdge inserted_edge] = cvGraphAddEdgeByPtr(CvGraph graph, CvGraphVtx start_vtx, CvGraphVtx end_vtx, const CvGraphEdge edge=None, CvGraphEdge_p inserted_edge_ptr=None)
 
     Adds edge to graph by pointer
+    [ctypes-opencv] inserted_edge_ptr can be:
+        None: the inserted edge is not returned
+        True: returns the inserted edge
+        an instance of CvGraphEdge_p: this holds the address of the inserted edge instead
     """
-    return _cvGraphAddEdgeByPtr(graph, start_vtx, end_vtx, edge=edge)
-
-# Adds edge to graph by pointer, returning the index of and a reference to the inserted edge
-def cvGraphAddEdgeByPtr_ReturnRef(graph, start_vtx, end_vtx, edge=None):
-    """(int, CvGraphEdge inserted_edge) = cvGraphAddEdgeByPtr_ReturnRef(CvGraph graph, CvGraphVtx start_vtx, CvGraphVtx end_vtx, const CvGraphEdge edge=None)
-
-    Adds edge to graph by pointer, returning the index of and a reference to the inserted edge
-    """
+    if inserted_edge_ptr is not True:
+        return _cvGraphAddEdgeByPtr(graph, start_vtx, end_vtx, edge=edge, inserted_edge=inserted_edge_ptr)
     z = CvGraphEdge_p()
-    i = _cvGraphAddEdgeByPtr(graph, start_vtx, end_vtx, edge=edge, inserted_edge=z)
-    return (i, pointee(z, graph))
+    return (_cvGraphAddEdgeByPtr(graph, start_vtx, end_vtx, edge=edge, inserted_edge=z), pointee(z, graph))
 
 # Removes edge from graph
 cvGraphRemoveEdge = cfunc('cvGraphRemoveEdge', _cxDLL, None,
