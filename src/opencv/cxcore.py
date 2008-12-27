@@ -2023,13 +2023,16 @@ _cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, CvMatND_p,
     ('type', c_int, 1), # int type 
 )
 
-def cvCreateMatNDHeader(sizes, cvmat_type):
-    """CvMatND cvCreateMatNDHeader(list_or_tuple_of_int sizes, int type)
+def cvCreateMatNDHeader(*args):
+    """CvMatND cvCreateMatNDHeader([int dims, ]list_or_tuple_of_int sizes, int type)
 
     Creates new matrix header
     [ctypes-opencv] returns None if CvMatND is not created
     """
-    z = pointee(_cvCreateMatNDHeader(len(sizes), sizes, cvmat_type))
+    if isinstance(args[0], int):
+        z = pointee(_cvCreateMatNDHeader(*args))
+    else:
+        z = pointee(_cvCreateMatNDHeader(len(args[0]), *args))
     z._owner = True
     return z
 
@@ -2040,13 +2043,16 @@ _cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, CvMatND_p,
     ('type', c_int, 1), # int type 
 )
 
-def cvCreateMatND(sizes, cvmat_type):
-    """CvMatND cvCreateMatND(list_or_tuple_of_int sizes, int type)
+def cvCreateMatND(*args):
+    """CvMatND cvCreateMatND([int dims, ]list_or_tuple_of_int sizes, int type)
 
     Creates multi-dimensional dense array
     [ctypes-opencv] returns None if CvMatND is not created
     """
-    z = pointee(_cvCreateMatND(len(sizes), sizes, cvmat_type))
+    if isinstance(args[0], int):
+        z = pointee(_cvCreateMatND(*args))
+    else:
+        z = pointee(_cvCreateMatND(len(sizes), *args))
     z._owner = True
     return z
 
@@ -2059,12 +2065,16 @@ _cvInitMatNDHeader = cfunc('cvInitMatNDHeader', _cxDLL, CvMatND_p,
     ('data', c_void_p, 1, None), # void* data
 )
 
-def cvInitMatNDHeader(mat, sizes, cvmat_type, data=None):
-    """CvMatND cvInitMatNDHeader(CvMatND mat, list_or_tuple_of_int sizes, int type, void* data=NULL)
+def cvInitMatNDHeader(*args, **kwds):
+    """CvMatND cvInitMatNDHeader(CvMatND mat[, int dims], list_or_tuple_of_int sizes, int type, void* data=NULL)
 
     Initializes multi-dimensional array header
     """
-    _cvInitMatNDHeader(mat, len(sizes), sizes, cvmat_type, data)
+    data = kwds.get('data', None)
+    if isinstance(args[1], int):
+        _cvInitMatNDHeader(*args, data=data)
+    else:
+        _cvInitMatNDHeader(args[0], len(args[1]), *args[1:], data=data)
     if data is not None:
         mat._depends = (data,)
     return mat
