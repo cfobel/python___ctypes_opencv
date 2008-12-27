@@ -1948,19 +1948,17 @@ _cvGetRows = cfunc('cvGetRows', _cxDLL, CvMat_p,
     ('delta_row', c_int, 1, 1), # int delta_row
 )
 
-def cvGetRows(*args, **kwds):
+def cvGetRows(arr, *args, **kwds):
     """CvMat cvGetRows(const CvArr arr[, CvMat submat], int start_row, int end_row, int delta_row=1)
 
     Returns array row or row span
     """
-    arr = args[0]
-    delta_row = kwds.get('delta_row', 1)
-    if isinstance(args[1], CvMat): # submat is given
-        z = args[1]
-        _cvGetRows(arr, z, args[2], args[3], delta_row=delta_row)
+    if isinstance(args[0], CvMat): # submat is given
+        z = args[0]
+        _cvGetRows(arr, *args, **kwds)
     else:
         z = CvMat()
-        _cvGetRows(arr, z, args[1], args[2], delta_row=delta_row)
+        _cvGetRows(arr, z, *args, **kwds)
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
     
@@ -1975,18 +1973,17 @@ _cvGetCols = cfunc('cvGetCols', _cxDLL, CvMat_p,
     ('end_col', c_int, 1), # int end_col 
 )
 
-def cvGetCols(*args):
+def cvGetCols(arr, *args, **kwds):
     """CvMat cvGetCols(const CvArr arr[, CvMat submat], int start_col, int end_col)
 
     Returns array column or column span
     """
-    arr = args[0]
-    if isinstance(args[1], CvMat): # submat is given
-        z = args[1]
-        _cvGetCols(arr, z, args[2], args[3])
+    if isinstance(args[0], CvMat): # submat is given
+        z = args[0]
+        _cvGetCols(arr, *args, **kwds)
     else:
         z = CvMat()
-        _cvGetCols(arr, z, args[1], args[2])
+        _cvGetCols(arr, z, *args, **kwds)
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
     
@@ -2000,19 +1997,17 @@ _cvGetDiag = cfunc('cvGetDiag', _cxDLL, CvMat_p,
     ('diag', c_int, 1, 0), # int diag
 )
 
-def cvGetDiag(*args, **kwds):
+def cvGetDiag(arr, *args, **kwds):
     """CvMat cvGetDiag(const CvArr arr[, CvMat submat], int diag=0)
 
     Returns one of array diagonals
     """
-    arr = args[0]
-    diag = kwds.get('diag', 0)
-    if isinstance(args[1], CvMat): # submat is given
-        z = args[1]
-        _cvGetDiag(arr, z, diag=diag)
+    if isinstance(args[0], CvMat): # submat is given
+        z = args[0]
+        _cvGetDiag(arr, z, *args, **kwds)
     else:
         z = CvMat()
-        _cvGetDiag(arr, z, diag=diag)
+        _cvGetDiag(arr, z, *args, **kwds)
     z._depends = (arr,) # make sure submat is deleted before arr is deleted
     return z
 
