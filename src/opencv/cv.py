@@ -728,15 +728,16 @@ _cvGetAffineTransform = cfunc('cvGetAffineTransform', _cvDLL, CvMat_p,
     ('map_matrix', CvMat_r, 1), # CvMat* map_matrix
 )
 
-def cvGetAffineTransform(src, dst):
+def cvGetAffineTransform(src, dst, map_matrix=None):
     """CvMat cvGetAffineTransform(const CvPoint2D32f src, const CvPoint2D32f dst)
 
     Calculates affine transform from 3 corresponding points
-    [ctypes-opencv] a new 2x3 matrix is created
+    [ctypes-opencv] If map_matrix is None, a new 2x3 matrix is created
     """
-    z = cvCreateMat(2, 3, CV_64FC1)
-    _cvGetAffineTransform(src, dst, z)
-    return z
+    if map_matrix is None:
+        map_matrix = cvCreateMat(2, 3, CV_64FC1)
+    _cvGetAffineTransform(src, dst, map_matrix)
+    return map_matrix
 
 # Calculates affine matrix of 2d rotation
 cv2DRotationMatrix = cfunc('cv2DRotationMatrix', _cvDLL, CvMat_p,
@@ -746,15 +747,16 @@ cv2DRotationMatrix = cfunc('cv2DRotationMatrix', _cvDLL, CvMat_p,
     ('map_matrix', CvMat_r, 1), # CvMat* map_matrix 
 )
 
-def cv2DRotationMatrix(center, angle, scale):
+def cv2DRotationMatrix(center, angle, scale, map_matrix=None):
     """CvMat cv2DRotationMatrix(CvPoint2D32f center, double angle, double scale)
 
     Calculates affine matrix of 2d rotation
-    [ctypes-opencv] a new 2x3 matrix is created
+    [ctypes-opencv] If map_matrix is None, a new 2x3 matrix is created
     """
-    z = cvCreateMat(2, 3, CV_64FC1)
-    _cv2DRotationMatrix(center, angle, scale, z)
-    return z
+    if map_matrix is None:
+        map_matrix = cvCreateMat(2, 3, CV_64FC1)
+    _cv2DRotationMatrix(center, angle, scale, map_matrix)
+    return map_matrix
 
 # Applies perspective transformation to the image
 cvWarpPerspective = cfunc('cvWarpPerspective', _cvDLL, None,
@@ -776,15 +778,16 @@ _cvGetPerspectiveTransform = cfunc('cvGetPerspectiveTransform', _cvDLL, CvMat_p,
     ('map_matrix', CvMat_r, 1), # CvMat* map_matrix 
 )
 
-def cvGetPerspectiveTransform(src, dst):
+def cvGetPerspectiveTransform(src, dst, map_matrix):
     """CvMat cvGetPerspectiveTransform(const CvPoint2D32f src, const CvPoint2D32f dst)
 
     Calculates perspective transform from 4 corresponding points
-    [ctypes-opencv] a new 3x3 matrix is created
+    [ctypes-opencv] If map_matrix is None, a new 3x3 matrix is created
     """
-    z = cvCreateMat(3, 3, CV_64FC1)
-    _cvGetPerspectiveTransform(src, dst, z)
-    return z
+    if map_matrix is None:
+        map_matrix = cvCreateMat(3, 3, CV_64FC1)
+    _cvGetPerspectiveTransform(src, dst, map_matrix)
+    return map_matrix
 
 # Applies generic geometrical transformation to the image
 cvRemap = cfunc('cvRemap', _cvDLL, None,
@@ -3119,7 +3122,7 @@ _cvCreatePOSITObject = cfunc('cvCreatePOSITObject', _cvDLL, CvPOSITObject_p,
 
 # Initializes structure containing object information
 def cvCreatePOSITObject(points):
-    """CvPOSITObject cvCreatePOSITObject(list_or_tupleof_CvPoint3D32f points)
+    """CvPOSITObject cvCreatePOSITObject(list_or_tuple_of_CvPoint3D32f points)
 
     Initializes structure containing object information
     [ctypes-opencv] returns None if no posit object is created
