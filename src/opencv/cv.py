@@ -1492,12 +1492,16 @@ _cvCreateHist = cfunc('cvCreateHist', _cvDLL, CvHistogram_p,
 )
 
 # Creates histogram
-def cvCreateHist(sizes, hist_type, ranges=None, uniform=1):
-    """CvHistogram cvCreateHist(list_or_tuple_of_int sizes, int type, list_of_list_of_float ranges (default=None), int uniform=1)
+def cvCreateHist(*args, **kwds):
+    """CvHistogram cvCreateHist([int dims, ]list_or_tuple_of_int sizes, int type, list_of_list_of_float ranges (default=None), int uniform=1)
 
     Creates histogram
+    [ctypes-opencv] dims=len(sizes) if omitted
     """
-    z = pointee(_cvCreateHist(len(sizes), sizes, hist_type, ranges, uniform))
+    if isinstance(args[0], int): # dims is given
+        z = pointee(_cvCreateHist(*args, **kwds))
+    else:
+        z = pointee(_cvCreateHist(len(args[0]), *args, **kwds))
     if z is not None:
         z._owner = True
     return z
