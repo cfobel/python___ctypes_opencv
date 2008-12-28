@@ -18,6 +18,7 @@
 import os, sys
 from ctypes.util import find_library
 from ctypes import *
+import ctypes
 from math import floor, ceil, pi
 
 # Use xrange if available (pre-3.0)
@@ -131,14 +132,14 @@ class _Structure(Structure):
         for field in self._fields_:
             res.append('%s=%s' % (field[0], repr(getattr(self, field[0]))))
         return self.__class__.__name__ + '(' + ','.join(res) + ')'
-    # @classmethod
-    # def from_param(cls, obj):
-        # '''Magically construct from a tuple'''
-        # if isinstance(obj, cls):
-            # return obj
-        # if isinstance(obj, tuple):
-            # return cls(*obj)
-        # raise TypeError
+    @classmethod
+    def from_param(cls, obj):
+        '''Magically construct from a tuple'''
+        if isinstance(obj, cls):
+            return obj
+        if isinstance(obj, tuple):
+            return cls(*obj)
+        raise TypeError
 
         
 class ListPOINTER(object):
@@ -423,11 +424,11 @@ class IplImage(_Structure):
         
     def __del__(self):
         if self._owner == 1: # own header only
-            _cvReleaseImageHeader(pointer(self))
+            _cvReleaseImageHeader(c_void_p(addressof(self)))
         elif self._owner == 2: # own data but not header
             _cvReleaseData(self)
         elif self._owner == 3: # own header and data
-            _cvReleaseImage(pointer(self))
+            _cvReleaseImage(c_void_p(addressof(self)))
 
     def __repr__(self):
         '''Print the fields'''
@@ -747,7 +748,7 @@ class CvMat(_Structure):
             
     def __del__(self):
         if self._owner is True:
-            _cvReleaseMat(pointer(self))
+            _cvReleaseMat(c_void_p(addressof(self)))
 
     _fields_ = [("type", c_int),
                 ("step", c_int),
@@ -791,7 +792,7 @@ class CvMatND(_Structure):
     
     def __del__(self):
         if self._owner is True:
-            _cvReleaseMat(pointer(self))
+            _cvReleaseMat(c_void_p(addressof(self)))
                 
 CvMatND_p = POINTER(CvMatND)
 CvMatND_r = ByRefArg(CvMatND)
@@ -815,7 +816,7 @@ CV_STORAGE_MAGIC_VAL = 0x42890000
 class CvMemStorage(_Structure): # forward declaration
     
     def __del__(self):
-        _cvReleaseMemStorage(pointer(self))
+        _cvReleaseMemStorage(c_void_p(addressof(self)))
     
 CvMemStorage_p = POINTER(CvMemStorage)
 CvMemStorage_r = ByRefArg(CvMemStorage)
@@ -1024,7 +1025,7 @@ class CvSparseMat(_Structure):
                 ('size', c_int * CV_MAX_DIM)]
                 
     def __del__(self):
-        _cvReleaseSparseMat(pointer(self))
+        _cvReleaseSparseMat(c_void_p(addressof(self)))
         
 CvSparseMat_p = POINTER(CvSparseMat)
 CvSparseMat_r = ByRefArg(CvSparseMat)
@@ -1323,7 +1324,7 @@ class CvGraphScanner(_Structure):
     ]
     
     def __del__(self):
-        _cvReleaseGraphScanner(pointer(self))
+        _cvReleaseGraphScanner(c_void_p(addressof(self)))
         
 CvGraphScanner_p = POINTER(CvGraphScanner)
 CvGraphScanner_r = ByRefArg(CvGraphScanner)
@@ -1484,7 +1485,7 @@ class CvFileStorage(_Structure):
     _fields_ = []
     
     def __del__(self):
-        _cvReleaseFileStorage(pointer(self))
+        _cvReleaseFileStorage(c_void_p(addressof(self)))
     
 CvFileStorage_p = POINTER(CvFileStorage)
 CvFileStorage_r = ByRefArg(CvFileStorage)

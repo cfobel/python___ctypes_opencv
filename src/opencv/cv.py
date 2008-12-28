@@ -257,7 +257,7 @@ class CvConDensation(_Structure):
     ]
     
     def __del__(self):
-        _cvReleaseCondensation(pointer(self))
+        _cvReleaseCondensation(c_void_p(addressof(self)))
         
 CvConDensation_p = POINTER(CvConDensation)
 CvConDensation_r = ByRefArg(CvConDensation)
@@ -303,7 +303,7 @@ class CvKalman(_Structure):
     ]
     
     def __del__(self):
-        _cvReleaseKalman(pointer(self))
+        _cvReleaseKalman(c_void_p(addressof(self)))
         
 CvKalman_p = POINTER(CvKalman)
 CvKalman_r = ByRefArg(CvKalman)
@@ -365,7 +365,7 @@ class CvHaarClassifierCascade(_Structure):
     ]
     
     def __del__(self):
-        _cvReleaseHaarClassifierCascade(pointer(self))
+        _cvReleaseHaarClassifierCascade(c_void_p(addressof(self)))
         
 CvHaarClassifierCascade_p = POINTER(CvHaarClassifierCascade)
 CvHaarClassifierCascade_r = ByRefArg(CvHaarClassifierCascade)
@@ -838,7 +838,7 @@ class IplConvKernel(_Structure):
     ]
     
     def __del__(self):
-        _cvReleaseStructuringElement(pointer(self))
+        _cvReleaseStructuringElement(c_void_p(addressof(self)))
     
 IplConvKernel_p = POINTER(IplConvKernel)
 IplConvKernel_r = ByRefArg(IplConvKernel)
@@ -1472,7 +1472,7 @@ class CvHistogram(_Structure):
                 
     def __del__(self):
         if self._owner is True:
-            _cvReleaseHist(pointer(self))
+            _cvReleaseHist(c_void_p(addressof(self)))
         
 CvHistogram_p = POINTER(CvHistogram)
 CvHistogram_r = ByRefArg(CvHistogram)
@@ -3114,7 +3114,7 @@ class CvPOSITObject(_Structure):
     ]
     
     def __del__(self):
-        _cvReleasePOSITObject(pointer(self))
+        _cvReleasePOSITObject(c_void_p(addressof(self)))
         
 CvPOSITObject_p = POINTER(CvPOSITObject)
 CvPOSITObject_r = ByRefArg(CvPOSITObject)
@@ -3278,7 +3278,7 @@ if cvVersion == 110:
         ]
         
         def __del__(self):
-            _cvReleaseStereoBMState(pointer(self))
+            _cvReleaseStereoBMState(c_void_p(addressof(self)))
             
     CvStereoBMState_p = POINTER(CvStereoBMState)
     CvStereoBMState_r = ByRefArg(CvStereoBMState)
@@ -3349,7 +3349,7 @@ if cvVersion == 110:
        ]
         
         def __del__(self):
-            _cvReleaseStereoGCState(pointer(self))
+            _cvReleaseStereoGCState(c_void_p(addressof(self)))
             
     CvStereoGCState_p = POINTER(CvStereoGCState)
     CvStereoGCState_r = ByRefArg(CvStereoGCState)
