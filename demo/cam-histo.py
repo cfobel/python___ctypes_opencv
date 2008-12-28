@@ -142,8 +142,8 @@ if __name__ == '__main__':
         cvSplit (hsv, hue, None, None, None)
         
         # select the rectangle of interest in the hue/mask arrays
-        hue_roi = cvGetSubRect (hue, selection)
-        mask_roi = cvGetSubRect (mask, selection)
+        hue_roi = cvGetSubRect (hue, None, selection)
+        mask_roi = cvGetSubRect (mask, None, selection)
         
         # it's time to compute the histogram
         cvCalcHist ([hue_roi], hist, 0, mask_roi)

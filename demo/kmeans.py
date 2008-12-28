@@ -32,9 +32,7 @@ if __name__ == "__main__":
             if first >= last:
                 continue
                 
-            point_chunk = cvGetRows(points, first, last)
-            
-            cvRandArr( rng, point_chunk, CV_RAND_NORMAL,
+            cvRandArr( rng, cvGetRows(points, None, first, last), CV_RAND_NORMAL,
                        cvScalar(center.x,center.y,0,0),
                        cvScalar(img.width*0.1,img.height*0.1,0,0));
         

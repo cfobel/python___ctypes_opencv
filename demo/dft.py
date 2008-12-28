@@ -24,14 +24,14 @@ def cvShiftDFT(src_arr, dst_arr ):
     cx = size.width/2;
     cy = size.height/2; # image center
 
-    q1 = cvGetSubRect( src_arr, cvRect(0,0,cx, cy) );
-    q2 = cvGetSubRect( src_arr, cvRect(cx,0,cx,cy) );
-    q3 = cvGetSubRect( src_arr, cvRect(cx,cy,cx,cy) );
-    q4 = cvGetSubRect( src_arr, cvRect(0,cy,cx,cy) );
-    d1 = cvGetSubRect( src_arr, cvRect(0,0,cx,cy) );
-    d2 = cvGetSubRect( src_arr, cvRect(cx,0,cx,cy) );
-    d3 = cvGetSubRect( src_arr, cvRect(cx,cy,cx,cy) );
-    d4 = cvGetSubRect( src_arr, cvRect(0,cy,cx,cy) );
+    q1 = cvGetSubRect( src_arr, None, cvRect(0,0,cx, cy) );
+    q2 = cvGetSubRect( src_arr, None, cvRect(cx,0,cx,cy) );
+    q3 = cvGetSubRect( src_arr, None, cvRect(cx,cy,cx,cy) );
+    q4 = cvGetSubRect( src_arr, None, cvRect(0,cy,cx,cy) );
+    d1 = cvGetSubRect( src_arr, None, cvRect(0,0,cx,cy) );
+    d2 = cvGetSubRect( src_arr, None, cvRect(cx,0,cx,cy) );
+    d3 = cvGetSubRect( src_arr, None, cvRect(cx,cy,cx,cy) );
+    d4 = cvGetSubRect( src_arr, None, cvRect(0,cy,cx,cy) );
 
     if(src_arr is not dst_arr):
         if( not CV_ARE_TYPES_EQ( q1, d1 )):
@@ -70,10 +70,10 @@ if __name__ == "__main__":
     image_Im = cvCreateImage( cvSize(dft_N, dft_M), IPL_DEPTH_64F, 1);
 
     # copy A to dft_A and pad dft_A with zeros
-    tmp = cvGetSubRect( dft_A, cvRect(0,0, im.width, im.height));
+    tmp = cvGetSubRect( dft_A, None, cvRect(0,0, im.width, im.height));
     cvCopy( complexInput, tmp, None );
     if(dft_A.width > im.width):
-        tmp = cvGetSubRect( dft_A, cvRect(im.width,0, dft_N - im.width, im.height));
+        tmp = cvGetSubRect( dft_A, None, cvRect(im.width,0, dft_N - im.width, im.height));
         cvZero( tmp );
 
     # no need to pad bottom part of dft_A with zeros because of

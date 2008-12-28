@@ -1923,15 +1923,15 @@ _cvGetSubRect = cfunc('cvGetSubRect', _cxDLL, CvArr_p,
     ('rect', CvRect, 1), # CvRect rect 
 )
 
-def cvGetSubRect(arr, *args, **kwds):
-    """CvMat cvGetSubRect(const CvArr arr[, CvMat submat], CvRect rect)
+def cvGetSubRect(arr, submat, rect):
+    """CvMat cvGetSubRect(const CvArr arr, CvMat submat, CvRect rect)
 
     Returns matrix header corresponding to the rectangular sub-array of input image or matrix
+    [ctypes-opencv] If 'submat' is None, it is internally created.
     """
-    if isinstance(args[0], CvMat): # submat is given
-        return pointee(_cvGetSubRect(arr, *args, **kwds), arr, args[0])
-    z = CvMat()
-    return pointee(_cvGetSubRect(arr, z, *args, **kwds), arr, z)
+    if submat is None:
+        submat = CvMat()
+    return pointee(_cvGetSubRect(arr, submat, rect), arr, submat)
 
 cvGetSubArr = cvGetSubRect
 
@@ -1944,18 +1944,18 @@ _cvGetRows = cfunc('cvGetRows', _cxDLL, CvMat_p,
     ('delta_row', c_int, 1, 1), # int delta_row
 )
 
-def cvGetRows(arr, *args, **kwds):
-    """CvMat cvGetRows(const CvArr arr[, CvMat submat], int start_row, int end_row, int delta_row=1)
+def cvGetRows(arr, submat, start_row, end_row, delta_row=1):
+    """CvMat cvGetRows(const CvArr arr, CvMat submat, int start_row, int end_row, int delta_row=1)
 
     Returns array row or row span
+    [ctypes-opencv] If 'submat' is None, it is internally created.
     """
-    if isinstance(args[0], CvMat): # submat is given
-        return pointee(_cvGetRows(arr, *args, **kwds), arr, args[0])
-    z = CvMat()
-    return pointee(_cvGetRows(arr, z, *args, **kwds), arr, z)
+    if submat is None:
+        submat = CvMat()
+    return pointee(_cvGetRows(arr, submat, start_row, end_row, delta_row=delta_row), arr, submat)
     
 def cvGetRow(arr, row):
-    return cvGetRows(arr, row, row+1)
+    return cvGetRows(arr, None, row, row+1)
 
 # Returns array column or column span
 _cvGetCols = cfunc('cvGetCols', _cxDLL, CvMat_p,
@@ -1965,18 +1965,18 @@ _cvGetCols = cfunc('cvGetCols', _cxDLL, CvMat_p,
     ('end_col', c_int, 1), # int end_col 
 )
 
-def cvGetCols(arr, *args, **kwds):
-    """CvMat cvGetCols(const CvArr arr[, CvMat submat], int start_col, int end_col)
+def cvGetCols(arr, submat, start_col, end_col):
+    """CvMat cvGetCols(const CvArr arr, CvMat submat, int start_col, int end_col)
 
     Returns array column or column span
+    [ctypes-opencv] If 'submat' is None, it is internally created.
     """
-    if isinstance(args[0], CvMat): # submat is given
-        return pointee(_cvGetCols(arr, *args, **kwds), arr, args[0])
-    z = CvMat()
-    return pointee(_cvGetCols(arr, z, *args, **kwds), arr, z)
+    if submat is None:
+        submat = CvMat()
+    return pointee(_cvGetCols(arr, submat, start_col, end_col), arr, submat)
     
 def cvGetCol(arr, col):
-    return cvGetCols(arr, col, col+1)
+    return cvGetCols(arr, None, col, col+1)
 
 # Returns one of array diagonals
 _cvGetDiag = cfunc('cvGetDiag', _cxDLL, CvMat_p,
@@ -1985,15 +1985,15 @@ _cvGetDiag = cfunc('cvGetDiag', _cxDLL, CvMat_p,
     ('diag', c_int, 1, 0), # int diag
 )
 
-def cvGetDiag(arr, *args, **kwds):
-    """CvMat cvGetDiag(const CvArr arr[, CvMat submat], int diag=0)
+def cvGetDiag(arr, submat, diag=0):
+    """CvMat cvGetDiag(const CvArr arr, CvMat submat, int diag=0)
 
     Returns one of array diagonals
+    [ctypes-opencv] If 'submat' is None, it is internally created.
     """
-    if len(args) > 0 and isinstance(args[0], CvMat): # submat is given
-        return pointee(_cvGetDiag(arr, *args, **kwds), arr, args[0])
-    z = CvMat()
-    return pointee(_cvGetDiag(arr, z, *args, **kwds), arr, z)
+    if submat is None:
+        submat = CvMat()
+    return pointee(_cvGetDiag(arr, submat, diag=diag), arr, submat)
 
 # Creates new matrix header
 _cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, CvMatND_p,
