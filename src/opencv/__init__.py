@@ -30,23 +30,26 @@ except ImportError:
 # Begin of code section contributed by David Bolen
 # ----------------------------------------------------------------------------
 #
-# Publish an optional "cv" namespace to provide access to names in this package
-# minus any "cv"/"cv_" prefix.  For example, "cv.Foo" instead of "cvFoo".
-# Names without a "cv" prefix remain intact in the new namespace.
-#
-# Names for which this would result in an invalid identifier (such as constant
-# names beginning with numbers) retain a leading underscore (e.g., cv._32F)
-#
-# In cases (such as CV_SVD) where a structure would overlap a function (cvSVD)
-# or where a factory function overlaps the data type (cvPoint2D3f/CvPoint2D3f)
-# the structure or data type retains/receives a leading underscore.
+# Publish an optional "cx" namespace intended for use without having to import
+# all the names into the local namespace, but minimizing duplication by
+# removing any "cv" or "cv_" prefix.  With "from opencv import cx as cv" it
+# then permits usage as "cv.Foo" instead of "cvFoo".
 #
 
-class namespace(object):
+class _cx(object):
+    """OpenCV namespace for functions/types/constants with any "cv"/"cv_"
+    prefix removed.  Symbols not starting with cv/cv_ retain their full name.
+
+    Names for which removing the prefix would result in an invalid identifier
+    (such as CV_32F) retain the leading underscore (becoming "32F").  If the
+    removal would create a collision between a function and structure
+    (e.g., cvSVD/CV_SVD) or data type (e.g., cvPoint2D3f/CvPoint2D3f), the
+    function has precedence, while the structure/data type receives a leading
+    underscore (e.g., _SVD/_Point2D3f).
+    """
     pass
 
-nsp = namespace()
-
+cx = _cx()
 
 # Process names in reverse order so functions/factories cvXXX will show up
 # before structures (CvXXX) or constants (CV_) and thus functions/factories
@@ -65,17 +68,14 @@ for sym, val in sorted(locals().items(), reverse=True):
         sname = sym
 
     # Use underscore to distinguish conflicts
-    if hasattr(nsp, sname):
+    if hasattr(cx, sname):
         sname = '_' + sname
 
     # If still have a conflict, punt and just install full name
-    if not hasattr(nsp, sname):
-        setattr(nsp, sname, val)
+    if not hasattr(cx, sname):
+        setattr(cx, sname, val)
     else:
-        setattr(nsp, sym, val)
-
-cv = nsp
-del nsp
+        setattr(cx, sym, val)
 
 # ----------------------------------------------------------------------------
 # End of code section contributed by David Bolen

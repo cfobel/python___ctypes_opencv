@@ -7,3 +7,5 @@ Wrap properly cvFindStereoCorrespondenceGC()
 NDarray slicing and indexing for CvMatND
 
 Wrap cvConvexHull2(), cvCalcOpticalFlowPyrLK() more properly
+
+Provide a stereo_calib.py demo counterpart for stereo_calib.cpp
