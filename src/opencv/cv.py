@@ -1200,7 +1200,7 @@ def cvFindContours(image, storage, *args, **kwds):
     Finds contours in binary image
     [ctypes-opencv] If 'first_contour_ptr' is given, it is filled with the address of 'first_contour'. Otherwise, 'first_contour' is returned.
     """
-    if isinstance(args[0], CvSeq_p): # first_contour_ptr is given
+    if len(args) > 0 and isinstance(args[0], CvSeq_p): # first_contour_ptr is given
         return _cvFindContours(image, storage, *args, **kwds)
     first = CvSeq_p()
     return (_cvFindContours(image, storage, first, *args, **kwds), pointee(first, storage))
