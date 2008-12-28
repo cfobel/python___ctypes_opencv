@@ -134,12 +134,14 @@ _cvCreateTrackbar = cfunc('cvCreateTrackbar', _hgDLL, c_int,
     ('on_change', CvTrackbarCallback, 1, None), # CvTrackbarCallback on_change 
 )
 
-def cvCreateTrackbar(trackbar_name, window_name, starting_value, count, on_change=None):
-    """int cvCreateTrackbar( const char* trackbar_name, const char* window_name, int starting_value, int count, CvTrackbarCallback on_change )
+def cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=None):
+    """int cvCreateTrackbar( const char* trackbar_name, const char* window_name, int_or_c_int value, int count, CvTrackbarCallback on_change )
 
     Creates the trackbar and attaches it to the specified window
+    [ctypes-opencv] 'value' is the initial position of the trackbar. Also, if 'value' is an instance of c_int, it holds the current position of the trackbar at any time.
     """
-    value = c_int(starting_value)
+    if not isinstance(value, c_int):
+        value = c_int(value)
     if on_change is None:
         _windows_callbacks[window_name].append((trackbar_name, value))
     else:

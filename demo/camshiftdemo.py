@@ -2,6 +2,7 @@
 # OpenCV's C demo
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
 
+from ctypes import c_int
 from opencv import *
 from sys import argv, exit
 
@@ -23,9 +24,9 @@ track_window = None
 track_box = None
 track_comp = None
 hdims = 16
-vmin = 10
-vmax = 256
-smin = 30
+vmin = c_int(10)
+vmax = c_int(256)
+smin = c_int(30)
 
 def on_mouse(event, x, y, flags, param):
     global select_object, image, selection, origin, track_object
@@ -122,12 +123,8 @@ if __name__ == '__main__':
         cvCvtColor( image, hsv, CV_BGR2HSV )
 
         if track_object != 0:
-            _vmin = cvGetTrackbarPos("Vmin", "CamShiftDemo")
-            _vmax = cvGetTrackbarPos("Vmax", "CamShiftDemo")
-            _smin = cvGetTrackbarPos("Smin", "CamShiftDemo")
-
-            cvInRangeS( hsv, cvScalar(0,_smin,min(_vmin,_vmax),0),
-                        cvScalar(180,256,max(_vmin,_vmax),0), mask )
+            cvInRangeS( hsv, cvScalar(0,smin.value,min(vmin.value,vmax.value),0),
+                        cvScalar(180,256,max(vmin.value,vmax.value),0), mask )
             cvSplit(hsv, hue)
 
             if track_object < 0:

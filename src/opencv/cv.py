@@ -2011,6 +2011,7 @@ def cvPointSeqFromMat(seq_kind, mat, contour_header, block):
     """(CvSeq seq, CvContour contour_header, CvSeqBlock block) = cvPointSeqFromMat(int seq_kind, const CvArr mat)
 
     Initializes point sequence header from a point vector
+    [ctypes-opencv] 'contour_header' and 'block' are automatically created.
     """
     y = CvContour()
     z = CvSeqBlock()
@@ -2022,14 +2023,17 @@ _cvBoxPoints = cfunc('cvBoxPoints', _cvDLL, None,
     ('pt', CvPoint2D32f*4, 1), # CvPoint2D32f pt
 )
 
-def cvBoxPoints(box):
-    """CvPoint2D32f pt[4] cvBoxPoints(CvBox2D box)
+def cvBoxPoints(box, pt=None):
+    """CvPoint2D32f[4] cvBoxPoints(CvBox2D box, CvPoint2D32f pt[4]=None)
 
     Finds box vertices
+    [ctypes-opencv] If 'pt' is omitted, it is automatically created.
+    [ctypes-opencv] 'pt' is returned.
     """
-    pts = (CvPoint2D32f*4)()
-    _cvBoxPoints(box, pts)
-    return pts
+    if pt is None:
+        pt = (CvPoint2D32f*4)()
+    _cvBoxPoints(box, pt)
+    return pt
 
 # Fits ellipse to set of 2D points
 cvFitEllipse2 = cfunc('cvFitEllipse2', _cvDLL, CvBox2D,
@@ -2552,7 +2556,7 @@ _cvCalcOpticalFlowPyrLK = cfunc('cvCalcOpticalFlowPyrLK', _cvDLL, None,
 )
 
 def cvCalcOpticalFlowPyrLK(prev, curr, prev_pyr, curr_pyr, pref_features, win_size, level, track_error, criteria, flags):
-    """(curr_features, status) = cvCalcOpticalFlowPyrLK(const CvArr prev, const CvArr curr, CvArr prev_pyr, CvArr curr_pyr, const CvPoint2D32f* prev_features, CvSize win_size, int level, float* track_error, CvTermCriteria criteria, int flags)
+    """(curr_features, status) = cvCalcOpticalFlowPyrLK(const CvArr prev, const CvArr curr, CvArr prev_pyr, CvArr curr_pyr, list_or_tuple_of_CvPoint2D32f prev_features, CvSize win_size, int level, float* track_error, CvTermCriteria criteria, int flags)
 
     Calculates optical flow for a sparse feature set using iterative Lucas-Kanade method in pyramids
     [ctypes-opencv] The number of features to be tracked is len(pref_features). 
@@ -2634,7 +2638,7 @@ if cvVersion == 110:
         ('results', CvMat_r, 1), # CvMat* results
     )
     
-    def cvFindFeaturesBoxed(tr):
+    def cvFindFeaturesBoxed(tr, bounds_min, bounds_max):
         """(int nfeatures, CvMat results) = cvFindFeaturesBoxed(CvFeatureTree tr, CvMax bounds_min, CvMax bounds_max)
         
         Orthogonal range search

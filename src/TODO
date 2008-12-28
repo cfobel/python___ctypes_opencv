@@ -6,3 +6,4 @@ Wrap properly cvFindStereoCorrespondenceGC()
 
 NDarray slicing and indexing for CvMatND
 
+Wrap cvConvexHull2(), cvCalcOpticalFlowPyrLK() more properly
