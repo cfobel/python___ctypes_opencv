@@ -1470,6 +1470,8 @@ class CvHistogram(_Structure):
                 ('thresh2', POINTER(c_float_p)), # for non-uniform histograms
                 ('mat', CvMatND)] # embedded matrix header for array histograms
                 
+    _owner = False
+                
     def __del__(self):
         if self._owner is True:
             _cvReleaseHist(c_void_p(addressof(self)))
@@ -1493,7 +1495,7 @@ _cvCreateHist = cfunc('cvCreateHist', _cvDLL, CvHistogram_p,
 
 # Creates histogram
 def cvCreateHist(*args, **kwds):
-    """CvHistogram cvCreateHist([int dims, ]list_or_tuple_of_int sizes, int type, list_of_list_of_float ranges (default=None), int uniform=1)
+    """CvHistogram cvCreateHist([int dims, ]list_or_tuple_of_int sizes, int type, list_of_list_of_float ranges=None, int uniform=1)
 
     Creates histogram
     [ctypes-opencv] dims=len(sizes) if omitted
@@ -1536,45 +1538,85 @@ _cvMakeHistHeaderForArray = cfunc('cvMakeHistHeaderForArray', _cvDLL, CvHistogra
     ('uniform', c_int, 1, 1), # int uniform
 )
 
-def cvMakeHistHeaderForArray(sizes, data, ranges=None, uniform=1):
-    """CvHistogram cvMakeHistHeaderForArray(list_or_tuple_of_int sizes, float* data, list_of_list_of_float ranges (default=None), int uniform=1)
+def cvMakeHistHeaderForArray(*args, **kwds):
+    """CvHistogram cvMakeHistHeaderForArray([int dims, ]list_or_tuple_of_int sizes[, CvHistogram hist], float* data, list_of_list_of_float ranges=None, int uniform=1)
 
     Makes a histogram out of array
+    [ctypes-opencv] dims=len(sizes) if omitted
+    [ctypes-opencv] 'hist' is automatically created if omitted
     """
-    z = CvHistogram()
-    _cvMakeHistHeaderForArray(len(sizes), sizes, z, data, ranges, uniform)
-    if z is not None:
-        z._depends = (data,) # make sure data is deleted after z is deleted
-        z._owner = False
+    if isinstance(args[0], int): # dims is given
+        dims = args[0]
+        sizes = args[1]
+        args = args[2:]
+    else:
+        dims = len(args[0])
+        sizes = args[0]
+        args = args[1:]
+        
+    if isinstance(args[0], CvHistogram): # hist is given
+        z = args[0]
+        _cvMakeHistHeaderForArray(dims, sizes, *args, **kwds)
+        z._depends = (args[1],) # make sure data is deleted after z is deleted
+    else:
+        z = CvHistogram()
+        _cvMakeHistHeaderForArray(dims, sizes, z, *args, **kwds)
+        z._depends = (args[0],) # make sure data is deleted after z is deleted
+        
     return z
 
 
 # Finds minimum and maximum histogram bins
 _cvGetMinMaxHistValue = cfunc('cvGetMinMaxHistValue', _cvDLL, None,
     ('hist', CvHistogram_r, 1), # const CvHistogram* hist
-    ('min_value', c_float_p, 2), # float* min_value
-    ('max_value', c_float_p, 2), # float* max_value
+    ('min_value', ByRefArg(c_float), 1), # float* min_value
+    ('max_value', ByRefArg(c_float), 1), # float* max_value
     ('min_idx', ByRefArg(c_int), 1, None), # int* min_idx
     ('max_idx', ByRefArg(c_int), 1, None), # int* max_idx
 )
 
 # Finds minimum and maximum histogram bins
-def cvGetMinMaxHistValue(hist):
-    """float min_value, max_value = cvGetMinMaxHistValue(const CvHistogram hist)
+def cvGetMinMaxHistValue(hist, min_val=True, max_val=True, min_idx=None, max_idx=None):
+    """[float min_val][, float max_val][, int min_idx][, int max_idx] = cvGetMinMaxHistValue(const CvHistogram hist, c_float min_val=True, c_float max_val=True, c_int min_idx=None, c_int max_idx=None)
 
     Finds minimum and maximum histogram bins
+    [ctypes-opencv] Depending on the input arguments, the returning object may be None, a single output argument, or a tuple of output arguments.
+    [ctypes-opencv] min_val can be:
+        True: returns the minimum value
+        an instance of c_float: this holds the minimum value instead
+    [ctypes-opencv] max_val can be:
+        True: returns the maximum value
+        an instance of c_float: this holds the maximum value instead
+    [ctypes-opencv] min_idx can be:
+        None: the index of the minimum value is not returned
+        True: returns the index of the minimum value
+        an instance of c_int: this holds the index of the minimum value instead
+    [ctypes-opencv] max_idx can be:
+        None: the index of the maximum value is not returned
+        True: returns the index of the maximum value
+        an instance of c_int: this holds the index of the maximum value instead
     """
-    return _cvGetMinMaxHistValue(hist)
-
-# Finds minimum and maximum histogram bins and their indices
-def cvGetMinMaxHistValueAndIdx(hist):
-    """(float min_value, float max_value, int min_idx, int max_idx) = cvGetMinMaxHistValueAndIdx(const CvHistogram hist)
-
-    Finds minimum and maximum histogram bins and their indices
-    """
-    min_idx = c_int()
-    max_idx = c_int()
-    return _cvGetMinMaxHistValue(hist, min_idx=min_idx, max_idx=max_idx)+(min_idx.value, max_idx.value)
+    min_val_p = c_float() if min_val is True else min_val
+    max_val_p = c_float() if max_val is True else max_val
+    min_idx_p = c_int() if min_idx is True else min_idx
+    max_idx_p = c_int() if max_idx is True else max_idx
+    
+    _cvGetMinMaxHistValue(hist, min_value=min_val_p, max_value=max_val_p, min_idx=min_idx_p, max_idx=max_idx_p)
+    
+    res = []
+    if min_val is True:
+        res.append(min_val_p.value)
+    if max_val is True:
+        res.append(max_val_p.value)
+    if min_idx is True:
+        res.append(min_idx_p.value)
+    if max_idx is True:
+        res.append(max_idx_p.value)
+    
+    if len(res) > 1:
+        return tuple(res)
+    if len(res) == 1:
+        return res[0]
 
 # Normalizes histogram
 cvNormalizeHist = cfunc('cvNormalizeHist', _cvDLL, None,
