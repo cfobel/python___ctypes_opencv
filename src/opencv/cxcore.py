@@ -2002,16 +2002,12 @@ _cvCreateMatNDHeader = cfunc('cvCreateMatNDHeader', _cxDLL, CvMatND_p,
     ('type', c_int, 1), # int type 
 )
 
-def cvCreateMatNDHeader(*args, **kwds):
-    """CvMatND cvCreateMatNDHeader([int dims, ]list_or_tuple_of_int sizes, int type)
+def cvCreateMatNDHeader(sizes, type):
+    """CvMatND cvCreateMatNDHeader(list_or_tuple_of_int sizes, int type)
 
     Creates new matrix header
-    [ctypes-opencv] dims=len(sizes) if it is omitted
     """
-    if isinstance(args[0], int): # dims is given
-        z = pointee(_cvCreateMatNDHeader(*args, **kwds))
-    else:
-        z = pointee(_cvCreateMatNDHeader(len(args[0]), *args, **kwds))
+    z = pointee(_cvCreateMatNDHeader(len(sizes), sizes, type))
     z._owner = True
     return z
 
@@ -2022,16 +2018,12 @@ _cvCreateMatND = cfunc('cvCreateMatND', _cxDLL, CvMatND_p,
     ('type', c_int, 1), # int type 
 )
 
-def cvCreateMatND(*args, **kwds):
-    """CvMatND cvCreateMatND([int dims, ]list_or_tuple_of_int sizes, int type)
+def cvCreateMatND(sizes, type):
+    """CvMatND cvCreateMatND(list_or_tuple_of_int sizes, int type)
 
     Creates multi-dimensional dense array
-    [ctypes-opencv] dims=len(sizes) if it is omitted
     """
-    if isinstance(args[0], int):
-        z = pointee(_cvCreateMatND(*args, **kwds))
-    else:
-        z = pointee(_cvCreateMatND(len(args[0]), *args, **kwds))
+    z = pointee(_cvCreateMatND(len(sizes), sizes, type))
     z._owner = True
     return z
 
@@ -2044,18 +2036,14 @@ _cvInitMatNDHeader = cfunc('cvInitMatNDHeader', _cxDLL, CvMatND_p,
     ('data', c_void_p, 1, None), # void* data
 )
 
-def cvInitMatNDHeader(mat, *args, **kwds):
-    """CvMatND cvInitMatNDHeader(CvMatND mat[, int dims], list_or_tuple_of_int sizes, int type, void* data=NULL)
+def cvInitMatNDHeader(mat, sizes, type, data=None):
+    """CvMatND cvInitMatNDHeader(CvMatND mat, list_or_tuple_of_int sizes, int type, void* data=NULL)
 
     Initializes multi-dimensional array header
-    [ctypes-opencv] dims=len(sizes) if it is omitted
     """
-    if isinstance(args[0], int):
-        _cvInitMatNDHeader(mat, *args, **kwds)
-    else:
-        _cvInitMatNDHeader(mat, len(args[0]), *args, **kwds)
-    # if data is not None: # potential crash here!!!
-        # mat._depends = (data,)
+    _cvInitMatNDHeader(mat, len(sizes), sizes, type, data=data)
+    if data is not None:
+        mat._depends = (data,)
     return mat
     
 _cvCloneMatND = cfunc('cvCloneMatND', _cxDLL, CvMatND_p,
