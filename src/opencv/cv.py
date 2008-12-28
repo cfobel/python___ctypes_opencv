@@ -560,18 +560,18 @@ def cvGoodFeaturesToTrack(image, *args, **kwds):
         corners = args[0]
         count = c_int(args[1]) if isinstance(args[1], int) else args[1]
         args = args[2:]
-    pts = cvCreateMat(1, count.value, CV_32FC2)
+    pts = (CvPoint2D32f*count.value)()
 
-    _cvGoodFeaturesToTrack(image, eig_image, temp_image, pts.data.ptr, count, *args, **kwds)
+    _cvGoodFeaturesToTrack(image, eig_image, temp_image, pts, count, *args, **kwds)
     
-    data_fl = pts.data.fl
     if corners is None:
-        return [cvPoint2D32f(data_fl[i*2], data_fl[i*2+1]) for i in range(count.value)]
+        return pts[:count.value]
             
     for i in range(count.value):
         x = corners[i]
-        x.x = data_fl[i*2]
-        x.y = data_fl[i*2+1]
+        y = pts[i]
+        x.x = y.x
+        x.y = y.y
 
 #-----------------------------------------------------------------------------
 # Speeded Up Robust Features

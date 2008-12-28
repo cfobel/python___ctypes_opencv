@@ -1990,7 +1990,7 @@ def cvGetDiag(arr, *args, **kwds):
 
     Returns one of array diagonals
     """
-    if isinstance(args[0], CvMat): # submat is given
+    if len(args) > 0 and isinstance(args[0], CvMat): # submat is given
         return pointee(_cvGetDiag(arr, *args, **kwds), arr, args[0])
     z = CvMat()
     return pointee(_cvGetDiag(arr, z, *args, **kwds), arr, z)
@@ -2430,7 +2430,7 @@ def cvGetMat(arr, *args, **kwds):
         True: the returning object is a tuple of CvMat and the output coi
         None: no output coi is returned
     """
-    if isinstance(args[0], CvMat): # header is given
+    if len(args) > 0 and isinstance(args[0], CvMat): # header is given
         return _cvGetMatWithHeader(arr, *args, **kwds)
     return _cvGetMatWithHeader(arr, CvMat(), *args, **kwds)
 
@@ -2446,7 +2446,7 @@ def cvGetImage(arr, *args, **kwds):
     Returns image header for arbitrary array
     [ctypes-opencv] If image_header is omitted, it is automatically created.
     """
-    if isinstance(args[0], IplImage):
+    if len(args) > 0 and isinstance(args[0], IplImage):
         return pointee(_cvGetImage(arr, *args, **kwds), arr, args[0])
     z = IplImage()
     return pointee(_cvGetImage(arr, z, *args, **kwds), arr, z)
