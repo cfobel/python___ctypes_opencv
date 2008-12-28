@@ -2643,7 +2643,7 @@ def cvMixChannels(src, dst, from_to):
     
     Copies several channels from input arrays to certain channels of output arrays
     """
-    return _cvMixChannels(src, len(src), dst(len(dst), from_to, len(from_to))
+    return _cvMixChannels(src, len(src), dst, len(dst), from_to, len(from_to))
 
 
 #-----------------------------------------------------------------------------
@@ -4782,18 +4782,12 @@ _cvFillPoly = cfunc('cvFillPoly', _cxDLL, None,
     ('shift', c_int, 1, 0), # int shift
 )
 
-def cvFillPoly(img, pts, *args, **kwds):
-    """void cvFillPoly(CvArr img, list_of_list_of_CvPoint pts[, list_of_int npts, int contours], CvScalar color, int line_type=8, int shift=0)
+def cvFillPoly(img, pts, color, line_type=8, shift=0):
+    """void cvFillPoly(CvArr img, list_of_list_of_CvPoint pts, CvScalar color, int line_type=8, int shift=0)
 
     Fills polygons interior
-    [ctypes-opencv] if both npts and contours are omitted, then:
-        npts = [len(x) for x in pts]
-        contours = len(pts)
     """
-    if isinstance(args[0], CvScalar): # both npts and contours are omitted
-        _cvFillPoly(img, pts, [len(x) for x in pts], len(pts), *args, **kwds)
-    else:
-        _cvFillPoly(img, pts, *args, **kwds)
+    _cvFillPoly(img, pts, [len(x) for x in pts], len(pts), color, line_type, shift)
 
 # Fills convex polygon
 _cvFillConvexPoly = cfunc('cvFillConvexPoly', _cxDLL, None,
@@ -4805,16 +4799,12 @@ _cvFillConvexPoly = cfunc('cvFillConvexPoly', _cxDLL, None,
     ('shift', c_int, 1, 0), # int shift
 )
 
-def cvFillConvexPoly(img, pts, *args, **kwds):
-    """void cvFillConvexPoly(CvArr img, list_or_tuple_of_CvPoint pts[, int npts], CvScalar color, int line_type=8, int shift=0)
+def cvFillConvexPoly(img, pts, color, line_type=8, shift=0):
+    """void cvFillConvexPoly(CvArr img, list_or_tuple_of_CvPoint pts, CvScalar color, int line_type=8, int shift=0)
 
     Fills convex polygon
-    [ctypes-opencv] npts=len(pts) if omitted
     """
-    if isinstance(args[0], int): # npts is given
-        _cvFillConvexPoly(img, pts, *args, **kwds)
-    else:
-        _cvFillConvexPoly(img, pts, len(pts), *args, **kwds)
+    _cvFillConvexPoly(img, pts, len(pts), color, line_type, shift)
 
 # Draws simple or thick polygons
 _cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,
@@ -4829,18 +4819,12 @@ _cvPolyLine = cfunc('cvPolyLine', _cxDLL, None,
     ('shift', c_int, 1, 0), # int shift
 )
 
-def cvPolyLine(img, pts, *args, **kwds):
-    """void cvPolyLine(CvArr img, list_of_list_of_CvPoint pts[, list_of_int npts, int contours], int is_closed, CvScalar color, int thickness=1, int line_type=8, int shift=0)
+def cvPolyLine(img, pts, is_closed, color, thickness=1, line_type=8, shift=0):
+    """void cvPolyLine(CvArr img, list_of_list_of_CvPoint pts, int is_closed, CvScalar color, int thickness=1, int line_type=8, int shift=0)
 
     Draws simple or thick polygons
-    [ctypes-opencv] if both npts and contours are omitted, then:
-        npts = [len(x) for x in pts]
-        contours = len(pts)
     """
-    if isinstance(args[0], int): # both npts and contours are omitted
-        _cvPolyLine(img, pts, [len(x) for x in pts], len(pts), *args, **kwds)
-    else:
-        _cvPolyLine(img, pts, *args, **kwds)
+    _cvPolyLine(img, pts, [len(x) for x in pts], len(pts), is_closed, color, thickness, line_type, shift)
 
 cvDrawRect = cvRectangle
 cvDrawLine = cvLine
