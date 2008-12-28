@@ -880,7 +880,7 @@ class _CvSeqStructure(_Structure):
         def __setitem__(self, key, value):
             raise NotImplementedError("I haven't implemented this method yet.")
 
-        def slicing_disabled(self, *args):
+        def slicing_disabled(self, *args, **kwds):
             raise KeyError("Slicing for CvSeq is currently disabled.")
             
         __getslice__ = slicing_disabled
@@ -2070,14 +2070,12 @@ _cvCreateSparseMat = cfunc('cvCreateSparseMat', _cxDLL, CvSparseMat_p,
     ('type', c_int, 1), # int type 
 )
 
-def cvCreateSparseMat(*args, **kwds):
-    """CvSparseMat cvCreateSparseMat([int dims, ]list_or_tuple_of_int sizes, int type)
+def cvCreateSparseMat(sizes, type):
+    """CvSparseMat cvCreateSparseMat(list_or_tuple_of_int sizes, int type)
 
     Creates sparse array
     """
-    if isinstance(args[0], int):
-        return pointee(_cvCreateSparseMat(*args, **kwds))
-    return pointee(_cvCreateSparseMat(len(args[0]), *args, **kwds))
+    return pointee(_cvCreateSparseMat(len(sizes), sizes, type))
 
 # Creates full copy of sparse array
 _cvCloneSparseMat = cfunc('cvCloneSparseMat', _cxDLL, CvSparseMat_p,
