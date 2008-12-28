@@ -2638,21 +2638,12 @@ _cvMixChannels = cfunc('cvMixChannels', _cxDLL, None,
     ('pair_count', c_int, 1), # int pair_count
 )    
 
-def cvMixChannels(*args, **kwds):
-    """void cvMixChannels(list_or_tuple_of_CvArr_p src[, int src_count], list_or_tuple_of_CvArr_p dst[, int dst_count], list_or_tuple_of_int from_to[, int pair_count])
+def cvMixChannels(src, dst, from_to):
+    """void cvMixChannels(list_or_tuple_of_CvArr_p src, list_or_tuple_of_CvArr_p dst, list_or_tuple_of_int from_to)
     
     Copies several channels from input arrays to certain channels of output arrays
-    [ctypes-opencv] src_count=len(src) if it is omitted
-    [ctypes-opencv] dst_count=len(dst) if it is omitted
-    [ctypes-opencv] pair_count=len(from_to) if it is omitted
     """
-    if not isinstance(args[1], int):
-        args.insert(1, len(args[0]))
-    if not isinstance(args[3], int):
-        args.insert(3, len(args[2]))
-    if len(args) < 6 or not isinstance(args[5], int):
-        args.insert(5, len(args[4]))
-    return _cvMixChannels(src, *args, **kwds)
+    return _cvMixChannels(src, len(src), dst(len(dst), from_to, len(from_to))
 
 
 #-----------------------------------------------------------------------------
