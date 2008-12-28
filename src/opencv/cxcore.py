@@ -1985,7 +1985,7 @@ _cvGetDiag = cfunc('cvGetDiag', _cxDLL, CvMat_p,
     ('diag', c_int, 1, 0), # int diag
 )
 
-def cvGetDiag(arr, submat, diag=0):
+def cvGetDiag(arr, submat=None, diag=0):
     """CvMat cvGetDiag(const CvArr arr, CvMat submat, int diag=0)
 
     Returns one of array diagonals
@@ -2399,26 +2399,22 @@ _cvGetMat = cfunc('cvGetMat', _cxDLL, CvMat_p,
     ('allowND', c_int, 1, 0), # int allowND
 )
 
-def _cvGetMatWithHeader(arr, header, coi=None, allowND=0):
-    if coi is not True:
-        return pointee(_cvGetMat(arr, header, coi=coi, allowND=allowND), arr, header)
-    coi = c_int()
-    return (pointee(_cvGetMat(arr, header, coi=coi, allowND=allowND), arr, header), coi.value)
-        
-
-def cvGetMat(arr, *args, **kwds):
-    """CvMat mat[, int output_coi] = cvGetMat(const CvArr arr[, CvMat header], c_int coi=None, int allowND=0)
+def cvGetMat(arr, header=None, coi=None, allowND=0):
+    """CvMat mat[, int output_coi] = cvGetMat(const CvArr arr, CvMat header=None, c_int coi=None, int allowND=0)
 
     Returns matrix header for arbitrary array
-    [ctypes-opencv] If header is omitted, it is automatically created.
-    [ctypes-opencv] coi can be:
+    [ctypes-opencv] If 'header' is None, it is internally created.
+    [ctypes-opencv] 'coi' can be:
         an instance of c_int: its value will hold the output coi
         True: the returning object is a tuple of CvMat and the output coi
         None: no output coi is returned
     """
-    if len(args) > 0 and isinstance(args[0], CvMat): # header is given
-        return _cvGetMatWithHeader(arr, *args, **kwds)
-    return _cvGetMatWithHeader(arr, CvMat(), *args, **kwds)
+    if header is None:
+        header = CvMat()
+    if coi is not True:
+        return pointee(_cvGetMat(arr, header, coi=coi, allowND=allowND), arr, header)
+    coi = c_int()
+    return (pointee(_cvGetMat(arr, header, coi=coi, allowND=allowND), arr, header), coi.value)
 
 # Returns image header for arbitrary array
 _cvGetImage = cfunc('cvGetImage', _cxDLL, IplImage_p,
@@ -2426,16 +2422,15 @@ _cvGetImage = cfunc('cvGetImage', _cxDLL, IplImage_p,
     ('image_header', IplImage_r, 1), # IplImage* image_header 
 )
 
-def cvGetImage(arr, *args, **kwds):
-    """IplImage cvGetImage(const CvArr arr[, IplImage image_header])
+def cvGetImage(arr, image_header=None):
+    """IplImage cvGetImage(const CvArr arr, IplImage image_header=None)
 
     Returns image header for arbitrary array
-    [ctypes-opencv] If image_header is omitted, it is automatically created.
+    [ctypes-opencv] If 'image_header' is None, it is internally created.
     """
-    if len(args) > 0 and isinstance(args[0], IplImage):
-        return pointee(_cvGetImage(arr, *args, **kwds), arr, args[0])
-    z = IplImage()
-    return pointee(_cvGetImage(arr, z, *args, **kwds), arr, z)
+    if image_header is None:
+        image_header = IplImage()
+    return pointee(_cvGetImage(arr, image_header), arr, image_header)
 
 
 #-----------------------------------------------------------------------------
