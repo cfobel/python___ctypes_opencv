@@ -494,20 +494,15 @@ _cvFindCornerSubPix = cfunc('cvFindCornerSubPix', _cvDLL, None,
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria 
 )
 
-def cvFindCornerSubPix(image, corners, *args, **kwds):
-    """list_or_tuple_of_CvPoint2D32f cvFindCornerSubPix(const CvArr image, list_or_tuple_of_CvPoint2D32f corners[, int count], CvSize win, CvSize zero_zone, CvTermCriteria criteria)
+def cvFindCornerSubPix(image, corners, win, zero_zone, criteria):
+    """list_or_tuple_of_CvPoint2D32f cvFindCornerSubPix(const CvArr image, list_or_tuple_of_CvPoint2D32f corners, CvSize win, CvSize zero_zone, CvTermCriteria criteria)
 
     Refines corner locations
     [ctypes-opencv] Parameter 'corners' is returned with points updated.
-    [ctypes-opencv] count=len(corners) if omitted
     """
     mat = cvCreateMatFromCvPoint2D32fList(corners)
-    if isinstance(args[0], int): # count is given
-        n = args[0]
-        _cvFindCornerSubPix(image, mat.data.ptr, *args, **kwds)
-    else:
-        n = len(corners)
-        _cvFindCornerSubPix(image, mat.data.ptr, n, *args, **kwds)
+    n = len(corners)
+    _cvFindCornerSubPix(image, mat.data.ptr, n, win, zero_zone, criteria)
     for i in range(n):
         x = mat[0,i]
         y = corners[i]
