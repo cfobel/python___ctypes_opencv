@@ -2460,15 +2460,15 @@ _cvReshape = cfunc('cvReshape', _cxDLL, CvMat_p,
     ('new_rows', c_int, 1, 0), # int new_rows
 )
 
-def cvReshape(arr, *args, **kwds):
-    """CvMat cvReshape(const CvArr arr[, CvMat header], int new_cn, int new_rows=0)
+def cvReshape(arr, header, new_cn, new_rows=0):
+    """CvMat cvReshape(const CvArr arr, CvMat header, int new_cn, int new_rows=0)
 
     Changes shape of matrix/image without copying data
+    [ctypes-opencv] If 'header' is None, it is internally created.
     """
-    if isinstance(args[0], CvMat): # header is given
-        return pointee(_cvReshape(arr, *args, **kwds), arr, args[0])
-    z = CvMat()
-    return pointee(_cvReshape(arr, z, *args, **kwds), arr, z)
+    if header is None:
+        header = CvMat()
+    return pointee(_cvReshape(arr, header, new_cn, new_rows=new_rows), arr, header)
 
 # Fill destination array with tiled source array
 cvRepeat = cfunc('cvRepeat', _cxDLL, None,
