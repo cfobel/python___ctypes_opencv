@@ -137,9 +137,9 @@ if __name__ == '__main__':
             # calculate the optical flow
             points [1], status = cvCalcOpticalFlowPyrLK (
                 prev_grey, grey, prev_pyramid, pyramid,
-                points [0], 
+                points [0], None, None, 
                 cvSize (win_size, win_size), 3,
-                None,
+                None, None,
                 cvTermCriteria (CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,
                                    20, 0.03),
                 flags)

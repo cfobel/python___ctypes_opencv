@@ -193,6 +193,33 @@ def pointee(ptr, *depends_args):
 def _ptr_add(ptr, offset):
     pc = ptr[0]
     return pointer(type(pc).from_address(addressof(pc) + offset))
+    
+    
+def as_c_array(data, n=None, elem_ctype=None):
+    """Converts data into a c_array.
+    
+    :Parameters:
+        data : a list/tuple/c_array of elements
+        elem_ctype : ctype of an element; if elem_ctype is None, then elem_ctype=type(data[0])
+        n : number of elements; if n==None, then n=len(data)
+    :Returns:
+        a (elem_ctype*n) c_array;
+            if data is a c_array:
+                if n==len(data), data is returned
+                otherwise, a c_array sharing the same memory allocation is returned
+            otherwise, a new c_array is created
+    """
+    if n is None:
+        n = len(data)
+    if elem_ctype is None:
+        elem_ctype = type(data[0])
+    if isinstance(data, (list, tuple)):
+        return (elem_ctype*n)(*data)
+    if n == len(data):
+        return data
+    z = (elem_ctype*n).from_address(addressof(data))
+    z._depends = (data,)
+    return z
 
 
 #=============================================================================
@@ -5782,7 +5809,7 @@ __all__ += [
     '_cxDLL', '_cvDLL', '_hgDLL',
     'cfunc', 'default_errcheck',
     '_Structure', '_CvSeqStructure', 'ListPOINTER', 'ListPOINTER2', 'ListByRef',
-    'ByRefArg', 'pointee', 'sizeof',
+    'ByRefArg', 'pointee', 'sizeof', 'as_c_array',
 ]
         
 

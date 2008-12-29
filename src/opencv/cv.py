@@ -487,7 +487,7 @@ Harris edge detector
 # Refines corner locations
 _cvFindCornerSubPix = cfunc('cvFindCornerSubPix', _cvDLL, None,
     ('image', CvArr_r, 1), # const CvArr* image
-    ('corners', c_void_p, 1), # CvPoint2D32f* corners
+    ('corners', CvPoint2D32f_p, 1), # CvPoint2D32f* corners
     ('count', c_int, 1), # int count
     ('win', CvSize, 1), # CvSize win
     ('zero_zone', CvSize, 1), # CvSize zero_zone
@@ -495,19 +495,15 @@ _cvFindCornerSubPix = cfunc('cvFindCornerSubPix', _cvDLL, None,
 )
 
 def cvFindCornerSubPix(image, corners, win, zero_zone, criteria):
-    """list_or_tuple_of_CvPoint2D32f cvFindCornerSubPix(const CvArr image, list_or_tuple_of_CvPoint2D32f corners, CvSize win, CvSize zero_zone, CvTermCriteria criteria)
+    """c_array_of_CvPoint2D32f cvFindCornerSubPix(const CvArr image, array_of_CvPoint2D32f corners, CvSize win, CvSize zero_zone, CvTermCriteria criteria)
 
     Refines corner locations
-    [ctypes-opencv] Parameter 'corners' is returned with points updated.
+    [ctypes-opencv] If 'corners' is a list or a tuple of CvPoint2D32f points, it is converted into a c_array_of_CvPoint2D32f before the actual function call.
+    [ctypes-opencv] During the call, 'corners',  now as a c_array_of_CvPoint2D32f, has its content updated with refined corners.
+    [ctypes-opencv] After the call, 'corners' is returned.
     """
-    mat = cvCreateMatFromCvPoint2D32fList(corners)
-    n = len(corners)
-    _cvFindCornerSubPix(image, mat.data.ptr, n, win, zero_zone, criteria)
-    for i in range(n):
-        x = mat[0,i]
-        y = corners[i]
-        y.x = x[0]
-        y.y = x[1]        
+    corners = as_c_array(corners, elem_ctype=CvPoint2D32f)
+    _cvFindCornerSubPix(image, corners, len(corners), win, zero_zone, criteria)
     return corners
 
 # Determines strong corners on image
@@ -526,23 +522,23 @@ _cvGoodFeaturesToTrack = cfunc('cvGoodFeaturesToTrack', _cvDLL, None,
 )
 
 def cvGoodFeaturesToTrack(image, eig_image, temp_image, corners, corner_count, quality_level, min_distance, mask=None, block_size=3, use_harris=0, k=0):
-    """list_of_CvPoint2D32f cvGoodFeaturesToTrack(const CvArr image, CvArr eig_image, CvArr temp_image, CvPoint2D32f_p corners, int corner_count, double quality_level, double min_distance, const CvArr mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
+    """c_array_of_CvPoint2D32f cvGoodFeaturesToTrack(const CvArr image, CvArr eig_image, CvArr temp_image, array_of_CvPoint2D32f corners, int corner_count, double quality_level, double min_distance, const CvArr mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
 
     Determines strong corners on image
     [ctypes-opencv] If 'eig_image' is None, it is internally created.
     [ctypes-opencv] If 'temp_image' is None, it is internally created.
-    [ctypes-opencv] If 'corners' is None, an array of 'corner_count' CvPoint2D32f items is internally created.
-    [ctypes-opencv] The returned object is a list of CvPoint2D32f items. The actual number of detected corners is the length of this list.
+    [ctypes-opencv] If 'corners' is None, an c_array of 'corner_count' CvPoint2D32f items is internally created before the actual function call.
+    [ctypes-opencv] If 'corners' is a list or a tuple of CvPoint2D32f points, it is converted into a c_array_of_CvPoint2D32f before the actual function call.
+    [ctypes-opencv] The returned object is a c_array of CvPoint2D32f items sharing the same memory allocation with 'corners'. The actual number of detected corners is the length of this c_array.
     """
     if eig_image is None:
         eig_image = cvCreateMat(image.height, image.width, CV_32FC1)
     if temp_image is None:
         temp_image = cvCreateMat(image.height, image.width, CV_32FC1)
-    if corners is None:
-        corners = (CvPoint2D32f*corner_count)()
+    corners = (CvPoint2D32f*corner_count)() if corners is None else as_c_array(corners, elem_ctype=CvPoint2D32f)
     count = c_int(corner_count)
     _cvGoodFeaturesToTrack(image, eig_image, temp_image, corners, count, quality_level, min_distance, mask, block_size, use_harris, k)
-    return corners[:count.value]
+    return as_c_array(corners, n=count.value, elem_ctype=CvPoint2D32f)
 
 #-----------------------------------------------------------------------------
 # Speeded Up Robust Features
@@ -2429,11 +2425,9 @@ def cvCamShift(prob_image, window, criteria, comp=None, box=True):
     if comp is None:
         comp = CvConnectedComp()
     if box is not True:
-        niter = _cvCamShift(prob_image, window, criteria, comp, box)
-        return (niter, comp)
+        return (_cvCamShift(prob_image, window, criteria, comp, box), comp)
     box = CvBox2D()
-    niter = _cvCamShift(prob_image, window, criteria, comp, box)
-    return (niter, comp, box)
+    return (_cvCamShift(prob_image, window, criteria, comp, box), comp, box)
 
 CV_VALUE = 1
 CV_ARRAY = 2
@@ -2519,33 +2513,36 @@ _cvCalcOpticalFlowPyrLK = cfunc('cvCalcOpticalFlowPyrLK', _cvDLL, None,
     ('curr', CvArr_r, 1), # const CvArr* curr
     ('prev_pyr', CvArr_r, 1), # CvArr* prev_pyr
     ('curr_pyr', CvArr_r, 1), # CvArr* curr_pyr
-    ('prev_features', c_void_p, 1), # const CvPoint2D32f* prev_features
-    ('curr_features', c_void_p, 1), # CvPoint2D32f* curr_features
+    ('prev_features', CvPoint2D32f_p, 1), # const CvPoint2D32f* prev_features
+    ('curr_features', CvPoint2D32f_p, 1), # CvPoint2D32f* curr_features
     ('count', c_int, 1), # int count
     ('win_size', CvSize, 1), # CvSize win_size
     ('level', c_int, 1), # int level
     ('status', c_char_p, 1), # char* status
     ('track_error', c_float_p, 1), # float* track_error
     ('criteria', CvTermCriteria, 1), # CvTermCriteria criteria
-    ('flags', c_int, 1), # int flags 
+    ('flags', c_int, 1, 0), # int flags 
 )
 
-def cvCalcOpticalFlowPyrLK(prev, curr, prev_pyr, curr_pyr, pref_features, win_size, level, track_error, criteria, flags):
-    """(curr_features, status) = cvCalcOpticalFlowPyrLK(const CvArr prev, const CvArr curr, CvArr prev_pyr, CvArr curr_pyr, list_or_tuple_of_CvPoint2D32f prev_features, CvSize win_size, int level, float* track_error, CvTermCriteria criteria, int flags)
+def cvCalcOpticalFlowPyrLK(prev, curr, prev_pyr, curr_pyr, prev_features, curr_features, count, win_size, level, status=None, track_error=None, criteria=CvTermCriteria(), flags=0):
+    """(curr_features, status) = cvCalcOpticalFlowPyrLK(const CvArr prev, const CvArr curr, CvArr prev_pyr, CvArr curr_pyr, array_of_CvPoint2D32f prev_features, array_of_CvPoint2D32f curr_features, int count, CvSize win_size, int level, c_array_of_c_char status=None, c_array_of_c_float track_error=None, CvTermCriteria criteria=CvTermCriteria(), int flags=0)
 
     Calculates optical flow for a sparse feature set using iterative Lucas-Kanade method in pyramids
-    [ctypes-opencv] The number of features to be tracked is len(pref_features). 
+    [ctypes-opencv] If 'count' is None, 'count=len(prev_features)'.
+    [ctypes-opencv] If 'prev_features' is a list or a tuple of CvPoint2D32f points, it is converted into a c_array_of_CvPoint2D32f before the actual function call.
+    [ctypes-opencv] If 'curr_features' is a list or a tuple of CvPoint2D32f points, it is converted into a c_array_of_CvPoint2D32f before the actual function call.
+    [ctypes-opencv] If 'curr_features' is None, it is internally created as a c_array_of_CvPoint2D32f.
+    [ctypes-opencv] If 'status' is None, it is internally created as a c_array_of_c_char.
     [ctypes-opencv] Returns a new list of features (curr_features) and a new status array.
     """
-    n = len(pref_features)
-    inmat = cvCreateMatFromCvPoint2D32fList(pref_features)
-    outmat = cvCreateMat(1, n, CV_32FC2)
-    status = (c_char*n)()
-    _cvCalcOpticalFlowPyrLK(prev, curr, prev_pyr, curr_pyr, inmat.data.ptr, outmat.data.ptr, n, win_size, level, status, track_error, criteria, flags)
-    curr_features = []
-    z = (CvPoint2D32f*n)()
-    memmove(z, outmat.data.ptr, n*sizeof(CvPoint2D32f))
-    return z, status
+    if count is None:
+        count = len(prev_features)
+    prev_features = as_c_array(prev_features, elem_ctype=CvPoint2D32f)
+    curr_features = (CvPoint2D32f*count)() if curr_features is None else as_c_array(curr_features, elem_ctype=CvPoint2D32f)
+    if status is None:
+        status = (c_char*count)()
+    _cvCalcOpticalFlowPyrLK(prev, curr, prev_pyr, curr_pyr, prev_features, curr_features, count, win_size, level, status, track_error, criteria, flags)
+    return curr_features, status
 
 
 #-----------------------------------------------------------------------------
