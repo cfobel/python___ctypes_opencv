@@ -2590,15 +2590,18 @@ if cvVersion == 110:
         ('emax', c_int, 1, 20), # int emax
     )
     
-    def cvFindFeatures(tr, desc, k=2, emax=20):
-        """(CvMat result, CvMat dist) = cvFindFeatures(CvFeatureTree tr, CvMat desc, int k=2, int emax=20)
+    def cvFindFeatures(tr, desc, result=None, dist=None, k=2, emax=20):
+        """(CvMat result, CvMat dist) = cvFindFeatures(CvFeatureTree tr, CvMat desc, CvMat result=None, CvMat dist=None, int k=2, int emax=20)
         
         Finds approximate k nearest neighbors of given vectors using best-bin-first search
-        [ctypes-opencv] result and dist are created automatically using cvCreateMat()
+        [ctypes-opencv] If 'result' is None, it is internally created as CV_32SC1 CvMat.
+        [ctypes-opencv] If 'dist' is None, it is internally created as CV_64FC1 CvMat.
         """
         m = desc.rows
-        result = cvCreateMat(m, k, CV_32SC1)
-        dist = cvCreateMat(m, k, CV_64FC1)
+        if result is None:
+            result = cvCreateMat(m, k, CV_32SC1)
+        if dist is None:
+            dist = cvCreateMat(m, k, CV_64FC1)
         _cvFindFeatures(tr, desc, result, dist, k=k, emax=emax)
         return (result, dist)
         
@@ -2610,15 +2613,16 @@ if cvVersion == 110:
         ('results', CvMat_r, 1), # CvMat* results
     )
     
-    def cvFindFeaturesBoxed(tr, bounds_min, bounds_max):
-        """(int nfeatures, CvMat results) = cvFindFeaturesBoxed(CvFeatureTree tr, CvMax bounds_min, CvMax bounds_max)
+    def cvFindFeaturesBoxed(tr, bounds_min, bounds_max, results=None):
+        """(int nfeatures, CvMat results) = cvFindFeaturesBoxed(CvFeatureTree tr, CvMax bounds_min, CvMax bounds_max, CvMat results=None)
         
         Orthogonal range search
-        [ctypes-opencv] Matrix 'results' is automatically created using cvCreateMat().
+        [ctypes-opencv] If 'results' is None, it is internally created as CV_32SC1 CvMat.
         """
-        z = cvCreateMat(1, tr.desc.rows, CV_32SC1) if bounds_min.rows == 1 else cvCreateMat(tr.desc.rows, 1, CV_32SC1)
-        n = _cvFindFeaturesBoxed(tr, bounds_min, bounds_max, z)
-        return (n, z)
+        if results is None:
+            results = cvCreateMat(1, tr.desc.rows, CV_32SC1) if bounds_min.rows == 1 else cvCreateMat(tr.desc.rows, 1, CV_32SC1)
+        n = _cvFindFeaturesBoxed(tr, bounds_min, bounds_max, results)
+        return (n, results)
         
     
 
