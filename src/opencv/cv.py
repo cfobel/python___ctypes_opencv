@@ -2207,7 +2207,7 @@ _cvSubdivDelaunay2DInsert = cfunc('cvSubdivDelaunay2DInsert', _cvDLL, CvSubdiv2D
     ('pt', CvPoint2D32f, 1), # CvPoint2D32f pt
 )
 def cvSubdivDelaunay2DInsert(subdiv, pt):
-    """CvSubdiv2DPoint cvSubdivDelaunay2DInsert(CvSubdiv2D subdiv, CvPoint2D32f p)
+    """CvSubdiv2DPoint cvSubdivDelaunay2DInsert(CvSubdiv2D subdiv, CvPoint2D32f pt)
 
     Inserts a single point to Delaunay triangulation
     [ctypes-opencv] returns None if no subdiv2dpoint is inserted
@@ -2395,14 +2395,16 @@ _cvMeanShift = cfunc('cvMeanShift', _cvDLL, c_int,
     ('comp', CvConnectedComp_r, 1), # CvConnectedComp* comp 
 )
 
-def cvMeanShift(prob_image, window, criteria):
-    """(int niter, CvConnectedComp comp) = cvMeanShift(const CvArr prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp)
+def cvMeanShift(prob_image, window, criteria, comp=None):
+    """(int niter, CvConnectedComp comp) = cvMeanShift(const CvArr prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp comp=None)
 
     Finds object center on back projection
+    [ctypes-opencv] If 'comp' is None, it is internally created.
     """
-    z = CvConnectedComp()
-    n = _cvMeanShift(prob_image, window, criteria, z)
-    return (n,z)
+    if comp is None:
+        comp = CvConnectedComp()
+    n = _cvMeanShift(prob_image, window, criteria, comp)
+    return (n,comp)
 
 # Finds object center, size, and orientation
 _cvCamShift = cfunc('cvCamShift', _cvDLL, c_int,
@@ -2413,13 +2415,22 @@ _cvCamShift = cfunc('cvCamShift', _cvDLL, c_int,
     ('box', CvBox2D_r, 1, None), # CvBox2D* box
 )
 
-def cvCamShift(prob_image, window, criteria):
-    """(int niter, CvConnectedComp comp, CvBox2D box) = cvCamShift(const CvArr prob_image, CvRect window, CvTermCriteria criteria)
+def cvCamShift(prob_image, window, criteria, comp=None, box=True):
+    """(int niter, CvConnectedComp comp[, CvBox2D box]) = cvCamShift(const CvArr prob_image, CvRect window, CvTermCriteria criteria, CvConnectedComp=None, CvBox2D box=None)
 
     Finds object center, size, and orientation
-    [ctypes-opencv] returns number of iterations, converged component, and circumscribed box
+    [ctypes-opencv] If 'comp' is None, it is internally created.
+    [ctypes-opencv] 'box' can be:
+        True: 'box' is internally created, filled with data, and returned.
+        None: 'box' is neither created nor returned.
+        an instance of CvBox2D: This holds the circumscribed box filled instead.
+    [ctypes-opencv] returns number of iterations, converged component, and optionally circumscribed box
     """
-    comp = CvConnectedComp()
+    if comp is None:
+        comp = CvConnectedComp()
+    if box is not True:
+        niter = _cvCamShift(prob_image, window, criteria, comp, box)
+        return (niter, comp)
     box = CvBox2D()
     niter = _cvCamShift(prob_image, window, criteria, comp, box)
     return (niter, comp, box)
