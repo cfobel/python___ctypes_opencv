@@ -515,7 +515,7 @@ _cvGoodFeaturesToTrack = cfunc('cvGoodFeaturesToTrack', _cvDLL, None,
     ('image', CvArr_r, 1), # const CvArr* image
     ('eig_image', CvArr_r, 1), # CvArr* eig_image
     ('temp_image', CvArr_r, 1), # CvArr* temp_image
-    ('corners', c_void_p, 1), # CvPoint2D32f* corners
+    ('corners', CvPoint2D32f_p, 1), # CvPoint2D32f* corners
     ('corner_count', ByRefArg(c_int), 1), # int* corner_count
     ('quality_level', c_double, 1), # double quality_level
     ('min_distance', c_double, 1), # double min_distance
@@ -542,9 +542,7 @@ def cvGoodFeaturesToTrack(image, eig_image, temp_image, corners, corner_count, q
         corners = (CvPoint2D32f*corner_count)()
     count = c_int(corner_count)
     _cvGoodFeaturesToTrack(image, eig_image, temp_image, corners, count, quality_level, min_distance, mask, block_size, use_harris, k)
-    z = _list(corners[:count.value])
-    z._depends = (corners,) # make sure corner is deleted after z is deleted
-    return z
+    return corners[:count.value]
 
 #-----------------------------------------------------------------------------
 # Speeded Up Robust Features
@@ -596,24 +594,27 @@ if cvVersion == 110:
     )
     
     # Extracts Speeded Up Robust Features from image
-    def cvExtractSURF(img, mask, *args, **kwds):
-        """[CvSeq keypoints, [CvSeq descriptors]] = cvExtractSURF(const CvArr img, const CvArr mask[[, CvSeq_p keypoints_ptr], CvSeq_p descriptors_ptr], CvMemStorage storage, CvSURFParams params)
+    def cvExtractSURF(img, mask, keypoints_ptr, descriptors_ptr, storage, params):
+        """CvSeq keypoints, [CvSeq descriptors] = cvExtractSURF(const CvArr img, const CvArr mask, CvSeq_p keypoints_ptr, CvSeq_p descriptors_ptr, CvMemStorage storage, CvSURFParams params)
         
         Extracts Speeded Up Robust Features from image
-        [ctypes-opencv] If both 'keypoints_ptr' and 'descriptors_ptr' are omitted, both 'keypoints' and 'descriptors' are returned.
-        [ctypes-opencv] If only 'keypoints_ptr' is omitted, only 'keypoints' is returned, while 'descriptors_ptr' is filled with the address of 'descriptors' if it is not None.
-        [ctypes-opencv] If neither 'keypoints_ptr' nor 'descriptors_ptr' is omitted, 'keypoints_ptr' is filled with the address of 'keypoints', while 'descriptors_ptr' is filled with the address of 'descriptors' if it is not None.
+        [ctypes-opencv] If 'keypoints_ptr' is not None, it holds the address of the returning 'keypoints'.
+        [ctypes-opencv] 'keypoints_ptr' can be:
+            None: 'descriptors' is not returned.
+            True: 'descriptors' is also returned.
+            an instance of CvSeq_p: 'descriptors' is also returned. Its address is stored in 'descriptors_ptr'.
         """
-        if isinstance(args[0], CvMemStorage): # no keypoints_ptr nor descriptors_ptr
-            y = CvSeq_p()
-            z = CvSeq_p()
-            _cvExtractSURF(img, mask, z, y, *args, **kwds)
-            return (pointee(z, args[0]), pointee(y, args[0]))
+        if keypoints_ptr is None:
+            keypoints_ptr = CvSeq_p()
         
-        if isinstance(args[1], CvMemStorage): # got descriptors_ptr but no keypoints_ptr
-            z = CvSeq_p()
-            _cvExtractSURF(img, mask, z, *args, **kwds)
-            return pointee(z, args[1])
+        if descriptors_ptr is None:
+            _cvExtractSURF(img, mask, keypoints_ptr, None, storage, params)
+            return pointee(keypoints_ptr, storage)
+
+        if descriptors_ptr is True:
+            descriptors_ptr = CvSeq_p()        
+        _cvExtractSURF(img, mask, keypoints_ptr, descriptors_ptr, storage, params)
+        return (pointee(keypoints_ptr, storage), pointee(descriptors_ptr, storage))
 
         # got both pointers
         _cvExtractSURF(img, mask, *args, **kwds)
