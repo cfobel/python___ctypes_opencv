@@ -32,12 +32,7 @@ def process_image( slider_pos ):
     cvThreshold( image03, image02, slider_pos, 255, CV_THRESH_BINARY );
     
     # Find all contours.
-    nb_contours, cont = cvFindContours (image02,
-            stor,
-            sizeof(CvContour),
-            CV_RETR_LIST,
-            CV_CHAIN_APPROX_NONE,
-            cvPoint (0,0))
+    nb_contours, cont = cvFindContours (image02, stor, method=CV_CHAIN_APPROX_NONE)
     
     # Clear images. IPL use.
     cvZero(image02);

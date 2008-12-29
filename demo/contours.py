@@ -113,12 +113,7 @@ if __name__ == '__main__':
     storage = cvCreateMemStorage (0)
     
     # find the contours
-    nb_contours, contours = cvFindContours (image,
-                                               storage,
-                                               sizeof(CvContour),
-                                               CV_RETR_TREE,
-                                               CV_CHAIN_APPROX_SIMPLE,
-                                               cvPoint (0,0))
+    nb_contours, contours = cvFindContours (image, storage, mode=CV_RETR_TREE)
 
     # comment this out if you do not want approximation
     contours = cvApproxPoly (contours, sizeof(CvContour),

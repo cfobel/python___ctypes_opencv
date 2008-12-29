@@ -64,8 +64,7 @@ def findSquares4( img, storage, thresh ):
                 cvThreshold( tgray, gray, (l+1)*255/N, 255, CV_THRESH_BINARY );
 
             # find contours and store them all as a list
-            count, contours = cvFindContours( gray, storage, sizeof(CvContour),
-                CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE, cvPoint(0,0) );
+            count, contours = cvFindContours(gray, storage)
 
             if not contours:
                 continue

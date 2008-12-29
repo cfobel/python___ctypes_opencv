@@ -615,10 +615,7 @@ if cvVersion == 110:
             descriptors_ptr = CvSeq_p()        
         _cvExtractSURF(img, mask, keypoints_ptr, descriptors_ptr, storage, params)
         return (pointee(keypoints_ptr, storage), pointee(descriptors_ptr, storage))
-
-        # got both pointers
-        _cvExtractSURF(img, mask, *args, **kwds)
-                
+             
 
 #-----------------------------------------------------------------------------
 # Image Processing: Sampling, Interpolation and Geometrical Transforms
@@ -1168,16 +1165,16 @@ _cvFindContours = cfunc('cvFindContours', _cvDLL, c_int,
 )
 
 # Finds contours in binary image
-def cvFindContours(image, storage, *args, **kwds):
-    """int ncontours[, CvSeq first_contour] = cvFindContours(CvArr image, CvMemStorage storage[, CvSeq_p first_contour_ptr], int header_size=sizeof(CvContour), int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
+def cvFindContours(image, storage, first_contour_ptr=None, header_size=sizeof(CvContour), mode=CV_RETR_LIST, method=CV_CHAIN_APPROX_SIMPLE, offset=cvPoint(0,0)):
+    """int ncontours, CvSeq first_contour = cvFindContours(CvArr image, CvMemStorage storage, CvSeq_p first_contour_ptr=None, int header_size=sizeof(CvContour), int mode=CV_RETR_LIST, int method=CV_CHAIN_APPROX_SIMPLE, CvPoint offset=cvPoint(0, 0)
 
     Finds contours in binary image
-    [ctypes-opencv] If 'first_contour_ptr' is given, it is filled with the address of 'first_contour'. Otherwise, 'first_contour' is returned.
+    [ctypes-opencv] If 'first_contour_ptr' is not None, it is filled with the address of 'first_contour'. In any case, both 'ncontours' and 'first_contour' are returned.
     """
-    if len(args) > 0 and isinstance(args[0], CvSeq_p): # first_contour_ptr is given
-        return _cvFindContours(image, storage, *args, **kwds)
-    first = CvSeq_p()
-    return (_cvFindContours(image, storage, first, *args, **kwds), pointee(first, storage))
+    if first_contour_ptr is None:
+        first_contour_ptr = CvSeq_p()
+    n = _cvFindContours(image, storage, first_contour_ptr, header_size, mode, method, offset)
+    return (n, pointee(first_contour_ptr, storage))
 
 # Initializes contour scanning process
 _cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,

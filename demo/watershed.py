@@ -79,8 +79,7 @@ if __name__ == "__main__":
             comp_count = 0;
             #cvSaveImage( "wshed_mask.png", marker_mask );
             #marker_mask = cvLoadImage( "wshed_mask.png", 0 );
-            nb_cont, contours = cvFindContours( marker_mask, storage, sizeof(CvContour),
-                            CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
+            nb_cont, contours = cvFindContours(marker_mask, storage, mode=CV_RETR_CCOMP)
             cvZero( markers );
             while contours:
                 cvDrawContours( markers, contours, cvScalarAll(comp_count+1),
