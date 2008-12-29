@@ -190,10 +190,11 @@ def pointee(ptr, *depends_args):
         return z
     return None
     
-# a list that can have additional attributes
-class _list(list):
-    pass
-        
+def _ptr_add(ptr, offset):
+    pc = ptr[0]
+    return pointer(type(pc).from_address(addressof(pc) + offset))
+
+
 #=============================================================================
 # End of basic stuff
 #=============================================================================
@@ -843,7 +844,7 @@ CvMemStoragePos_r = ByRefArg(CvMemStoragePos)
 #-----------------------------------------------------------------------------
 
 class _CvSeqStructure(_Structure):
-    class CvArrayFromSequence2(object):
+    class CvArrayFromSequence(object):
         """Converts a CvSeq into an array of elements.
 
         Allows to return an element's address directly using array indexing e.g. seq[i]
@@ -883,6 +884,9 @@ class _CvSeqStructure(_Structure):
 
         def __setitem__(self, key, value):
             raise NotImplementedError("I haven't implemented this method yet.")
+            
+        def __len__(self):
+            return self.seq.total
 
         def slicing_disabled(self, *args, **kwds):
             raise KeyError("Slicing for CvSeq is currently disabled.")
@@ -896,11 +900,11 @@ class _CvSeqStructure(_Structure):
 
     def asarrayptr(self, elem_type):
         """Converts this CvSeq into an array of element pointers. The pointers are of type 'elem_type'."""
-        return self.CvArrayFromSequence2(self, elem_type, True)
+        return self.CvArrayFromSequence(self, elem_type, True)
         
     def asarray(self, elem_type):
         """Converts this CvSeq into an array of elements of type 'elem_type'."""
-        return self.CvArrayFromSequence2(self, elem_type, False)
+        return self.CvArrayFromSequence(self, elem_type, False)
         
     def append(self, element):
         """Adds element to sequence end
@@ -1958,8 +1962,8 @@ def cvGetRows(arr, submat, start_row, end_row, delta_row=1):
         submat = CvMat()
     return pointee(_cvGetRows(arr, submat, start_row, end_row, delta_row=delta_row), arr, submat)
     
-def cvGetRow(arr, row):
-    return cvGetRows(arr, None, row, row+1)
+def cvGetRow(arr, submat=None, row=0):
+    return cvGetRows(arr, submat, row, row+1)
 
 # Returns array column or column span
 _cvGetCols = cfunc('cvGetCols', _cxDLL, CvMat_p,
@@ -1979,8 +1983,8 @@ def cvGetCols(arr, submat, start_col, end_col):
         submat = CvMat()
     return pointee(_cvGetCols(arr, submat, start_col, end_col), arr, submat)
     
-def cvGetCol(arr, col):
-    return cvGetCols(arr, None, col, col+1)
+def cvGetCol(arr, submat=None, col=0):
+    return cvGetCols(arr, submat, col, col+1)
 
 # Returns one of array diagonals
 _cvGetDiag = cfunc('cvGetDiag', _cxDLL, CvMat_p,
@@ -2099,16 +2103,17 @@ _cvInitSparseMatIterator = cfunc('cvInitSparseMatIterator', _cxDLL, CvSparseNode
     ('mat_iterator', CvSparseMatIterator_r, 1), # CvSparseMatIterator* mat_iterator
 )
 
-def cvInitSparseMatIterator(mat):
-    """(CvSparseMatIterator iter, CvSparseNode first) = cvInitSparseMatIterator(CvSparseMat node)
+def cvInitSparseMatIterator(mat, mat_iterator=None):
+    """(CvSparseMatIterator iterator, CvSparseNode first) = cvInitSparseMatIterator(CvSparseMat node, CvSparseMatIterator mat_iterator)
     
     Initializes sparse array elements iterator
-    [ctypes-opencv] *Creates* CvSparseMatIterator before initializing
+    [ctypes-opencv] If mat_iterator is None, it is internally created.
     """
-    iter = CvSparseMatIterator()
-    z = pointee(_cvInitSparseMatIterator(mat, iter), mat)
-    iter._depends = (mat,) # to make sure mat is deleted after iter is deleted
-    return (iter, z)
+    if mat_iterator is None:
+        mat_iterator = CvSparseMatIterator()
+    z = pointee(_cvInitSparseMatIterator(mat, mat_iterator), mat)
+    mat_iterator._depends = (mat,) # to make sure mat is deleted after mat_iterator is deleted
+    return (mat_iterator, z)
     
 # Initializes sparse array elements iterator
 def cvGetNextSparseNode(mat_iterator):
@@ -2160,14 +2165,16 @@ Return the size of a particular dimension
 """
 
 # Return a tuple of array dimensions
-def cvGetDims(arr):
-    """tuple_of_ints cvGetDims(const CvArr arr)
+def cvGetDims(arr, sizes=None):
+    """tuple_of_ints cvGetDims(const CvArr arr, c_int_p sizes=NULL)
 
     Return a tuple of array dimensions
+    [ctypes-opencv] If 'sizes' is None, it is internally created.
     """
-    sz = (c_int*32)()
-    ndims = _cvGetDims(arr, sz)
-    return tuple(sz[:ndims])
+    if sizes is None:
+        sizes = (c_int*32)()
+    ndims = _cvGetDims(arr, sizes)
+    return tuple(sizes[:ndims])
 
 
 # Return POINTER to the particular array element
@@ -3969,15 +3976,17 @@ _cvStartAppendToSeq = cfunc('cvStartAppendToSeq', _cxDLL, None,
     ('writer', CvSeqWriter_r, 1), # CvSeqWriter* writer 
 )
 
-def cvStartAppendToSeq(seq):
-    """CvSeqWriter cvStartAppendToSeq(CvSeq seq)
+def cvStartAppendToSeq(seq, writer=None):
+    """CvSeqWriter cvStartAppendToSeq(CvSeq seq, CvSeqWriter writer=None)
 
     Initializes process of writing data to sequence
-    [ctypes-opencv] *creates* and initializes the writer instead
+    [ctypes-opencv] If 'writer' is None, it is internally created. In any case, 'writer' is returned.
     """
-    z = CvSeqWriter()
+    if writer is None:
+        writer = CvSeqWriter()
     _cvStartAppendToSeq(seq, writer)
-    return z
+    writer._depends = (seq,)
+    return writer
 
 # Creates new sequence and initializes writer for it
 _cvStartWriteSeq = cfunc('cvStartWriteSeq', _cxDLL, None,
@@ -3988,16 +3997,17 @@ _cvStartWriteSeq = cfunc('cvStartWriteSeq', _cxDLL, None,
     ('writer', CvSeqWriter_r, 1), # CvSeqWriter* writer 
 )
 
-def cvStartWriteSeq(seq_flags, header_size, elem_size, storage):
-    """CvSeqWriter cvStartWriteSeq(int seq_flags, int header_size, int elem_size, CvMemStorage storage)
+def cvStartWriteSeq(seq_flags, header_size, elem_size, storage, writer=None):
+    """CvSeqWriter cvStartWriteSeq(int seq_flags, int header_size, int elem_size, CvMemStorage storage, CvSeqWriter writer=None)
 
     Creates new sequence and initializes writer for it
-    [ctypes-opencv] *creates* and initializes the writer instead
+    [ctypes-opencv] If 'writer' is None, it is internally created. In any case, 'writer' is returned.
     """
-    z = CvSeqWriter()
-    _cvStartWriteSeq(seq_flags, header_size, elem_size, storage, z)
-    z._depends = (storage,) # to make sure storage is always deleted after z is deleted
-    return z
+    if writer is None:
+        writer = CvSeqWriter()
+    _cvStartWriteSeq(seq_flags, header_size, elem_size, storage, writer)
+    writer._depends = (storage,) # to make sure storage is always deleted after writer is deleted
+    return writer
     
 
 # Finishes process of writing sequence
@@ -4028,16 +4038,17 @@ _cvStartReadSeq = cfunc('cvStartReadSeq', _cxDLL, None,
     ('reverse', c_int, 1, 0), # int reverse
 )
 
-def cvStartReadSeq(seq, reverse=0):
-    """CvSeqReader cvStartReadSeq(const CvSeq seq, int reverse=0)
+def cvStartReadSeq(seq, reader=None, reverse=0):
+    """CvSeqReader cvStartReadSeq(const CvSeq seq, CvSeqReader reader=None, int reverse=0)
 
     Initializes process of sequential reading from sequence
-    [ctypes-opencv] *creates* and initializes a sequence reader instead
+    [ctypes-opencv] If 'reader' is None, it is internally created. In any case, 'reader' is returned.
     """
-    z = CvSeqReader()
-    _cvStartReadSeq(seq, z, reverse=reverse)
-    z._depends = (seq,)
-    return z
+    if reader is None:
+        reader = CvSeqReader()
+    _cvStartReadSeq(seq, reader, reverse)
+    reader._depends = (seq,)
+    return reader
 
 # Returns the current reader position
 cvGetSeqReaderPos = cfunc('cvGetSeqReaderPos', _cxDLL, c_int,
@@ -4081,15 +4092,17 @@ _cvMakeSeqHeaderForArray = cfunc('cvMakeSeqHeaderForArray', _cxDLL, CvSeq_p,
     ('block', CvSeqBlock_r, 1), # CvSeqBlock* block 
 )
 
-def cvMakeSeqHeaderForArray(seq_type, header_size, elem_size, elements, total, block):
-    """CvSeq cvMakeSeqHeaderForArray(int seq_type, int header_size, int elem_size, void* elements, int total, CvSeqBlock block)
+def cvMakeSeqHeaderForArray(seq_type, header_size, elem_size, elements, total, seq, block):
+    """CvSeq cvMakeSeqHeaderForArray(int seq_type, int header_size, int elem_size, void* elements, int total, CvSeq seq, CvSeqBlock block)
 
     Constructs sequence from array
+    [ctypes-opencv] If 'seq' is None, it is internally created.
     """
-    z = CvSeq()
-    _cvMakeSeqHeaderForArray(seq_type, header_size, elem_size, elements, total, z, block)
-    # potential crash: z should link to elements
-    return z
+    if seq is None:
+        seq = CvSeq()
+    _cvMakeSeqHeaderForArray(seq_type, header_size, elem_size, elements, total, seq, block)
+    seq._depends = (elements,)
+    return seq
 
 # Makes separate header for the sequence slice
 _cvSeqSlice = cfunc('cvSeqSlice', _cxDLL, CvSeq_p,
@@ -4626,15 +4639,17 @@ _cvInitTreeNodeIterator = cfunc('cvInitTreeNodeIterator', _cxDLL, None,
     ('max_level', c_int, 1), # int max_level 
 )
 
-def cvInitTreeNodeIterator(first, max_level):
+def cvInitTreeNodeIterator(tree_iterator, first, max_level):
     """CvTreeNodeIterator cvInitTreeNodeIterator(const void* first, int max_level)
 
     Initializes tree node iterator
-    [ctypes-opencv] *creates* and initializes a CvTreenodeIterator instead
+    [ctypes-opencv] If 'tree_iterator' is None, it is internally created.
     """
-    z = CvTreeNodeIterator()
-    _cvInitTreeNodeIterator(z, first, max_level)
-    return z
+    if tree_iterator is None:
+        tree_iterator = CvTreeNodeIterator()
+    _cvInitTreeNodeIterator(tree_iterator, first, max_level)
+    tree_iterator._depends = (first,)
+    return tree_iterator
 
 # Returns the currently observed node and moves iterator toward the next node
 cvNextTreeNode = cfunc('cvNextTreeNode', _cxDLL, c_void_p,
@@ -4879,13 +4894,14 @@ _cvInitFont = cfunc('cvInitFont', _cxDLL, None,
     ('line_type', c_int, 1, 8), # int line_type
 )
 
-def cvInitFont(font_face, hscale, vscale, shear=0, thickness=1, line_type=8):
-    """CvFont cvInitFont(int font_face, double hscale, double vscale, double shear=0, int thickness=1, int line_type=8)
+def cvInitFont(font, font_face, hscale, vscale, shear=0, thickness=1, line_type=8):
+    """CvFont cvInitFont(CvFont font, int font_face, double hscale, double vscale, double shear=0, int thickness=1, int line_type=8)
 
     Initializes font structure
-    [ctypes-opencv] *creates* and initializes a CvFont instead
+    [ctypes-opencv] If 'font' is None, it is internally created.
     """
-    font = CvFont()
+    if font is None:
+        font = CvFont()
     _cvInitFont(font, font_face, hscale, vscale, shear, thickness, line_type)
     return font
 
@@ -4894,7 +4910,7 @@ def cvFont(scale, thickness=1):
     
     Returns a CV_FONT_HERSHEY_PLAIN font with given scale and thickness
     """
-    return cvInitFont(CV_FONT_HERSHEY_PLAIN, scale, scale, 0, thickness, CV_AA)
+    return cvInitFont(None, CV_FONT_HERSHEY_PLAIN, scale, scale, 0, thickness, CV_AA)
                 
 # Draws text string
 cvPutText = cfunc('cvPutText', _cxDLL, None,
@@ -4953,19 +4969,17 @@ _cvInitLineIterator = cfunc('cvInitLineIterator', _cxDLL, c_int,
     ('left_to_right', c_int, 1, 0), # int left_to_right
 )
 
-def cvInitLineIterator(image, pt1, pt2, connectivity=8, left_to_right=0):
-    """(int, CvLineIterator) cvInitLineIterator(const CvArr image, CvPoint pt1, CvPoint pt2, int connectivity=8, int left_to_right=0)
+def cvInitLineIterator(image, pt1, pt2, line_iterator=None, connectivity=8, left_to_right=0):
+    """(int, CvLineIterator) cvInitLineIterator(const CvArr image, CvPoint pt1, CvPoint pt2, CvLineIterator line_iterator=None, int connectivity=8, int left_to_right=0)
 
     Initializes line iterator
-    [ctypes-opencv] *creates* the iterator before initializing
+    [ctypes-opencv] If 'line_iterator' is None, it is internally created.
     """
-    z = CvLineIterator()
-    _cvInitLineIterator(image, pt1, pt2, z, connectivity, left_to_right)
-    return z
-
-def _ptr_add(ptr, offset):
-    pc = ptr[0]
-    return pointer(type(pc).from_address(addressof(pc) + offset))
+    if line_iterator is None:
+        line_iterator = CvLineIterator()
+    _cvInitLineIterator(image, pt1, pt2, line_iterator, connectivity, left_to_right)
+    line_iterator._depends = (image,)
+    return line_iterator
 
 # Moves iterator to the next line point
 def CV_NEXT_LINE_POINT(line_iterator):
@@ -5768,7 +5782,7 @@ __all__ += [
     '_cxDLL', '_cvDLL', '_hgDLL',
     'cfunc', 'default_errcheck',
     '_Structure', '_CvSeqStructure', 'ListPOINTER', 'ListPOINTER2', 'ListByRef',
-    'ByRefArg', 'pointee', '_list', 'sizeof',
+    'ByRefArg', 'pointee', 'sizeof',
 ]
         
 

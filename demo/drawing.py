@@ -131,7 +131,7 @@ if __name__ == '__main__':
     for i in range (number):
         pt1 = cvPoint (random.randrange (-width, 2 * width),
                           random.randrange (-height, 2 * height))
-        font = cvInitFont (random.randrange (0, 8),
+        font = cvInitFont (None, random.randrange (0, 8),
                               random.randrange (0, 100) * 0.05 + 0.01,
                               random.randrange (0, 100) * 0.05 + 0.01,
                               random.randrange (0, 5) * 0.1,
@@ -146,7 +146,7 @@ if __name__ == '__main__':
         cvWaitKey (delay)
 
     # prepare a text, and get it's properties
-    font = cvInitFont (CV_FONT_HERSHEY_COMPLEX,
+    font = cvInitFont (None, CV_FONT_HERSHEY_COMPLEX,
                           3, 3, 0.0, 5, line_type)
     text_size, ymin = cvGetTextSize ("OpenCV forever!", font)
     pt1.x = (width - text_size.width) / 2

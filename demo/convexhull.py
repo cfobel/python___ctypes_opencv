@@ -41,7 +41,8 @@ if __name__ == '__main__':
                 ))
 
         # compute the convex hull
-        hull = cvConvexHull2 (points, CV_CLOCKWISE, 0)
+        hull = cvConvexHull2 (cvCreateMatFromCvPointList(points))
+        hull = hull.data.i[:hull.cols]
 
         # start with an empty image
         cvSetZero (image)
@@ -53,7 +54,7 @@ if __name__ == '__main__':
                          CV_FILLED, CV_AA, 0)
 
         # start the line from the last point
-        pt0 = points [hull [-1]]
+        pt0 = points [hull[-1]]
         
         for point_index in hull:
             # connect the previous point to the current one

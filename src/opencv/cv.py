@@ -1463,16 +1463,12 @@ _cvCreateHist = cfunc('cvCreateHist', _cvDLL, CvHistogram_p,
 )
 
 # Creates histogram
-def cvCreateHist(*args, **kwds):
-    """CvHistogram cvCreateHist([int dims, ]list_or_tuple_of_int sizes, int type, list_of_list_of_float ranges=None, int uniform=1)
+def cvCreateHist(sizes, type, ranges=None, uniform=1):
+    """CvHistogram cvCreateHist(list_or_tuple_of_int sizes, int type, list_of_list_of_float ranges=None, int uniform=1)
 
     Creates histogram
-    [ctypes-opencv] dims=len(sizes) if omitted
     """
-    if isinstance(args[0], int): # dims is given
-        z = pointee(_cvCreateHist(*args, **kwds))
-    else:
-        z = pointee(_cvCreateHist(len(args[0]), *args, **kwds))
+    z = pointee(_cvCreateHist(len(sizes), sizes, type, ranges=ranges, uniform=uniform))
     if z is not None:
         z._owner = True
     return z
@@ -1507,33 +1503,17 @@ _cvMakeHistHeaderForArray = cfunc('cvMakeHistHeaderForArray', _cvDLL, CvHistogra
     ('uniform', c_int, 1, 1), # int uniform
 )
 
-def cvMakeHistHeaderForArray(*args, **kwds):
-    """CvHistogram cvMakeHistHeaderForArray([int dims, ]list_or_tuple_of_int sizes[, CvHistogram hist], float* data, list_of_list_of_float ranges=None, int uniform=1)
+def cvMakeHistHeaderForArray(sizes, hist, data, ranges=None, uniform=1):
+    """CvHistogram cvMakeHistHeaderForArray(list_or_tuple_of_int sizes, CvHistogram hist, float* data, list_of_list_of_float ranges=None, int uniform=1)
 
     Makes a histogram out of array
-    [ctypes-opencv] dims=len(sizes) if omitted
-    [ctypes-opencv] 'hist' is automatically created if omitted
+    [ctypes-opencv] If 'hist' is None, it is internally created. In any case, 'hist' is returned.
     """
-    if isinstance(args[0], int): # dims is given
-        dims = args[0]
-        sizes = args[1]
-        args = args[2:]
-    else:
-        dims = len(args[0])
-        sizes = args[0]
-        args = args[1:]
-        
-    if isinstance(args[0], CvHistogram): # hist is given
-        z = args[0]
-        _cvMakeHistHeaderForArray(dims, sizes, *args, **kwds)
-        z._depends = (args[1],) # make sure data is deleted after z is deleted
-    else:
-        z = CvHistogram()
-        _cvMakeHistHeaderForArray(dims, sizes, z, *args, **kwds)
-        z._depends = (args[0],) # make sure data is deleted after z is deleted
-        
-    return z
-
+    if hist is None:
+        hist = CvHistogram()
+    _cvMakeHistHeaderForArray(len(sizes), sizes, hist, data, ranges=ranges, uniform=uniform)
+    hist._depends = (data,)
+    return hist
 
 # Finds minimum and maximum histogram bins
 _cvGetMinMaxHistValue = cfunc('cvGetMinMaxHistValue', _cvDLL, None,
@@ -1698,15 +1678,15 @@ Divides one histogram by another
 
 def cvQueryHistValue_1D(hist, i1, i2):
     """Queries value of histogram bin"""
-    return cvGetReal1D(hist[0].bins, i1)
+    return cvGetReal1D(hist.bins, i1)
 
 def cvQueryHistValue_2D(hist, i1, i2):
     """Queries value of histogram bin"""
-    return cvGetReal2D(hist[0].bins, i1, i2)
+    return cvGetReal2D(hist.bins, i1, i2)
 
 def cvQueryHistValue_3D(hist, i1, i2, i3):
     """Queries value of histogram bin"""
-    return cvGetReal2D(hist[0].bins, i1, i2, i3)
+    return cvGetReal2D(hist.bins, i1, i2, i3)
 
 # Equalizes histogram of grayscale image
 cvEqualizeHist = cfunc('cvEqualizeHist', _cvDLL, None,
@@ -1720,15 +1700,15 @@ Equalizes histogram of grayscale image
 
 def cvGetHistValue_1D(hist, i1, i2):
     """Returns pointer to histogram bin"""
-    return cvPtr1D(hist[0].bins, i1, 0)
+    return cvPtr1D(hist.bins, i1, 0)
 
 def cvQueryHistValue_2D(hist, i1, i2):
     """Returns pointer to histogram bin"""
-    return cvPtr2D(hist[0].bins, i1, i2, 0)
+    return cvPtr2D(hist.bins, i1, i2, 0)
 
 def cvQueryHistValue_3D(hist, i1, i2, i3):
     """Returns pointer to histogram bin"""
-    return cvPtr3D(hist[0].bins, i1, i2, i3, 0)
+    return cvPtr3D(hist.bins, i1, i2, i3, 0)
 
 
 #-----------------------------------------------------------------------------
@@ -1818,16 +1798,17 @@ _cvStartReadChainPoints = cfunc('cvStartReadChainPoints', _cvDLL, None,
     ('reader', CvChainPtReader_r, 1), # CvChainPtReader* reader 
 )
 
-def cvStartReadChainPoints(chain):
-    """CvChainPtReader cvStartReadChainPoints(CvChain chain)
+def cvStartReadChainPoints(chain, reader=None):
+    """CvChainPtReader reader = cvStartReadChainPoints(CvChain chain, CvChainPtReader reader)
 
     Initializes chain reader
-    [ctypes-opencv] *creates* a chain reader before initializing it
+    [ctypes-opencv] If 'reader' is None, it is internally created. In any case, 'reader' is returned.
     """
-    z = CvChainPtReader()
-    _cvStartReadChainPoints(chain, z)
-    z._depends = (chain,) # to make sure chain is always deleted after z is deleted
-    return z
+    if reader is None:
+        reader = CvChainPtReader()
+    _cvStartReadChainPoints(chain, reader)
+    reader._depends = (chain,) # to make sure chain is always deleted after reader is deleted
+    return reader
 
 # Gets next chain point
 cvReadChainPoint = cfunc('cvReadChainPoint', _cvDLL, CvPoint,
@@ -1976,15 +1957,19 @@ _cvPointSeqFromMat = cfunc('cvPointSeqFromMat', _cvDLL, CvSeq_p,
     ('block', CvSeqBlock_r, 1), # CvSeqBlock* block 
 )
 
-def cvPointSeqFromMat(seq_kind, mat, contour_header, block):
-    """(CvSeq seq, CvContour contour_header, CvSeqBlock block) = cvPointSeqFromMat(int seq_kind, const CvArr mat)
+def cvPointSeqFromMat(seq_kind, mat, contour_header=None, block=None):
+    """(CvSeq seq, CvContour contour_header, CvSeqBlock block) = cvPointSeqFromMat(int seq_kind, const CvArr mat, CvContour contour_header=None, CvSeqBlock block=None)
 
     Initializes point sequence header from a point vector
-    [ctypes-opencv] 'contour_header' and 'block' are automatically created.
+    [ctypes-opencv] If 'contour_header' is None, it is internally created.
+    [ctypes-opencv] If 'block' is None, it is internally created.
+    [ctypes-opencv] In any case, both 'seq', 'contour_header' and 'block' are returned.
     """
-    y = CvContour()
-    z = CvSeqBlock()
-    return pointee(_cvPointSeqFromMat(seq_kind, mat, y, z), mat, y, z)
+    if contour_header is None:
+        contour_header = CvContour()
+    if block is None:
+        block = CvSeqBlock()
+    return pointee(_cvPointSeqFromMat(seq_kind, mat, contour_header, block), mat, contour_header, block), contour_header, block
 
 # Finds box vertices
 _cvBoxPoints = cfunc('cvBoxPoints', _cvDLL, None,
@@ -1996,8 +1981,7 @@ def cvBoxPoints(box, pt=None):
     """CvPoint2D32f[4] cvBoxPoints(CvBox2D box, CvPoint2D32f pt[4]=None)
 
     Finds box vertices
-    [ctypes-opencv] If 'pt' is omitted, it is automatically created.
-    [ctypes-opencv] 'pt' is returned.
+    [ctypes-opencv] If 'pt' is None, it is internally created. In any case, 'pt' is returned.
     """
     if pt is None:
         pt = (CvPoint2D32f*4)()
@@ -2035,18 +2019,29 @@ _cvConvexHull2 = cfunc('cvConvexHull2', _cvDLL, CvSeq_p,
     ('return_points', c_int, 1, 0), # int return_points
 )
 
-def cvConvexHull2(input, orientation=CV_CLOCKWISE, return_points=0):
-    """list_or_tuple_of_int cvConvexHull2(list_or_tuple_of_CvPoint input, int orientation=CV_CLOCKWISE, int return_points=0)
+def cvConvexHull2(input, hull_storage=None, orientation=CV_CLOCKWISE, return_points=0):
+    """CvSeq_or_CvMat cvConvexHull2(list_or_tuple_of_CvPointXYZ input, void* hull_storage=NULL, int orientation=CV_CLOCKWISE, int return_points=0)
 
     Finds convex hull of point set
+    [ctypes-opencv] OpenCV's note: a vertex of the detected convex hull can be represented by:
+        a point of the same type with every point in 'input', if return_points==1
+        an index to a point in 'input', if return_points==0 and hull_storage is a CvMat
+        a pointer to a point in 'input', if return_points==0 and hull_storage is a CvStorage        
+    [ctypes-opencv] If input is a (subclass of) CvSeq, 'hull_storage' can be:
+        None: detected vertices are stored in input's storage
+        an instance of CvStorage or CvMat: detected vertices are stored here
+    [ctypes-opencv] If input is 1d CvMat of 2D 32-bit points, 'hull_storage' can be:
+        None: 'hull_storage' is internally created as a 1d CvMat of 2D 32-bit points.
+        an instance of CvStorage or CvMat: detected vertices are stored here
+    [ctypes-opencv] In any case, the function returns a sequence (CvSeq) of detected vertices if 'hull_storage' is an instance CvStorage, or 'hull_storage' itself if otherwise.
     """
-    n = len(input)
-    hull_mat = cvCreateMat(1, n, CV_32SC1)
-    
-    point_mat = cvCreateMatFromCvPointList(input)
-    _cvConvexHull2(point_mat, hull_mat, orientation, return_points)
-    
-    return [hull_mat[0,i] for i in range(hull_mat.cols)]
+    if isinstance(input, _CvSeqStructure): # a sequence
+            return pointee(_cvConvexHull2(input, hull_storage, orientation, return_points), input if hull_storage is None else hull_storage)
+            
+    if hull_storage is None:
+        hull_storage = cvCreateMat(1, input.rows*input.cols, CV_MAT_TYPE(input) if return_points else CV_32SC1)
+    _cvConvexHull2(input, hull_storage, orientation, return_points)
+    return hull_storage
 
 # Tests contour convex
 cvCheckContourConvexity = cfunc('cvCheckContourConvexity', _cvDLL, c_int,
