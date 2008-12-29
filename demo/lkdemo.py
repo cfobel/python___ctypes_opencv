@@ -121,13 +121,7 @@ if __name__ == '__main__':
 
         if need_to_init:
             # we want to search all the good points
-
-            # the default parameters
-            quality = 0.01
-            min_distance = 10
-
-            # search the good points
-            points[1] = cvGoodFeaturesToTrack(grey, MAX_COUNT, quality, min_distance)
+            points[1] = cvGoodFeaturesToTrack(grey, None, None, None, MAX_COUNT, 0.01, 10)
 
             # refine the corner locations
             cvFindCornerSubPix (

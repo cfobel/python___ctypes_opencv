@@ -525,48 +525,26 @@ _cvGoodFeaturesToTrack = cfunc('cvGoodFeaturesToTrack', _cvDLL, None,
     ('k', c_double, 1, 0.04), # double k
 )
 
-def cvGoodFeaturesToTrack(image, *args, **kwds):
-    """[list_of_CvPoint2D32f corners] = cvGoodFeaturesToTrack(const CvArr image[, CvArr eig_image, CvArr temp_image][, list_of_CvPoint2D32f corners], int_or_c_int corner_count, double quality_level, double min_distance, const CvArr mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
+def cvGoodFeaturesToTrack(image, eig_image, temp_image, corners, corner_count, quality_level, min_distance, mask=None, block_size=3, use_harris=0, k=0):
+    """list_of_CvPoint2D32f cvGoodFeaturesToTrack(const CvArr image, CvArr eig_image, CvArr temp_image, CvPoint2D32f_p corners, int corner_count, double quality_level, double min_distance, const CvArr mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
 
     Determines strong corners on image
-    [ctypes-opencv] If both 'eig_image' and 'temp_image' are omitted, they are automatically created.
-    [ctypes-opencv] If 'corners' is omitted, it is created with detected corners and returned as output.
-    [ctypes-opencv] 'corner_count' holds the maximum number of corners to be detected as input. If it is an instance of c_int, upon return, it holds the number of detected corners.
-    
+    [ctypes-opencv] If 'eig_image' is None, it is internally created.
+    [ctypes-opencv] If 'temp_image' is None, it is internally created.
+    [ctypes-opencv] If 'corners' is None, an array of 'corner_count' CvPoint2D32f items is internally created.
+    [ctypes-opencv] The returned object is a list of CvPoint2D32f items. The actual number of detected corners is the length of this list.
     """
-    
-    if not isinstance(args[0], CvMat) and not isinstance(args[0], IplImage): # no temp variables
+    if eig_image is None:
         eig_image = cvCreateMat(image.height, image.width, CV_32FC1)
+    if temp_image is None:
         temp_image = cvCreateMat(image.height, image.width, CV_32FC1)
-    else:
-        eig_image = args[0]
-        temp_image = args[1]
-        args = args[2:]
-        
-    if isinstance(args[0], int): # no corners given, and no fill out number of corners
-        corners = None
-        count = c_int(args[0])
-        args = args[1:]
-    elif isinstance(args[0], c_int): # no corners given, but fill out number of corners
-        corners = None
-        count = args[0]
-        args = args[1:]
-    else: # corners given
-        corners = args[0]
-        count = c_int(args[1]) if isinstance(args[1], int) else args[1]
-        args = args[2:]
-    pts = (CvPoint2D32f*count.value)()
-
-    _cvGoodFeaturesToTrack(image, eig_image, temp_image, pts, count, *args, **kwds)
-    
     if corners is None:
-        return pts[:count.value]
-            
-    for i in range(count.value):
-        x = corners[i]
-        y = pts[i]
-        x.x = y.x
-        x.y = y.y
+        corners = (CvPoint2D32f*corner_count)()
+    count = c_int(corner_count)
+    _cvGoodFeaturesToTrack(image, eig_image, temp_image, corners, count, quality_level, min_distance, mask, block_size, use_harris, k)
+    z = _list(corners[:count.value])
+    z._depends = (corners,) # make sure corner is deleted after z is deleted
+    return z
 
 #-----------------------------------------------------------------------------
 # Speeded Up Robust Features

@@ -189,6 +189,10 @@ def pointee(ptr, *depends_args):
         z._depends = depends_args
         return z
     return None
+    
+# a list that can have additional attributes
+class _list(list):
+    pass
         
 #=============================================================================
 # End of basic stuff
@@ -5764,7 +5768,7 @@ __all__ += [
     '_cxDLL', '_cvDLL', '_hgDLL',
     'cfunc', 'default_errcheck',
     '_Structure', '_CvSeqStructure', 'ListPOINTER', 'ListPOINTER2', 'ListByRef',
-    'ByRefArg', 'pointee', 'sizeof',
+    'ByRefArg', 'pointee', '_list', 'sizeof',
 ]
         
 
