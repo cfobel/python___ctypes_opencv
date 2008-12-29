@@ -29,7 +29,7 @@ def set_thresh2( val ):
 def ON_SEGMENT():
     global storage
     global min_comp
-    comp = cvPyrSegmentation(image0, image1, storage, level, threshold1+1, threshold2+1);
+    comp = cvPyrSegmentation(image0, image1, storage, None, level, threshold1+1, threshold2+1);
     cvShowImage("Segmentation", image1);
 
 if __name__ == "__main__":

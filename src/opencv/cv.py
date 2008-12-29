@@ -599,7 +599,7 @@ if cvVersion == 110:
         
         Extracts Speeded Up Robust Features from image
         [ctypes-opencv] If 'keypoints_ptr' is not None, it holds the address of the returning 'keypoints'.
-        [ctypes-opencv] 'keypoints_ptr' can be:
+        [ctypes-opencv] 'descriptors_ptr' can be:
             None: 'descriptors' is not returned.
             True: 'descriptors' is also returned.
             an instance of CvSeq_p: 'descriptors' is also returned. Its address is stored in 'descriptors_ptr'.
@@ -703,7 +703,7 @@ def cvGetAffineTransform(src, dst, map_matrix=None):
     """CvMat cvGetAffineTransform(const CvPoint2D32f src, const CvPoint2D32f dst)
 
     Calculates affine transform from 3 corresponding points
-    [ctypes-opencv] If map_matrix is None, a new 2x3 matrix is created
+    [ctypes-opencv] If 'map_matrix' is None, a CV_64FC1 2x3 CvMat is internally created.
     """
     if map_matrix is None:
         map_matrix = cvCreateMat(2, 3, CV_64FC1)
@@ -722,7 +722,7 @@ def cv2DRotationMatrix(center, angle, scale, map_matrix=None):
     """CvMat cv2DRotationMatrix(CvPoint2D32f center, double angle, double scale)
 
     Calculates affine matrix of 2d rotation
-    [ctypes-opencv] If map_matrix is None, a new 2x3 matrix is created
+    [ctypes-opencv] If 'map_matrix' is None, a Cv_64FC1 2x3 CvMat is internally created.
     """
     if map_matrix is None:
         map_matrix = cvCreateMat(2, 3, CV_64FC1)
@@ -753,7 +753,7 @@ def cvGetPerspectiveTransform(src, dst, map_matrix):
     """CvMat cvGetPerspectiveTransform(const CvPoint2D32f src, const CvPoint2D32f dst)
 
     Calculates perspective transform from 4 corresponding points
-    [ctypes-opencv] If map_matrix is None, a new 3x3 matrix is created
+    [ctypes-opencv] If map_matrix is None, a CV_64FC1 3x3 CvMat is internally created.
     """
     if map_matrix is None:
         map_matrix = cvCreateMat(3, 3, CV_64FC1)
@@ -1246,18 +1246,16 @@ _cvPyrSegmentation = cfunc('cvPyrSegmentation', _cvDLL, None,
     ('threshold2', c_double, 1), # double threshold2 
 )
 
-def cvPyrSegmentation(src, dst, storage, *args, **kwds):
-    """CvSeq cvPyrSegmentation(CvArr src, CvArr dst, CvMemStorage storage[, CvSeq_p comp_ptr], int level, double threshold1, double threshold2)
+def cvPyrSegmentation(src, dst, storage, comp_ptr, level, threshold1, threshold2):
+    """CvSeq comp = cvPyrSegmentation(CvArr src, CvArr dst, CvMemStorage storage, CvSeq_p comp_ptr, int level, double threshold1, double threshold2)
 
     Implements image segmentation by pyramids
-    [ctypes-opencv] If 'comp' is given, it is filled with the address of 'comp' as output. Otherwise, 'comp' is returned.
+    [ctypes-opencv] If 'comp_ptr' is not None, it holds the address of 'comp' as output. In any case, 'comp' is returned.
     """
-    if isinstance(args[0], CvSeq_p): # comp_ptr is given
-        return _cvPyrSegmentation(src, dst, storage, *args, **kwds)    
-    comp = CvSeq_p()
-    _cvPyrSegmentation(src, dst, storage, comp, *args, **kwds)
-    comp._depends = (storage,)
-    return comp
+    if comp_ptr is None:
+        comp_ptr = CvSeq_p()
+    _cvPyrSegmentation(src, dst, storage, comp_ptr, level, threshold1, threshold2)
+    return pointee(comp_ptr, storage)
 
 _default_cvTermCriteria = cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 5, 1)
 
