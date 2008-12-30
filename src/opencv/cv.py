@@ -3001,7 +3001,7 @@ if cvVersion == 110:
         return H1, H2
     
     # Computes undistortion+rectification transformation map a head of stereo camera
-    cvInitUndistortRectifyMap = cfunc('cvInitUndistortRectifyMap', _cvDLL, None,
+    _cvInitUndistortRectifyMap = cfunc('cvInitUndistortRectifyMap', _cvDLL, None,
         ('camera_matrix', CvMat_r, 1), # const CvMat* camera_matrix
         ('dist_coeffs', CvMat_r, 1), # const CvMat* dist_coeffs
         ('R', CvMat_r, 1), # const CvMat* R
@@ -3009,10 +3009,17 @@ if cvVersion == 110:
         ('mapx', CvMat_r, 1), # const CvMat* mapx
         ('mapy', CvMat_r, 1), # const CvMat* mapy
     )
-    cvInitUndistortRectifyMap.__doc__ = """void cvInitUndistortRectifyMap( const CvMat* camera_matrix, const CvMat* dist_coeffs, const CvMat* R, const CvMat* new_camera_matrix, CvArr* mapx, CvArr* mapy )
     
-    Computes undistortion+rectification transformation map a head of stereo camera
-    """
+    def cvInitUndistortRectifyMap(camera_matrix, dist_coeffs, R, new_camera_matrix, mapx, mapy):
+        """(new_camera_matrix, mapx, mapy) = cvInitUndistortRectifyMap( const CvMat* camera_matrix, const CvMat* dist_coeffs, const CvMat* R, const CvMat* new_camera_matrix, CvArr* mapx, CvArr* mapy )
+        
+        Computes undistortion+rectification transformation map a head of stereo camera
+        [ctypes-opencv] If 'new_camera_matrix' is None, it is internally created as a 3x3 CV_64FC1 CvMat. In any case, 'new_camera_matrix', 'mapx', and 'mapy' are returned.
+        """
+        if new_camera_matrix is None:
+            new_camera_matrix = cvCreateMat(3, 3, CV_64FC1)
+        _cvInitUndistortRectifyMap(camera_matrix, dist_coeffs, R, new_camera_matrix, mapx, mapy)
+        return new_camera_matrix, mapx, mapy
     
     # Computes the ideal point coordinates from the observed point coordinates
     cvUndistortPoints = cfunc('cvUndistortPoints', _cvDLL, None,
