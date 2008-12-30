@@ -654,6 +654,7 @@ class CvMatData(Union):
         ('i', c_int_p),
         ('fl', c_float_p),
         ('db', c_double_p),
+        ('address', c_int), # added by Minh-Tri Pham
     ]
 CvMatData_p = POINTER(CvMatData)
     

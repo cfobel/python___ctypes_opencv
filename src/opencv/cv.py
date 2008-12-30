@@ -2804,24 +2804,32 @@ Runs cascade of boosted classifier at given image location
 
 if cvVersion == 110:
     # Projects 3D points to image plane
-    cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
+    _cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
         ('object_points', CvMat_r, 1), # const CvMat* object_points
         ('rotation_vector', CvMat_r, 1), # const CvMat* rotation_vector
         ('translation_vector', CvMat_r, 1), # const CvMat* translation_vector
         ('intrinsic_matrix', CvMat_r, 1), # const CvMat* intrinsic_matrix
         ('distortion_coeffs', CvMat_r, 1), # const CvMat* distortion_coeffs
-        ('image_points', CvMat_p, 1), # CvMat* image_points
-        ('dpdrot', CvMat_p, 1, None), # CvMat* dpdrot
-        ('dpdt', CvMat_p, 1, None), # CvMat* dpdt
-        ('dpdf', CvMat_p, 1, None), # CvMat* dpdf
-        ('dpdc', CvMat_p, 1, None), # CvMat* dpdc
-        ('dpddist', CvMat_p, 1, None), # CvMat* dpddist
+        ('image_points', CvMat_r, 1), # CvMat* image_points
+        ('dpdrot', CvMat_r, 1, None), # CvMat* dpdrot
+        ('dpdt', CvMat_r, 1, None), # CvMat* dpdt
+        ('dpdf', CvMat_r, 1, None), # CvMat* dpdf
+        ('dpdc', CvMat_r, 1, None), # CvMat* dpdc
+        ('dpddist', CvMat_r, 1, None), # CvMat* dpddist
         ('aspect_ratio', c_double, 1, 0), # double aspect_ratio
     )
-    cvProjectPoints2.__doc__ = """void cvProjectPoints2(const CvMat object_points, const CvMat rotation_vector, const CvMat translation_vector, const CvMat intrinsic_matrix, const CvMat distortion_coeffs, CvMat* image_points, CvMat* dpdrot=NULL, CvMat* dpdt=NULL, CvMat* dpdf=NULL, CvMat* dpdc=NULL, CvMat* dpddist=NULL, double aspect_ratio=0)
-
-    Projects 3D points to image plane
-    """
+    
+    def cvProjectPoints2(object_points, rotation_vector, intrinsic_matrix, distortion_coeffs, image_points=None, dpdrot=None, dpdt=None, dpdf=None, dpdc=None, dpddist=None, aspect_ratio=0):
+        """void cvProjectPoints2(const CvMat object_points, const CvMat rotation_vector, const CvMat translation_vector, const CvMat intrinsic_matrix, const CvMat distortion_coeffs, CvMat image_points=None, CvMat dpdrot=NULL, CvMat dpdt=NULL, CvMat dpdf=NULL, CvMat dpdc=NULL, CvMat dpddist=NULL, double aspect_ratio=0)
+        
+        Projects 3D points to image plane
+        [ctypes-opencv] If 'image_points' is None, it is internally created. In any case, 'image_points' is returned.
+        """
+        if image_points is None:
+            sz = (1, object_points.cols) if object_points.rows == 1 else (object_points.rows, 1)
+            image_points = cvCreateMat(sz[0], sz[1], CV_MAKETYPE(CV_MAT_DEPTH(object_points), 2))
+        _cvProjectPoints2(object_points, rotation_vector, intrinsic_matrix, distortion_coeffs, image_points, dpdrot, dpdt, dpdf, dpdc, dpddist, aspect_ratio)
+        return image_points
 
     # Finds perspective transformation between two planes
     CV_LMEDS = 4
@@ -2833,23 +2841,25 @@ if cvVersion == 110:
         ('homography', CvMat_r, 1), # CvMat* homography 
         ('method', c_int, 1, 0), # int method
         ('ransacReprojThreshold', c_double, 1, 0), # double ransacReprojThreshold
-        ('mask', CvMat_p, 1, None), # CvMat* mask
+        ('mask', CvMat_r, 1, None), # CvMat* mask
     )
 
-    def cvFindHomography(src_points, dst_points, method=0, ransacReprojThreshold=0, mask=None):
-        """(CvMat homography, CvMat mask) = cvFindHomography(const CvMat src_points, const CvMat dst_points, int method=0, double ransacReprojThreshold=0)
+    def cvFindHomography(src_points, dst_points, homography=None, method=0, ransacReprojThreshold=0, mask=None):
+        """(CvMat homography, CvMat mask) = cvFindHomography(const CvMat src_points, const CvMat dst_points, CvMat homography=None, int method=0, double ransacReprojThreshold=0, CvMat mask=None)
 
         Finds perspective transformation between two planes
-        [ctypes-opencv] a 3x3 matrix is created
-        [ctypes-opencv] Internally, OpenCV creates a temporary mask if 'mask' is not given. Thus, a mask is explicitly created and passed to OpenCV's cvFindHomography instead.
-        [ctypes-opencv] A WinError is raised if calling the function is not successful.
+        [ctypes-opencv] If 'homography' is None, it is internally created as a 3x3 CV_64FC1 CvMat.
+        [ctypes-opencv] Internally, OpenCV creates a temporary mask if 'mask' is not given. Thus, if 'mask' is None, it is internally created by ctypes-opencv as a CV_8U CvMat.
+        [ctypes-opencv] A RuntimeError is raised if calling the function is not successful. Otherwise, both 'homography' and 'mask' are returned.
         """
-        z = cvCreateMat(3, 3, CV_64FC1)
-        mask = cvCreateMat(dst_points.height, dst_points.width, CV_8U)
-        result = _cvFindHomography(src_points, dst_points, z, method=method, ransacReprojThreshold=ransacReprojThreshold, mask=mask)
+        if homography is None:
+            homography = cvCreateMat(3, 3, CV_64FC1)
+        if mask is None:
+            mask = cvCreateMat(dst_points.height, dst_points.width, CV_8U)
+        result = _cvFindHomography(src_points, dst_points, homography, method, ransacReprojThreshold, mask)
         if not result:
-            raise WinError("Calling cvFindHomography() was not successful.")
-        return (z, mask)
+            raise RuntimeError("Calling cvFindHomography() was not successful.")
+        return (homography, mask)
         
     CV_CALIB_FIX_FOCAL_LENGTH = 16
     CV_CALIB_FIX_K1 = 32
@@ -2967,23 +2977,30 @@ if cvVersion == 110:
 
 elif cvVersion == 100:
     # Projects 3D points to image plane
-    cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
+    _cvProjectPoints2 = cfunc('cvProjectPoints2', _cvDLL, None,
         ('object_points', CvMat_r, 1), # const CvMat* object_points
         ('rotation_vector', CvMat_r, 1), # const CvMat* rotation_vector
         ('translation_vector', CvMat_r, 1), # const CvMat* translation_vector
         ('intrinsic_matrix', CvMat_r, 1), # const CvMat* intrinsic_matrix
         ('distortion_coeffs', CvMat_r, 1), # const CvMat* distortion_coeffs
-        ('image_points', CvMat_p, 1), # CvMat* image_points
-        ('dpdrot', CvMat_p, 1, None), # CvMat* dpdrot
-        ('dpdt', CvMat_p, 1, None), # CvMat* dpdt
-        ('dpdf', CvMat_p, 1, None), # CvMat* dpdf
-        ('dpdc', CvMat_p, 1, None), # CvMat* dpdc
-        ('dpddist', CvMat_p, 1, None), # CvMat* dpddist
+        ('image_points', CvMat_r, 1), # CvMat* image_points
+        ('dpdrot', CvMat_r, 1, None), # CvMat* dpdrot
+        ('dpdt', CvMat_r, 1, None), # CvMat* dpdt
+        ('dpdf', CvMat_r, 1, None), # CvMat* dpdf
+        ('dpdc', CvMat_r, 1, None), # CvMat* dpdc
+        ('dpddist', CvMat_r, 1, None), # CvMat* dpddist
     )
-    cvProjectPoints2.__doc__ = """void cvProjectPoints2(const CvMat object_points, const CvMat rotation_vector, const CvMat translation_vector, const CvMat intrinsic_matrix, const CvMat distortion_coeffs, CvMat* image_points, CvMat* dpdrot=NULL, CvMat* dpdt=NULL, CvMat* dpdf=NULL, CvMat* dpdc=NULL, CvMat* dpddist=NULL)
+    def cvProjectPoints2(object_points, rotation_vector, intrinsic_matrix, distortion_coeffs, image_points=None, dpdrot=None, dpdt=None, dpdf=None, dpdc=None, dpddist=None):
+        """void cvProjectPoints2(const CvMat object_points, const CvMat rotation_vector, const CvMat translation_vector, const CvMat intrinsic_matrix, const CvMat distortion_coeffs, CvMat image_points=None, CvMat dpdrot=NULL, CvMat dpdt=NULL, CvMat dpdf=NULL, CvMat dpdc=NULL, CvMat dpddist=NULL)
 
-    Projects 3D points to image plane
-    """
+        Projects 3D points to image plane
+        [ctypes-opencv] If 'image_points' is None, it is internally created. In any case, 'image_points' is returned.
+        """
+        if image_points is None:
+            sz = (1, object_points.cols) if object_points.rows == 1 else (object_points.rows, 1)
+            image_points = cvCreateMat(sz[0], sz[1], CV_MAKETYPE(CV_MAT_DEPTH(object_points), 2))
+        _cvProjectPoints2(object_points, rotation_vector, intrinsic_matrix, distortion_coeffs, image_points, dpdrot, dpdt, dpdf, dpdc, dpddist)
+        return image_points
 
     # Finds perspective transformation between two planes
     _cvFindHomography = cfunc('cvFindHomography', _cvDLL, None,
@@ -2992,15 +3009,16 @@ elif cvVersion == 100:
         ('homography', CvMat_r, 1), # CvMat* homography 
     )
 
-    def cvFindHomography(src_points, dst_points):
-        """CvMat cvFindHomography(const CvMat src_points, const CvMat dst_points)
+    def cvFindHomography(src_points, dst_points, homography=None):
+        """CvMat homography = cvFindHomography(const CvMat src_points, const CvMat dst_points, CvMat homography=None)
 
         Finds perspective transformation between two planes
-        [ctypes-opencv] a 3x3 matrix is created
+        [ctypes-opencv] If 'homography' is None, it is internally createed as a 3x3 CvMat. In any case, 'homography' is returned.
         """
-        z = cvCreateMat(3, 3, CV_64FC1)
-        _cvFindHomography(src_points, dst_points, z)
-        return z
+        if homography is None:
+            homography = cvCreateMat(3, 3, CV_64FC1)
+        _cvFindHomography(src_points, dst_points, homography)
+        return homography
 
 CV_CALIB_USE_INTRINSIC_GUESS = 1
 CV_CALIB_FIX_ASPECT_RATIO = 2

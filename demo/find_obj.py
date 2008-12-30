@@ -75,8 +75,8 @@ def locatePlanarObject(objectKeypoints, objectDescriptors, imageKeypoints, image
     ik_arr = imageKeypoints.asarray(CvSURFPoint)
     pt2 = cvCreateMatFromCvPoint2D32fList([ik_arr[x[1]].pt for x in ptpairs])
     try:
-        h = cvFindHomography( pt1, pt2, CV_RANSAC, 5 )[0]
-    except WinError:
+        h = cvFindHomography( pt1, pt2, method=CV_RANSAC, ransacReprojThreshold=5 )[0]
+    except RuntimeError:
         return 0
 
     for i in xrange(4):
