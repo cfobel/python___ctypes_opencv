@@ -3086,35 +3086,55 @@ CV_CALIB_FIX_PRINCIPAL_POINT = 4
 CV_CALIB_ZERO_TANGENT_DIST = 8
 
 # Finds intrinsic and extrinsic camera parameters using calibration pattern
-cvCalibrateCamera2 = cfunc('cvCalibrateCamera2', _cvDLL, None,
+_cvCalibrateCamera2 = cfunc('cvCalibrateCamera2', _cvDLL, None,
     ('object_points', CvMat_r, 1), # const CvMat* object_points
     ('image_points', CvMat_r, 1), # const CvMat* image_points
     ('point_counts', CvMat_r, 1), # const CvMat* point_counts
     ('image_size', CvSize, 1), # CvSize image_size
-    ('intrinsic_matrix', CvMat_p, 1), # CvMat* intrinsic_matrix
-    ('distortion_coeffs', CvMat_p, 1), # CvMat* distortion_coeffs
-    ('rotation_vectors', CvMat_p, 1, None), # CvMat* rotation_vectors
-    ('translation_vectors', CvMat_p, 1, None), # CvMat* translation_vectors
+    ('intrinsic_matrix', CvMat_r, 1), # CvMat* intrinsic_matrix
+    ('distortion_coeffs', CvMat_r, 1), # CvMat* distortion_coeffs
+    ('rotation_vectors', CvMat_r, 1, None), # CvMat* rotation_vectors
+    ('translation_vectors', CvMat_r, 1, None), # CvMat* translation_vectors
     ('flags', c_int, 1, 0), # int flags
 )
-cvCalibrateCamera2.__doc__ = """void cvCalibrateCamera2(const CvMat object_points, const CvMat image_points, const CvMat point_counts, CvSize image_size, CvMat* intrinsic_matrix, CvMat* distortion_coeffs, CvMat* rotation_vectors=NULL, CvMat* translation_vectors=NULL, int flags=0)
 
-Finds intrinsic and extrinsic camera parameters using calibration pattern
-"""
+def cvCalibrateCamera2(object_points, image_points, point_counts, image_size, intrinsic_matrix=None, distortion_coeffs=None, rotation_vectors=None, translation_vectors=None, flags=0):
+    """void cvCalibrateCamera2(const CvMat object_points, const CvMat image_points, const CvMat point_counts, CvSize image_size, CvMat intrinsic_matrix=None, CvMat distortion_coeffs=None, CvMat rotation_vectors=NULL, CvMat translation_vectors=NULL, int flags=0)
 
+    Finds intrinsic and extrinsic camera parameters using calibration pattern
+    [ctypes-opencv] If 'intrinsic_matrix' is None, it is internally created with random data.
+    [ctypes-opencv] If 'distortion_coeffs' is None, it is internally created as a 1x5 CV_64FC1 CvMat.
+    [ctypes-opencv] In any case, both 'intrinsic_matrix' and 'distortion_coeffs' are returned.
+    """
+    if intrinsic_matrix is None:
+        intrinsic_matrix = cvCreateMat(3, 3, CV_64FC1)
+    if distortion_coeffs is None:
+        distortion_coeffs = cvCreateMat(1, 5, CV_64FC1)
+    _cvCalibrateCamera2(object_points, image_points, point_counts, image_size, intrinsic_matrix, distortion_coeffs, rotation_vectors, translation_vectors, flags)
+    return intrinsic_matrix, distortion_coeffs
+        
 # Finds extrinsic camera parameters for particular view
-cvFindExtrinsicCameraParams2 = cfunc('cvFindExtrinsicCameraParams2', _cvDLL, None,
+_cvFindExtrinsicCameraParams2 = cfunc('cvFindExtrinsicCameraParams2', _cvDLL, None,
     ('object_points', CvMat_r, 1), # const CvMat* object_points
     ('image_points', CvMat_r, 1), # const CvMat* image_points
     ('intrinsic_matrix', CvMat_r, 1), # const CvMat* intrinsic_matrix
     ('distortion_coeffs', CvMat_r, 1), # const CvMat* distortion_coeffs
-    ('rotation_vector', CvMat_p, 1), # CvMat* rotation_vector
-    ('translation_vector', CvMat_p, 1), # CvMat* translation_vector 
+    ('rotation_vector', CvMat_r, 1), # CvMat* rotation_vector
+    ('translation_vector', CvMat_r, 1), # CvMat* translation_vector 
 )
-cvFindExtrinsicCameraParams2.__doc__ = """void cvFindExtrinsicCameraParams2(const CvMat object_points, const CvMat image_points, const CvMat intrinsic_matrix, const CvMat distortion_coeffs, CvMat* rotation_vector, CvMat* translation_vector)
 
-Finds extrinsic camera parameters for particular view
-"""
+def cvFindExtrinsicCameraParams2(object_points, image_points, intrinsic_matrix, distortion_coeffs, rotation_vector=None, translation_vector=None):
+    """(rotation_vector, translation_vector) = cvFindExtrinsicCameraParams2(const CvMat object_points, const CvMat image_points, const CvMat intrinsic_matrix, const CvMat distortion_coeffs, CvMat rotation_vector=None, CvMat translation_vector=None)
+
+    Finds extrinsic camera parameters for particular view
+    [ctypes-opencv] If any of 'rotation_vector' and 'translation_vector' is None, it is internally created as a 1x3 CV_64FC1 CvMat. In any case, both of them are returned.
+    """
+    if rotation_vector is None:
+        rotation_vector = cvCreateMat(1, 3, CV_64FC1)
+    if translation_vector is None:
+        translation_vector = cvCreateMat(1, 3, CV_64FC1)
+    _cvFindExtrinsicCameraParams2(object_points, image_points, intrinsic_matrix, distortion_coeffs, rotation_vector, translation_vector)
+    return rotation_vector, translation_vector
 
 # Converts rotation matrix to rotation vector or vice versa
 cvRodrigues2 = cfunc('cvRodrigues2', _cvDLL, c_int,
