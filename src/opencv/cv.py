@@ -2876,19 +2876,34 @@ if cvVersion == 110:
         ('imgHeight', c_int, 1), # int imgHeight
         ('apertureWidth', c_double, 1, 0), # double apertureWidth
         ('apertureHeight', c_double, 1, 0), # double apertureHeight
-        ('fovx', c_double_p, 1, None), # double *fovx
-        ('fovy', c_double_p, 1, None), # double *fovy
-        ('focalLength', c_double_p, 1, None), # double focalLength
-        ('principalPoint', CvPoint2D64f_p, 1, None), # CvPoint2D64f* principalPoint
-        ('pixelAspectRatio', c_double_p, 1, None), # double* pixelAspectRatio
+        ('fovx', ByRefArg(c_double), 1, None), # double *fovx
+        ('fovy', ByRefArg(c_double), 1, None), # double *fovy
+        ('focalLength', ByRefArg(c_double), 1, None), # double focalLength
+        ('principalPoint', CvPoint2D64f_r, 1, None), # CvPoint2D64f* principalPoint
+        ('pixelAspectRatio', ByRefArg(c_double), 1, None), # double* pixelAspectRatio
     )
-    cvCalibrationMatrixValues.__doc__ = """void cvCalibrationMatrixValues( const CvMat calibMatr, int imgWidth, int imgHeight, double apertureWidth=0, double apertureHeight=0, double *fovx=NULL, double *fovy=NULL, double *focalLength=NULL, CvPoint2D64f *principalPoint=NULL, double *pixelAspectRatio=NULL )
     
-    Finds intrinsic and extrinsic camera parameters using calibration pattern
-    """
+    def cvCalibrationMatrixValues(calibMatr, imgWidth, imgHeight, apertureWidth=0, apertureHeight=0, fovx=None, fovy=None, focalLength=None, principalPoint=None, pixelAspectRatio=None):
+        """(double fovx, double fovy, double focalLength, CvPoint2D64f principalPoint, double pixelAspectRatio) = cvCalibrationMatrixValues( const CvMat calibMatr, int imgWidth, int imgHeight, double apertureWidth=0, double apertureHeight=0, c_double fovx=NULL, c_double fovy=NULL, c_double focalLength=NULL, CvPoint2D64f principalPoint=NULL, c_double pixelAspectRatio=NULL )
+        
+        Finds intrinsic and extrinsic camera parameters using calibration pattern
+        [ctypes-opencv] For every output parameter, if it is 'None', it is internally created. In any case, all output parameters are returned by value.
+        """
+        if fovx is None:
+            fovx = c_double()
+        if fovy is None:
+            fovy = c_double()
+        if focalLength is None:
+            focalLength = c_double()
+        if principalPoint is None:
+            principalPoint = CvPoint2D64f()
+        if pixelAspectRatio is None:
+            pixelAspectRatio = c_double()
+        _cvCalibrationMatrixValues(calibMatr, imgWidth, imgHeight, apertureWidth, apertureHeight, fovx, fovy, focalLength, principalPoint, pixelAspectRatio)
+        return fovx.value, fovy.value, focalLength.value, principalPoint, pixelAspectRatio.value
     
     # Calibrates stereo camera
-    cvStereoCalibrate = cfunc('cvStereoCalibrate', _cvDLL, None,
+    _cvStereoCalibrate = cfunc('cvStereoCalibrate', _cvDLL, None,
         ('object_points', CvMat_r, 1), # const CvMat* object_points
         ('image_points1', CvMat_r, 1), # const CvMat* image_points1
         ('image_points2', CvMat_r, 1), # const CvMat* image_points2
@@ -2904,10 +2919,15 @@ if cvVersion == 110:
         ('F', CvMat_r, 1, None), # CvMat* F
         ('term_crit', CvTermCriteria, 1, cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 30, 1e-6)), # CvTermCriteria term_crit
     )
-    cvStereoCalibrate.__doc__ = """void cvStereoCalibrate( const CvMat object_points, const CvMat image_points1, const CvMat image_points2, const CvMat point_counts, CvMat camera_matrix1, CvMat* dist_coeffs1, CvMat camera_matrix2, CvMat* dist_coeffs2, CvSize image_size, CvMat* R, CvMat* T, CvMat* E=0, CvMat* F=0, CvTermCriteria term_crit=cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,30,1e-6), int flags=CV_CALIB_FIX_INTRINSIC )
-                        
-    Calibrates stereo camera
-    """
+    
+    def cvStereoCalibrate(object_points, image_points1, image_points2, point_counts, camera_matrix1, dist_coeffs1, camera_matrix2, dist_coeffs2, image_size, R, T, E=None, F=None, term_crit=cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,30,1e-6), flags=CV_CALIB_FIX_INTRINSIC):
+        """(camera_matrix1, dist_coeffs1, camera_matrix2, dist_coeffs2) = cvStereoCalibrate( const CvMat object_points, const CvMat image_points1, const CvMat image_points2, const CvMat point_counts, CvMat camera_matrix1, CvMat dist_coeffs1, CvMat camera_matrix2, CvMat dist_coeffs2, CvSize image_size, CvMat R, CvMat T, CvMat E=None, CvMat F=None, CvTermCriteria term_crit=cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,30,1e-6), int flags=CV_CALIB_FIX_INTRINSIC )
+                            
+        Calibrates stereo camera
+        [ctypes-opencv] 'camera_matrix1', 'dist_coeffs1', 'camera_matrix2', 'dist_coeffs2' are returned.
+        """
+        _cvStereoCalibrate(object_points, image_points1, image_points2, point_counts, camera_matrix1, dist_coeffs1, camera_matrix2, dist_coeffs2, image_size, R, T, E, F, term_crit, flags)
+        return camera_matrix1, dist_coeffs1, camera_matrix2, dist_coeffs2
     
     # Computes rectification transform for stereo camera
     cvStereoRectify = cfunc('cvStereoRectify', _cvDLL, None,
