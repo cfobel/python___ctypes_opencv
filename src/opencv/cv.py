@@ -2883,10 +2883,11 @@ if cvVersion == 110:
         ('pixelAspectRatio', ByRefArg(c_double), 1, None), # double* pixelAspectRatio
     )
     
-    def cvCalibrationMatrixValues(calibMatr, imgWidth, imgHeight, apertureWidth=0, apertureHeight=0, fovx=None, fovy=None, focalLength=None, principalPoint=None, pixelAspectRatio=None):
-        """(double fovx, double fovy, double focalLength, CvPoint2D64f principalPoint, double pixelAspectRatio) = cvCalibrationMatrixValues( const CvMat calibMatr, int imgWidth, int imgHeight, double apertureWidth=0, double apertureHeight=0, c_double fovx=NULL, c_double fovy=NULL, c_double focalLength=NULL, CvPoint2D64f principalPoint=NULL, c_double pixelAspectRatio=NULL )
+    def cvCalibrationMatrixValues(calibMatr, image_size, apertureWidth=0, apertureHeight=0, fovx=None, fovy=None, focalLength=None, principalPoint=None, pixelAspectRatio=None):
+        """(double fovx, double fovy, double focalLength, CvPoint2D64f principalPoint, double pixelAspectRatio) = cvCalibrationMatrixValues( const CvMat calibMatr, CvSize image_size, double apertureWidth=0, double apertureHeight=0, c_double fovx=NULL, c_double fovy=NULL, c_double focalLength=NULL, CvPoint2D64f principalPoint=NULL, c_double pixelAspectRatio=NULL )
         
         Finds intrinsic and extrinsic camera parameters using calibration pattern
+        [ctypes-opencv] (imgWidth, imgHeight) is replaced by CvSize image_size
         [ctypes-opencv] For every output parameter, if it is 'None', it is internally created. In any case, all output parameters are returned by value.
         """
         if fovx is None:
@@ -2899,7 +2900,7 @@ if cvVersion == 110:
             principalPoint = CvPoint2D64f()
         if pixelAspectRatio is None:
             pixelAspectRatio = c_double()
-        _cvCalibrationMatrixValues(calibMatr, imgWidth, imgHeight, apertureWidth, apertureHeight, fovx, fovy, focalLength, principalPoint, pixelAspectRatio)
+        _cvCalibrationMatrixValues(calibMatr, image_size.width, image_size.height, apertureWidth, apertureHeight, fovx, fovy, focalLength, principalPoint, pixelAspectRatio)
         return fovx.value, fovy.value, focalLength.value, principalPoint, pixelAspectRatio.value
     
     # Calibrates stereo camera
@@ -2930,7 +2931,7 @@ if cvVersion == 110:
         return camera_matrix1, dist_coeffs1, camera_matrix2, dist_coeffs2
     
     # Computes rectification transform for stereo camera
-    cvStereoRectify = cfunc('cvStereoRectify', _cvDLL, None,
+    _cvStereoRectify = cfunc('cvStereoRectify', _cvDLL, None,
         ('camera_matrix1', CvMat_r, 1), # const CvMat* camera_matrix1
         ('camera_matrix2', CvMat_r, 1), # const CvMat* camera_matrix2
         ('dist_coeffs1', CvMat_r, 1), # const CvMat* dist_coeffs1
@@ -2944,13 +2945,36 @@ if cvVersion == 110:
         ('P2', CvMat_r, 1), # CvMat* P2
         ('Q', CvMat_r, 1, None), # CvMat* Q
         ('flags', c_int, 1, CV_CALIB_ZERO_DISPARITY), # int flags
-        
     )
-    cvStereoRectify.__doc__ = """void cvStereoRectify( const CvMat camera_matrix1, const CvMat camera_matrix2, const CvMat dist_coeffs1, const CvMat dist_coeffs2, CvSize image_size, const CvMat R, const CvMat T, CvMat R1, CvMat R2, CvMat P1, CvMat P2, CvMat* Q=0, int flags=CV_CALIB_ZERO_DISPARITY )
     
-    Computes rectification transform for stereo camera
-    """
+    def cvStereoRectify(camera_matrix1, camera_matrix2, dist_coeffs1, dist_coeffs2, image_size, R, T, R1=None, R2=None, P1=None, P2=None, Q=None, flags=CV_CALIB_ZERO_DISPARITY):
+        """(R1, R2, P1, P2[, Q]) = void cvStereoRectify( const CvMat camera_matrix1, const CvMat camera_matrix2, const CvMat dist_coeffs1, const CvMat dist_coeffs2, CvSize image_size, const CvMat R, const CvMat T, CvMat R1=None, CvMat R2=None, CvMat P1=None, CvMat P2=None, CvMat Q=None, int flags=CV_CALIB_ZERO_DISPARITY )
+        
+        Computes rectification transform for stereo camera
+        [ctypes-opencv] For each 'R1', 'R2', 'P1', 'P2', if it is None, it is internally created as a CV_64FC1 CvMat.
+        [ctypes-opencv] 'Q' can be:
+            None: 'Q' is neither computed nor returned.
+            True: 'Q' is internally created as a CV_64FC1 CvMat, filled with output, and returned.
+            an instance of CvMat: output for 'Q' is filled in this instance. The instance is also returned.
+        """
+        if R1 is None:
+            R1 = cvCreateMat(3, 3, CV_64FC1)
+        if R2 is None:
+            R2 = cvCreateMat(3, 3, CV_64FC1)
+        if P1 is None:
+            P1 = cvCreateMat(3, 4, CV_64FC1)
+        if P2 is None:
+            P2 = cvCreateMat(3, 4, CV_64FC1)
+        if Q is None:
+            _cvStereoRectify(camera_matrix1, camera_matrix2, dist_coeffs1, dist_coeffs2, image_size, R, T, R1, R2, P1, P2, None, flags)
+            return R1, R2, P1, P2
 
+        if Q is True:
+            Q = cvCreateMat(4, 4, CV_64FC1)
+        _cvStereoRectify(camera_matrix1, camera_matrix2, dist_coeffs1, dist_coeffs2, image_size, R, T, R1, R2, P1, P2, Q, flags)
+        return R1, R2, P1, P2, Q
+        
+    
     # Computes rectification transform for uncalibrated stereo camera
     cvStereoRectifyUncalibrated = cfunc('cvStereoRectifyUncalibrated', _cvDLL, None,
         ('points1', CvMat_r, 1), # const CvMat* points1
