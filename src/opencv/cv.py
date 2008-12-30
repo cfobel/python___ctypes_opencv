@@ -2879,7 +2879,7 @@ if cvVersion == 110:
         ('fovx', ByRefArg(c_double), 1, None), # double *fovx
         ('fovy', ByRefArg(c_double), 1, None), # double *fovy
         ('focalLength', ByRefArg(c_double), 1, None), # double focalLength
-        ('principalPoint', CvPoint2D64f_r, 1, None), # CvPoint2D64f* principalPoint
+        ('principalPoint', ByRefArg(CvPoint2D64f), 1, None), # CvPoint2D64f* principalPoint
         ('pixelAspectRatio', ByRefArg(c_double), 1, None), # double* pixelAspectRatio
     )
     
@@ -3139,8 +3139,8 @@ def cvFindExtrinsicCameraParams2(object_points, image_points, intrinsic_matrix, 
 # Converts rotation matrix to rotation vector or vice versa
 cvRodrigues2 = cfunc('cvRodrigues2', _cvDLL, c_int,
     ('src', CvMat_r, 1), # const CvMat* src
-    ('dst', CvMat_p, 1), # CvMat* dst
-    ('jacobian', CvMat_p, 1, None), # CvMat* jacobian
+    ('dst', CvMat_r, 1), # CvMat* dst
+    ('jacobian', CvMat_r, 1, None), # CvMat* jacobian
 )
 cvRodrigues2.__doc__ = """int cvRodrigues2(const CvMat src, CvMat* dst, CvMat* jacobian=0)
 
@@ -3179,29 +3179,24 @@ _cvFindChessboardCorners = cfunc('cvFindChessboardCorners', _cvDLL, c_int,
     ('image', CvArr_r, 1), # const void* image
     ('pattern_size', CvSize, 1), # CvSize pattern_size
     ('corners', CvPoint2D32f_p, 1), # CvPoint2D32f* corners
-    ('corner_count', c_int_p, 1, None), # int* corner_count
+    ('corner_count', ByRefArg(c_int), 1, None), # int* corner_count
     ('flags', c_int, 1, CV_CALIB_CB_ADAPTIVE_THRESH), # int flags
 )
 
 # Finds positions of internal corners of the chessboard
-def cvFindChessboardCorners(image, pattern_size, flags=CV_CALIB_CB_ADAPTIVE_THRESH):
-    """ctypes_array_of_CvPoint2D32f cvFindChessboardCorners(const CvArr image, CvSize pattern_size, int flags=CV_CALIB_CB_ADAPTIVE_THRESH)
+def cvFindChessboardCorners(image, pattern_size, corners=None, corner_count=None, flags=CV_CALIB_CB_ADAPTIVE_THRESH):
+    """(int pattern_found, c_array_of_CvPoint2D32f out_corners) = cvFindChessboardCorners(const CvArr image, CvSize pattern_size, c_array_of_CvPoint2D32f corners=None, c_int corner_count=None, int flags=CV_CALIB_CB_ADAPTIVE_THRESH)
 
     Finds positions of internal corners of the chessboard
+    [ctypes-opencv] If 'corners' is None, it is internally created as a c_array of 1024 CvPoint2D32f items.
+    [ctypes-opencv] In any case, an integer indicating if the pattern was found, and a c_array of N CvPoint2D32f items is returned, where N is the number of detected corners. 
     """
-    MAX_CORNER_COUNT = 32768
-    corners = (CvPoint2D32f*MAX_CORNER_COUNT)()
-    corner_count = c_int(0)
-    z = _cvFindChessboardCorners(image, pattern_size, corners, pointer(corner_count), flags)
-        
-    if z:
-        n = corner_count.value
-        corners = (CvPoint2D32f*n)(*corners[:n])
-    else:
-        corners = (CvPoint2D32f*0)()
-        
-    corners.pattern_found = z
-    return corners
+    if corners is None:
+        corners = (CvPoint2D32f*1024)()
+    if corner_count is None:
+        corner_count = c_int()
+    found = _cvFindChessboardCorners(image, pattern_size, corners, corner_count, flags)
+    return found, as_c_array(corners, n=corner_count.value, elem_ctype=CvPoint2D32f)
     
 _cvDrawChessboardCorners = cfunc('cvDrawChessboardCorners', _cvDLL, None,
     ('image', CvArr_r, 1), # CvArr* image
@@ -3212,12 +3207,12 @@ _cvDrawChessboardCorners = cfunc('cvDrawChessboardCorners', _cvDLL, None,
 )
 
 # Renders the detected chessboard corners
-def cvDrawChessboardCorners(image, pattern_size, corners):
-    """void cvDrawChessboardCorners(CvArr image, CvSize pattern_size, ctypes_array_of_CvPoint2D32f corners)
+def cvDrawChessboardCorners(image, pattern_size, corners, pattern_was_found):
+    """void cvDrawChessboardCorners(CvArr image, CvSize pattern_size, c_array_of_CvPoint2D32f corners)
 
     Renders the detected chessboard corners
     """
-    _cvDrawChessboardCorners(image, pattern_size, corners, len(corners), corners.pattern_found)
+    _cvDrawChessboardCorners(image, pattern_size, corners, len(corners), pattern_was_found)
 
 
 #-----------------------------------------------------------------------------
