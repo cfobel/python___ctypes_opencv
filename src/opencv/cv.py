@@ -3123,7 +3123,7 @@ def cvDrawChessboardCorners(image, pattern_size, corners):
 
 
 #-----------------------------------------------------------------------------
-# Camera Calibration
+# Pose Estimation
 #-----------------------------------------------------------------------------
 
 

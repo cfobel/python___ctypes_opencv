@@ -86,13 +86,12 @@ def findSquares4( img, storage, thresh ):
                     abs(cvContourArea(result)) > 1000 and 
                     cvCheckContourConvexity(result) ):
                     s = 0;
-                    for i in range(5):
+                    for i in range(4):
                         # find minimum angle between joint
                         # edges (maximum of cosine)
-                        if( i >= 2 ):
-                            t = abs(angle( res_arr[i], res_arr[i-2], res_arr[i-1]))
-                            if s<t:
-                                s=t
+                        t = abs(angle( res_arr[i], res_arr[i-2], res_arr[i-1]))
+                        if s<t:
+                            s=t
                     # if cosines of all angles are small
                     # (all angles are ~90 degree) then write quandrange
                     # vertices to resultant sequence

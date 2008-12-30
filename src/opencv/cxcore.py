@@ -871,67 +871,26 @@ CvMemStoragePos_r = ByRefArg(CvMemStoragePos)
 #-----------------------------------------------------------------------------
 
 class _CvSeqStructure(_Structure):
-    class CvArrayFromSequence(object):
-        """Converts a CvSeq into an array of elements.
-
-        Allows to return an element's address directly using array indexing e.g. seq[i]
-        Allows to iterate elements, e.g. for x in seq: <tada>
-        
-        Elements of seq are accessed directly. No copy of elements is made.
-        """
-        def __init__(self, seq, elem_type, return_ptr=False):
-            """Initializes the class.
-            
-            :Parameters:
-                seq : CvSeq
-                    a (possible subclass of) CvSeq
-                elem_type : type
-                    type of an element, its meaning depends on 'return_ptr'
-                return_ptr : bool
-                    False: each item is an element, 'elem_type' is its type
-                    True: each item is a pointer to an element, 'elem_type' is the type of a pointer
-            """
-            self.seq = seq
-            self.elem_type = elem_type
-            self.return_ptr = return_ptr
-            
-        def __getitem__(self, key):
-            if not isinstance(key, int):
-                raise KeyError("Key '%s' must be an integer." % str(key))
-                
-            z = cvGetSeqElem(self.seq, key)
-            
-            if self.return_ptr:
-                try:
-                    return self.elem_type(z)
-                except TypeError:
-                    return cast(z, self.elem_type)
-                
-            return cast(z, POINTER(self.elem_type))[0]
-
-        def __setitem__(self, key, value):
-            raise NotImplementedError("I haven't implemented this method yet.")
-            
-        def __len__(self):
-            return self.seq.total
-
-        def slicing_disabled(self, *args, **kwds):
-            raise KeyError("Slicing for CvSeq is currently disabled.")
-            
-        __getslice__ = slicing_disabled
-        __setslice__ = slicing_disabled
-            
-        def __iter__(self):
-            for i in range(self.seq.total):
-                yield self.__getitem__(i)
-
     def asarrayptr(self, elem_type):
         """Converts this CvSeq into an array of element pointers. The pointers are of type 'elem_type'."""
-        return self.CvArrayFromSequence(self, elem_type, True)
+        reader = cvStartReadSeq(self)
+        z = [None]*self.total
+        for i in range(self.total):
+            try:
+                z[i] = elem_type(reader.ptr)
+            except TypeError:
+                z[i] = cast(reader.ptr, elem_type)
+            cvSetSeqReaderPos(reader, 1, 1)
+        return z
         
     def asarray(self, elem_type):
         """Converts this CvSeq into an array of elements of type 'elem_type'."""
-        return self.CvArrayFromSequence(self, elem_type, False)
+        reader = cvStartReadSeq(self)
+        z = [None]*self.total
+        for i in range(self.total):
+            z[i] = elem_type.from_address(reader.ptr)
+            cvSetSeqReaderPos(reader, 1, 1)
+        return z
         
     def append(self, element):
         """Adds element to sequence end
@@ -1499,7 +1458,7 @@ def CV_SEQ_READER_FIELDS():
         ('header_size', c_int),
         ('seq', CvSeq_p), # sequence, begin read
         ('block', CvSeqBlock_p), # current block
-        ('ptr', c_char_p), # POINTER to free space
+        ('ptr', c_void_p), # POINTER to free space
         ('block_min', c_char_p), # POINTER to the beginning of block
         ('block_max', c_char_p), # POINTER to the end of block
         ('delta_index', c_int), # = seq->first-.start_index
