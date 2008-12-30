@@ -3297,13 +3297,13 @@ if cvVersion == 110:
     cvFindFundamentalMat = cfunc('cvFindFundamentalMat', _cvDLL, c_int,
         ('points1', CvMat_r, 1), # const CvMat* points1
         ('points2', CvMat_r, 1), # const CvMat* points2
-        ('fundamental_matrix', CvMat_p, 1), # CvMat* fundamental_matrix
+        ('fundamental_matrix', CvMat_r, 1), # CvMat* fundamental_matrix
         ('method', c_int, 1), # int method
         ('param1', c_double, 1, 3), # double param1
         ('param2', c_double, 1, 0), # double param2
-        ('status', CvMat_p, 1, None), # CvMat* status
+        ('status', CvMat_r, 1, None), # CvMat* status
     )
-    cvFindFundamentalMat.__doc__ = """int cvFindFundamentalMat(const CvMat points1, const CvMat points2, CvMat* fundamental_matrix, int method=CV_FM_RANSAC, double param1=1., double param2=0.99, CvMat* status=NUL)
+    cvFindFundamentalMat.__doc__ = """int cvFindFundamentalMat(const CvMat points1, const CvMat points2, CvMat fundamental_matrix, int method=CV_FM_RANSAC, double param1=3., double param2=0, CvMat status=None)
 
     Calculates fundamental matrix from corresponding points in two images
     """
@@ -3320,13 +3320,13 @@ elif cvVersion == 100:
     cvFindFundamentalMat = cfunc('cvFindFundamentalMat', _cvDLL, c_int,
         ('points1', CvMat_r, 1), # const CvMat* points1
         ('points2', CvMat_r, 1), # const CvMat* points2
-        ('fundamental_matrix', CvMat_p, 1), # CvMat* fundamental_matrix
+        ('fundamental_matrix', CvMat_r, 1), # CvMat* fundamental_matrix
         ('method', c_int, 1), # int method
         ('param1', c_double, 1, 1), # double param1
         ('param2', c_double, 1, 0), # double param2
-        ('status', CvMat_p, 1, None), # CvMat* status
+        ('status', CvMat_r, 1, None), # CvMat* status
     )
-    cvFindFundamentalMat.__doc__ = """int cvFindFundamentalMat(const CvMat points1, const CvMat points2, CvMat* fundamental_matrix, int method=CV_FM_RANSAC, double param1=1., double param2=0.99, CvMat* status=NUL)
+    cvFindFundamentalMat.__doc__ = """int cvFindFundamentalMat(const CvMat points1, const CvMat points2, CvMat fundamental_matrix, int method=CV_FM_RANSAC, double param1=1., double param2=0., CvMat status=None)
 
     Calculates fundamental matrix from corresponding points in two images
     """

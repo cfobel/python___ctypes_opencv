@@ -1,7 +1,5 @@
 Provide an interface for machine learning classes. Atm, it's pretty tough. Perhaps, Boost.Python is the right choice.
 
-Wrap properly (i.e. pythonic) cvFindChessboardCorners(), cvFindFundamentalMat().
-
 Wrap properly cvFindStereoCorrespondenceGC()
 
 NDarray slicing and indexing for CvMatND
