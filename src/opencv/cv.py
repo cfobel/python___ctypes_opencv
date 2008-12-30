@@ -2976,7 +2976,7 @@ if cvVersion == 110:
         
     
     # Computes rectification transform for uncalibrated stereo camera
-    cvStereoRectifyUncalibrated = cfunc('cvStereoRectifyUncalibrated', _cvDLL, None,
+    _cvStereoRectifyUncalibrated = cfunc('cvStereoRectifyUncalibrated', _cvDLL, None,
         ('points1', CvMat_r, 1), # const CvMat* points1
         ('points2', CvMat_r, 1), # const CvMat* points2
         ('F', CvMat_r, 1), # const CvMat* F
@@ -2986,10 +2986,19 @@ if cvVersion == 110:
         ('threshold', c_double, 1, 5), # double threshold
         
     )
-    cvStereoRectifyUncalibrated.__doc__ = """void cvStereoRectifyUncalibrated( const CvMat points1, const CvMat points2, const CvMat F, CvSize image_size, CvMat* H1, CvMat* H2, double threshold=5 )
     
-    Computes rectification transform for uncalibrated stereo camera
-    """
+    def cvStereoRectifyUncalibrated(points1, points2, F, image_size, H1=None, H2=None, threshold=5):
+        """(H1, H2) = cvStereoRectifyUncalibrated( const CvMat points1, const CvMat points2, const CvMat F, CvSize image_size, CvMat H1=None, CvMat H2=None, double threshold=5 )
+        
+        Computes rectification transform for uncalibrated stereo camera
+        [ctypes-opencv] If any of 'H1' or 'H2' is None, it is created internally created as a 3x3 CV_64FC1 CvMat. In any case, both of them are returned.
+        """
+        if H1 is None:
+            H1 = cvCreateMat(3, 3, CV_64FC1)
+        if H2 is None:
+            H2 = cvCreateMat(3, 3, CV_64FC1)
+        _cvStereoRectifyUncalibrated(points1, points2, F, image_size, H1, H2, threshold)
+        return H1, H2
     
     # Computes undistortion+rectification transformation map a head of stereo camera
     cvInitUndistortRectifyMap = cfunc('cvInitUndistortRectifyMap', _cvDLL, None,
