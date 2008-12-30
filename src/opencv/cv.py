@@ -3428,15 +3428,16 @@ if cvVersion == 110:
         ('state', CvStereoBMState, 1), # const CvStereoBMState* state
     )    
     
-    def cvFindStereoCorrespondenceBM(left, right, state):
-        """CvArr disparity = cvFindStereoCorrespondenceBM( const CvArr left, const CvArr right, CvStereoBMState state)
+    def cvFindStereoCorrespondenceBM(left, right, disparity, state):
+        """CvArr disparity = cvFindStereoCorrespondenceBM( const CvArr left, const CvArr right, CvArr disparity, CvStereoBMState state)
         
         Computes the disparity map using block matching algorithm
-        [ctypes-opencv] disparity is created using cvCreateMat()
+        [ctypes-opencv] If 'disparity' is None, it is internally created as a CV_16SC1 CvMat.
         """
-        z = cvCreateMat(left.rows, left.cols, CV_16SC1)
-        _cvFindStereoCorrespondenceBM(left, right, z, state)
-        return z
+        if disparity is None:
+            disparity = cvCreateMat(left.rows, left.cols, CV_16SC1)
+        _cvFindStereoCorrespondenceBM(left, right, disparity, state)
+        return disparity
     
     # The structure for graph cuts-based stereo correspondence algorithm
     class CvStereoGCState(_Structure):
@@ -3488,7 +3489,7 @@ if cvVersion == 110:
     )
     
     # Computes the disparity map using graph cut-based algorithm
-    cvFindStereoCorrespondenceGC = cfunc('cvFindStereoCorrespondenceGC', _cvDLL, None,
+    _cvFindStereoCorrespondenceGC = cfunc('cvFindStereoCorrespondenceGC', _cvDLL, None,
         ('left', CvArr_r, 1), # const CvArr* left
         ('right', CvArr_r, 1), # const CvArr* right
         ('dispLeft', CvArr_r, 1), # const CvArr* left
@@ -3496,10 +3497,19 @@ if cvVersion == 110:
         ('state', CvStereoGCState, 1), # const CvStereoGCState* state
         ('useDisparityGuess', c_int, 1, 0), # const CvStereoGCState* state
     )
-    cvFindStereoCorrespondenceGC.__doc__ = """cvFindStereoCorrespondenceGC( const CvArr left, const CvArr right, CvArr dispLeft, CvArr dispRight, CvStereoGCState state, int useDisparityGuess=0)
+    
+    def cvFindStereoCorrespondenceGC(left, right, dispLeft, dispRight, state, useDisparityGuess=0):
+    """(dispLeft, dispRight) = cvFindStereoCorrespondenceGC( const CvArr left, const CvArr right, CvArr dispLeft, CvArr dispRight, CvStereoGCState state, int useDisparityGuess=0)
     
     Computes the disparity map using graph cut-based algorithm
+    [ctypes-opencv] If any of 'dispLeft' and 'dispRight' is None, it is internally created as a CV_16SC1 CvMat.
     """
+    if dispLeft is None:
+        dispLeft = cvCreateMat(left.rows, left.cols, CV_16SC1)
+    if dispRight is None:
+        dispRight = cvCreateMat(left.rows, left.cols, CV_16SC1)
+    _cvFindStereoCorrespondenceGC(left, righ, dispLeft, dispRight, state, useDisparityGuess)
+    return dispLeft, dispRight
     
     # Reprojects disparity image to 3D space
     cvReprojectImageTo3D = cfunc('cvReprojectImageTo3D', _cvDLL, None,
