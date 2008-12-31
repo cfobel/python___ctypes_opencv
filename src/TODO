@@ -3,3 +3,5 @@ Provide an interface for machine learning classes. Atm, it's pretty tough. Perha
 NDarray slicing and indexing for CvMatND
 
 Provide a stereo_calib.py demo counterpart for stereo_calib.cpp
+
+Distribute the .txt files more properly. Atm, they are not distributed in the Windows installer binaries.
