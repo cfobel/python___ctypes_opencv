@@ -732,8 +732,7 @@ class CvMat(_Structure):
         
         data_address = addressof(self.data.ptr.contents)+self.step*sy.start+sx.start
         
-        z = CvMat()
-        cvInitMatHeader(z, rows, cols, self.type, c_void_p(data_address), step)
+        z = cvMat(rows, cols, self.type, c_void_p(data_address), step)
         z._depends = (self,) # make sure z is deleted before self is deleted, don't care about self.data!!
         return z
 
@@ -1851,6 +1850,9 @@ def cvInitMatHeader(mat, rows, cols, cvmat_type, data=None, step=CV_AUTOSTEP):
     if data is not None:
         mat._depends = (data,)
     return mat
+    
+def cvMat(rows, cols, cvmat_type, data=None, step=CV_AUTOSTEP):
+    return cvInitMatHeader(CvMat(), rows, cols, cvmat_type, data, step)
 
 # Creates new matrix
 _cvCreateMat = cfunc('cvCreateMat', _cxDLL, CvMat_p,

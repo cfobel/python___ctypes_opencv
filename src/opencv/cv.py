@@ -3188,11 +3188,11 @@ def cvFindChessboardCorners(image, pattern_size, corners=None, corner_count=None
     """(int pattern_found, c_array_of_CvPoint2D32f out_corners) = cvFindChessboardCorners(const CvArr image, CvSize pattern_size, c_array_of_CvPoint2D32f corners=None, c_int corner_count=None, int flags=CV_CALIB_CB_ADAPTIVE_THRESH)
 
     Finds positions of internal corners of the chessboard
-    [ctypes-opencv] If 'corners' is None, it is internally created as a c_array of 1024 CvPoint2D32f items.
+    [ctypes-opencv] If 'corners' is None, it is internally created as a c_array of CvPoint2D32f items.
     [ctypes-opencv] In any case, an integer indicating if the pattern was found, and a c_array of N CvPoint2D32f items is returned, where N is the number of detected corners. 
     """
     if corners is None:
-        corners = (CvPoint2D32f*1024)()
+        corners = (CvPoint2D32f*(pattern_size.width*pattern_size.height))()
     if corner_count is None:
         corner_count = c_int()
     found = _cvFindChessboardCorners(image, pattern_size, corners, corner_count, flags)
@@ -3499,17 +3499,17 @@ if cvVersion == 110:
     )
     
     def cvFindStereoCorrespondenceGC(left, right, dispLeft, dispRight, state, useDisparityGuess=0):
-    """(dispLeft, dispRight) = cvFindStereoCorrespondenceGC( const CvArr left, const CvArr right, CvArr dispLeft, CvArr dispRight, CvStereoGCState state, int useDisparityGuess=0)
-    
-    Computes the disparity map using graph cut-based algorithm
-    [ctypes-opencv] If any of 'dispLeft' and 'dispRight' is None, it is internally created as a CV_16SC1 CvMat.
-    """
-    if dispLeft is None:
-        dispLeft = cvCreateMat(left.rows, left.cols, CV_16SC1)
-    if dispRight is None:
-        dispRight = cvCreateMat(left.rows, left.cols, CV_16SC1)
-    _cvFindStereoCorrespondenceGC(left, righ, dispLeft, dispRight, state, useDisparityGuess)
-    return dispLeft, dispRight
+        """(dispLeft, dispRight) = cvFindStereoCorrespondenceGC( const CvArr left, const CvArr right, CvArr dispLeft, CvArr dispRight, CvStereoGCState state, int useDisparityGuess=0)
+        
+        Computes the disparity map using graph cut-based algorithm
+        [ctypes-opencv] If any of 'dispLeft' and 'dispRight' is None, it is internally created as a CV_16SC1 CvMat.
+        """
+        if dispLeft is None:
+            dispLeft = cvCreateMat(left.rows, left.cols, CV_16SC1)
+        if dispRight is None:
+            dispRight = cvCreateMat(left.rows, left.cols, CV_16SC1)
+        _cvFindStereoCorrespondenceGC(left, righ, dispLeft, dispRight, state, useDisparityGuess)
+        return dispLeft, dispRight
     
     # Reprojects disparity image to 3D space
     cvReprojectImageTo3D = cfunc('cvReprojectImageTo3D', _cvDLL, None,
