@@ -5,6 +5,42 @@ ctypes-opencv - A Python wrapper for OpenCV using ctypes
 Change Log
 ==========
 
+ctypes-opencv-0.7.0 development release
+---------------------------------------
+
+Major change that breaks backward compatibility with 0.5 releases: A large number of functions have been improved in their calling sequences. In the previous releases, these functions had some parameters omitted because I thought they were unnecessary. However, my decisions, while offering convenience to a majority of users, made these functions not so compatible with their OpenCV counterparts. Now, the parameters are re-enabled, allowing the functions to be fully compatible with OpenCV's functions. Thanks David Bolen for this key suggestion. These functions are:
+- cvGetRows(), cvGetCols(), cvGetSubRect(), cvGetDiag()
+- cvCreateMatND(), cvCreateMatNDHeader(), cvInitMatNDHeader()
+- cvCreateSparseMat()
+- cvGetMat() and cvGetImage()
+- cvReshape()
+- cvFillPoly(), cvFillConvexPoly(), and cvPolyLine()
+- cvFindCornersSubPix()
+- cvGoodFeaturesToTrack()
+- cvExtractSURF()
+- cvFindContours()
+- cvPyrSegmentation()
+- cvMakeHistHeaderForArray()
+- cvConvexHull2()
+- cvGetCol(), cvGetRow(), cvMat()
+- cvStartReadSeq()
+- cvMakeSeqHeaderForArray()
+- cvInitTreeNodeIterator()
+- cvInitFont()
+- cvInitLineIterator()
+- cvCalcOpticalFlowPyrLK()
+- cvFindChessboardCorners() and cvDrawChessboardCorners()
+
+Other improvements:
+- Improved algorithm for detecting libraries in POSIX systems like Linux and Mac OS
+- Improved algorithm for detecting OpenCV's version
+- Added David Bolen's enhanced version of 'cx' namespace. Now you can call 'from open import cx' to import all OpenCV's functionality without 'cv' prefixes.
+- Added David Bolen's enhancement in Python 3.0 compatibility
+- Added additional prototype default values, by David Bolen
+- Added David Bolen's cvLoadCast patch to create full object
+- Restored _Structure.from_param(), couldn't find any error with the current demos
+- Fixed a bug with __del__() functions, by David Bolen
+
 ctypes-opencv-0.5.1 development release
 ---------------------------------------
 
