@@ -55,14 +55,9 @@ def detect_opencv():
         return z
         
     if os.name == 'posix':
-        try:
-            cxDLL = cdll.LoadLibrary(find_lib('cxcore'))
-            cvDLL = cdll.LoadLibrary(find_lib('cv'))
-            hgDLL = cdll.LoadLibrary(find_lib('highgui'))
-        except ImportError:
-            raise
-        else:
-            raise ImportError("Cannot import OpenCV's shared libraries.")
+        cxDLL = cdll.LoadLibrary(find_lib('cxcore'))
+        cvDLL = cdll.LoadLibrary(find_lib('cv'))
+        hgDLL = cdll.LoadLibrary(find_lib('highgui'))
 
     elif os.name == 'nt':
         try:
