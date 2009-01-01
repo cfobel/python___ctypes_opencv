@@ -229,18 +229,13 @@ def cvSetMouseCallback(window_name, on_mouse, param=None):
     _windows_callbacks[window_name]["mouse"] = on_mouse
 
 # Waits for a pressed key
-_cvWaitKey = cfunc('cvWaitKey', _hgDLL, c_int,
+cvWaitKey = cfunc('cvWaitKey', _hgDLL, c_int,
     ('delay', c_int, 1, 0), # int delay
 )
-def cvWaitKey(delay=0):
-    """int cvWaitKey(int delay=0)
+cvWaitKey.__doc__ = """int cvWaitKey(int delay=0)
 
-    Waits for a pressed key
-    [ctypes-opencv] returns -1 if no key is pressed, or a string representing the key character
-    """
-    z = _cvWaitKey(delay)
-    return z if z <= 0 else '%c' %z
-
+Waits for a pressed key
+"""
 
 #-----------------------------------------------------------------------------
 # Loading and Saving Images

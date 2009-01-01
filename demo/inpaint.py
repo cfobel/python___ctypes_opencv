@@ -59,7 +59,7 @@ if __name__=="__main__":
     cvSetMouseCallback( "image", on_mouse, None );
 
     while True:
-        c = cvWaitKey(0);
+        c = '%c' % (cvWaitKey(0) & 255)
 
         if( c == '\x1b' or c=='q'):
             break;

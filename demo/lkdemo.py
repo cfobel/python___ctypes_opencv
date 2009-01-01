@@ -204,7 +204,7 @@ if __name__ == '__main__':
         cvShowImage ('LkDemo', image)
 
         # handle events
-        c = cvWaitKey (10)
+        c = '%c' % (cvWaitKey (10) & 255)
 
         if c == '\x1b':
             # user has press the ESC key, so exit

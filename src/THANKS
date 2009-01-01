@@ -1,4 +1,4 @@
-Gary Bishop (and contributors) for his CVtypes package, which precedes ctypes-opencv
+Gary Bishop (and former contributors) for his CVtypes package, which precedes ctypes-opencv
 
 Jérémy Bethmont for his contributions in conversion between IplImage and PIL's Image, and in detection of OpenCV's libraries
 

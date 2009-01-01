@@ -168,7 +168,7 @@ if __name__ == '__main__':
         cvShowImage( "CamShiftDemo", image )
         cvShowImage( "Histogram", histimg )
 
-        c = cvWaitKey(10)
+        c = '%c' % (cvWaitKey(10) & 255)
         if c == '\x1b':
             break
         elif c == 'b':

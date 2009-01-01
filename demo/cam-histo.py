@@ -189,8 +189,6 @@ if __name__ == '__main__':
         cvShowImage ('Histogram', histimg)
 
         # handle events
-        k = cvWaitKey (10)
-
-        if k == '\x1b':
+        if cvWaitKey (10) & 255 == 27:
             # user has press the ESC key, so exit
             break

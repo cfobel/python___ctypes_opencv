@@ -112,7 +112,7 @@ if __name__ == "__main__":
         else:
             cvShowImage( "image", gray_img );
 
-        c = cvWaitKey(0);
+        c = '%c' % (cvWaitKey(0) & 255)
         if c=='\x1b':
             print("Exiting ...");
             sys.exit(0)

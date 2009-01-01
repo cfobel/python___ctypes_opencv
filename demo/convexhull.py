@@ -74,7 +74,6 @@ if __name__ == '__main__':
         cvShowImage ('hull', image)
 
         # handle events, and wait a key pressed
-        k = cvWaitKey (0)
-        if k == '\x1b':
+        if cvWaitKey (0) & 255 == 27:
             # user has press the ESC key, so exit
             break

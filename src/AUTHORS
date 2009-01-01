@@ -4,7 +4,8 @@ ctypes-opencv - A Python wrapper for OpenCV using ctypes
 
 The ctypes-opencv package has been developed and programmed by Minh-Tri
 Pham, School of Computer Engineering, Nanyang Technological University,
-Singapore.
+Singapore. It was based from the CVtypes package of Gary Bishop released 
+in 2007.
 
 E-mail:         <mtpham@ieee.org>, <pmtri80@gmail.com>
 

@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
         cvShowImage("Laplacian", colorlaplace );
 
-        if cvWaitKey(10) != -1:
+        if cvWaitKey(10) > 0:
             break;
 
     cvDestroyWindow("Laplacian");

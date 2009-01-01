@@ -89,6 +89,7 @@ if __name__ == "__main__":
             if( code > 0 ):
                 break;
             
+        code = '%c' % (code & 255)
         if( code == '\x1b' or code == 'q' or code == 'Q' ):
             break;
     

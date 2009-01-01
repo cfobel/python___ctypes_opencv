@@ -95,8 +95,6 @@ if __name__ == '__main__':
         cvShowImage ('Camera', frame)
 
         # handle events
-        k = cvWaitKey (5)
-
-        if k == '\x1b':
+        if cvWaitKey (5) & 255 == 27:
             # user has press the ESC key, so exit
             break

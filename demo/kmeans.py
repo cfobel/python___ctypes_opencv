@@ -54,8 +54,7 @@ if __name__ == "__main__":
 
         cvShowImage( "clusters", img );
 
-        key = cvWaitKey(0)
-        if( key == '\x1b' or key == 'q' or key == 'Q' ): # 'ESC'
+        if '%c' % (cvWaitKey(0) & 255) in ['\x1b','q','Q']: # 'ESC'
             break;
     
     

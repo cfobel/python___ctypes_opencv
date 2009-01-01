@@ -66,8 +66,7 @@ if __name__ == "__main__":
             minarea_array(img, count)
 
         cvShowImage("rect & circle", img)
-        key = cvWaitKey()
-        if( key == '\x1b' ):
+        if cvWaitKey() == 27:
             break;
 
         use_seq = not use_seq

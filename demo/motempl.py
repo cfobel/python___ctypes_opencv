@@ -112,7 +112,7 @@ if __name__ == "__main__":
                     motion.origin = 0
             update_mhi( image, motion, 30 );
             cvShowImage( "Motion", motion );
-            if( cvWaitKey(10) != -1 ):
+            if( cvWaitKey(10) > 0 ):
                 break;
         else:
             break
