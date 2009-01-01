@@ -27,6 +27,10 @@ from opencv.cxcore import _cvReleaseImage
 
 CV_WINDOW_AUTOSIZE = 1
 
+# Holds references to ctypes function wrappers for callbacks to keep the
+# Python side object alive.  Keyed by window name, with a window value being
+# a dictionary of callbacks, keyed by "mouse" mouse callback, or "trackbar-name"
+# for a trackbar named "name".  
 _windows_callbacks = {}
 
 # Creates window
@@ -41,7 +45,7 @@ def cvNamedWindow(name, flags=1):
     Creates window
     """
     if _cvNamedWindow(name, flags=flags) > 0 and not name in _windows_callbacks:
-        _windows_callbacks[name] = []
+        _windows_callbacks[name] = {}
     
 
 # Destroys a window
@@ -142,12 +146,19 @@ def cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=None):
     """
     if not isinstance(value, c_int):
         value = c_int(value)
-    if on_change is None:
-        _windows_callbacks[window_name].append((trackbar_name, value))
-    else:
+
+    if on_change is not None:
         on_change = CvTrackbarCallback(on_change) # convert to C callback function
-        _windows_callbacks[window_name].append((trackbar_name, value, on_change))
-    return _cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=on_change)
+    # Instantiate (or re-use) trackbar first before updating callback
+    # references to ensure new ones are in place before old ones get removed
+
+    result = _cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=on_change)
+
+    if result:
+        cb_key = 'tracker-' + trackbar_name
+        _windows_callbacks[window_name][cb_key] = (value, on_change)
+
+    return result
 
 # Retrieves trackbar position
 cvGetTrackbarPos = cfunc('cvGetTrackbarPos', _hgDLL, c_int,
@@ -208,9 +219,14 @@ def cvSetMouseCallback(window_name, on_mouse, param=None):
 
     Assigns callback for mouse events
     """
+
     on_mouse = CvMouseCallback(on_mouse) # convert to C callback function
-    _windows_callbacks[window_name].append(on_mouse)
+
+    # Set the new callback first, so we don't release the callback function
+    # pointer until the highgui library is already associated with the new
+    # function
     _cvSetMouseCallback(window_name, on_mouse, param=param)
+    _windows_callbacks[window_name]["mouse"] = on_mouse
 
 # Waits for a pressed key
 _cvWaitKey = cfunc('cvWaitKey', _hgDLL, c_int,
