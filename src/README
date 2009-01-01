@@ -22,12 +22,12 @@ The following packages must be installed on your platforms:
  - OpenCV 1.0 or above
  - Python 2.5 or above
 
-ctypes-opencv detects the existence of OpenCV installation by detecting OpenCV's shared libraries. It uses these shared libraries to provide an interface in Python. This is done via package 'ctypes', which is available in Python since version 2.5. Being a pure Python package, ctypes-opencv works with Python 2.6, too.
+ctypes-opencv detects the existence of OpenCV installation by detecting OpenCV's shared libraries. It uses these shared libraries to provide an interface in Python. This is done via package 'ctypes', which is available in Python since version 2.5. 
 
 Installation
 ============
 
-Starting from version 0.3.0, ctypes-opencv is distributed via distutils. Simply type the following command to install the package:
+Starting from version 0.3.0, ctypes-opencv is distributed by using distutils. Simply type the following command to install the package:
 python setup.py install
 
 Support
@@ -39,4 +39,4 @@ Support
 How to use
 ==========
 
-See the demo package associated with ctypes-opencv. It contains many Python demos slightly modified from those in OpenCV. You will find that, compared to their C++ and Python demo counterparts, our demos are similar in syntax, but are shorter and more elegant.
+See the demo package coming along with ctypes-opencv. It contains many Python demos slightly modified from those in OpenCV. You will find that, compared to their C++ and Python demo counterparts, our demos are similar in syntax, but are shorter and more elegant.

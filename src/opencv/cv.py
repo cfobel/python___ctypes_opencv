@@ -1379,14 +1379,16 @@ _cvHoughCircles = cfunc('cvHoughCircles', _cvDLL, CvSeq_p,
     ('min_dist', c_double, 1), # double min_dist
     ('param1', c_double, 1, 100), # double param1
     ('param2', c_double, 1, 100), # double param2
+    ('min_radius', c_int, 1, 0), # int min_radius
+    ('max_radius', c_int, 1, 0), # int max_radius
 )
 
-def cvHoughCircles(image, circle_storage, method, dp, min_dist, param1=100, param2=100):
+def cvHoughCircles(image, circle_storage, method, dp, min_dist, param1=100, param2=100, min_radius=0, max_radius=0):
     """CvSeq cvHoughCircles(CvArr image, void* circle_storage, int method, double dp, double min_dist, double param1=100, double param2=100)
 
     Finds circles in grayscale image using Hough transform
     """
-    return pointee(_cvHoughCircles(image, circle_storage, method, dp, min_dist, param1=param1, param2=param2), circle_storage)
+    return pointee(_cvHoughCircles(image, circle_storage, method, dp, min_dist, param1=param1, param2=param2, min_radius=min_radius, max_radius=max_radius), circle_storage)
 
 CV_DIST_MASK_3 = 3
 CV_DIST_MASK_5 = 5
