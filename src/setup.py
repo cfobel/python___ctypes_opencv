@@ -56,6 +56,6 @@ setup(name = 'ctypes-opencv',
 	classifiers = filter(None, CLASSIFIERS.split('\n')),
 	long_description = "\n".join(DOCLINES[2:]),
 	packages = ['opencv'],
-    data_files=[('Doc/ctypes-opencv', ['AUTHORS', 'ChangeLog', 'COPYING', 'README', 'THANKS', 'TODO'])],
+    data_files=[('doc/ctypes-opencv', ['AUTHORS', 'ChangeLog', 'COPYING', 'README', 'THANKS', 'TODO'])],
 )
 
