@@ -5,6 +5,13 @@ ctypes-opencv - A Python wrapper for OpenCV using ctypes
 Change Log
 ==========
 
+ctypes-opencv-0.7.1 development release
+---------------------------------------
+
+- Improved handling C-level cvWaitKey results to support 32-bit keys. Now cvWaitKey() always returns a 32-bit integer.
+- Fixed a memory leak in callback functions, by David Bolen
+- Added two missing parameters in cvHoughCircles(), by David Bolen 
+
 ctypes-opencv-0.7.0 development release
 ---------------------------------------
 
