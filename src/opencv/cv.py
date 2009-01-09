@@ -1065,7 +1065,7 @@ CV_THRESH_MASK = 7
 CV_THRESH_OTSU = 8        # use Otsu algorithm to choose the optimal threshold value
 
 # Applies fixed-level threshold to array elements
-cvThreshold = cfunc('cvThreshold', _cvDLL, None,
+cvThreshold = cfunc('cvThreshold', _cvDLL, c_double if cvVersion==110 else None,
     ('src', CvArr_r, 1), # const CvArr* src
     ('dst', CvArr_r, 1), # CvArr* dst
     ('threshold', c_double, 1), # double threshold
