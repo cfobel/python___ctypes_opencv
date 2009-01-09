@@ -158,7 +158,9 @@ class ListPOINTER2(object):
         self.etype = etype
 
     def from_param(self, param):
-        if isinstance(param, (list,tuple)):
+        if param is None:
+            return None
+        elif isinstance(param, (list,tuple)):
             val = (POINTER(self.etype) * len(param))()
             for i,v in enumerate(param):
                 if isinstance(v, (list,tuple)):
@@ -253,7 +255,7 @@ else:
 #=============================================================================
 
 class CvArr(_Structure):
-    pass
+    _fields_ = []
     
 CvArr_p = POINTER(CvArr)
 CvArr_r = ByRefArg(CvArr)

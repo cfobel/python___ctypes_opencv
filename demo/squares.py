@@ -149,6 +149,6 @@ if __name__ == "__main__":
         c = cvWaitKey(0);
         # clear memory storage - reset free space position
         cvClearMemStorage( storage );
-        if( c == 27 ):
+        if( c & 255 == 27 ):
             break;
     cvDestroyWindow( wndname );

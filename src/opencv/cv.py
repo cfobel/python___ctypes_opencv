@@ -1674,17 +1674,17 @@ cvCalcProbDensity.__doc__ = """void cvCalcProbDensity(const CvHistogram hist1, c
 Divides one histogram by another
 """
 
-def cvQueryHistValue_1D(hist, i1, i2):
+def cvQueryHistValue_1D(hist, i1):
     """Queries value of histogram bin"""
-    return cvGetReal1D(hist.bins, i1)
+    return cvGetReal1D(hist.bins.contents, i1)
 
 def cvQueryHistValue_2D(hist, i1, i2):
     """Queries value of histogram bin"""
-    return cvGetReal2D(hist.bins, i1, i2)
+    return cvGetReal2D(hist.bins.contents, i1, i2)
 
 def cvQueryHistValue_3D(hist, i1, i2, i3):
     """Queries value of histogram bin"""
-    return cvGetReal2D(hist.bins, i1, i2, i3)
+    return cvGetReal2D(hist.bins.contents, i1, i2, i3)
 
 # Equalizes histogram of grayscale image
 cvEqualizeHist = cfunc('cvEqualizeHist', _cvDLL, None,
@@ -1698,15 +1698,15 @@ Equalizes histogram of grayscale image
 
 def cvGetHistValue_1D(hist, i1, i2):
     """Returns pointer to histogram bin"""
-    return cvPtr1D(hist.bins, i1, 0)
+    return cvPtr1D(hist.bins.contents, i1, 0)
 
 def cvQueryHistValue_2D(hist, i1, i2):
     """Returns pointer to histogram bin"""
-    return cvPtr2D(hist.bins, i1, i2, 0)
+    return cvPtr2D(hist.bins.contents, i1, i2, 0)
 
 def cvQueryHistValue_3D(hist, i1, i2, i3):
     """Returns pointer to histogram bin"""
-    return cvPtr3D(hist.bins, i1, i2, i3, 0)
+    return cvPtr3D(hist.bins.contents, i1, i2, i3, 0)
 
 
 #-----------------------------------------------------------------------------
