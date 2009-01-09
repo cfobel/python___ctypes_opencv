@@ -3390,7 +3390,7 @@ Computes eigenvalues and eigenvectors of symmetric matrix
 # Initializes scaled identity matrix
 cvSetIdentity = cfunc('cvSetIdentity', _cxDLL, None,
     ('mat', CvArr_r, 1), # CvArr* mat
-    ('value', CvScalar, 1), # CvScalar value
+    ('value', CvScalar, 1, cvRealScalar(1)), # CvScalar value
 )
 cvSetIdentity.__doc__ = """void cvSetIdentity(CvArr mat, CvScalar value=cvRealScalar(1))
 
