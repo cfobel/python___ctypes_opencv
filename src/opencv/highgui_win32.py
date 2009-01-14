@@ -6,7 +6,7 @@
 """
 highgui_win32
 
-Background UI thread implementation for Windows, since OpenCV doesn't
+UI background window thread implementation for Windows, since OpenCV doesn't
 support it natively.  Wraps (and is safe for import * from) the following
 OpenCV functions:
 
@@ -24,9 +24,23 @@ through to their normal wrappers in the opencv.highgui module.  However,
 once cvStartWindowThread is called, those functions execute calls to the
 equivalent opencv.highgui methods from within a background thread, and that
 thread maintains an event loop, calling cvWaitKey periodically.
+
+By default, calls are synchronized with the window thread, so for example
+a foreground call to cvShowImage won't return until the window thread has
+called the actual cvShowImage method.
+
+There is latency added by the synchronization due to the round trip thread
+context switching.  Callers requiring the least impact to the foreground
+thread can set the optional cvStartWindowThread 'synchronized' parameter to
+False, but should appreciate that access to function parameters by the
+window thread may be delayed.  For example, the foreground should not
+immediately manipulate an image used as a parameter to cvShowImage.  Memory
+usage may also be slightly higher if many commands by the foreground thread
+are enqueued before being executed by the window thread.
 """
 
 import sys
+import time
 import traceback
 from threading import Thread
 from Queue import Queue, Empty
@@ -45,36 +59,64 @@ def threadmethod(func):
     @wraps(func)
     def execute(self, *args, **kwargs):
         self.cmds.put((func, (self,)+args, kwargs))
+        if self.synchronized:
+            return self.result.get()
     return execute
 
 
 class ImageThread(Thread):
 
-    def __init__(self):
+    def __init__(self, synchronized=True):
         Thread.__init__(self)
-        self.cmds = Queue()  # Requests functions to run in image thread
-        self.keys = Queue()  # Holds recent keys read within the image thread
+        self.cmds = Queue()   # Requests functions to run in image thread
+        self.result = Queue() # Result from functions called
+        self.keys = Queue()   # Holds recent keys from image thread for WaitKey
+        self.synchronized = synchronized
         self.stopping = False
+        self._have_windows = False  # True if some windows have been created
 
     def run(self):
         while 1:
             if self.stopping:
                 hg.cvDestroyAllWindows()
                 return
+
             try:
-                self.func, self.args, self.kwargs = self.cmds.get_nowait()
+
+                # Check for a new command request
                 try:
-                    self.func(*self.args, **self.kwargs)
-                except Exception, e:
-                    sys.stderr.write('ImageThread exception - ignoring:')
-                    traceback.print_exc()
-            except Empty:
-                rc = hg.cvWaitKey(100)
-                # Permit buffering of approximately the most recent 10 keys
-                if rc >= 0:
-                    if self.keys.qsize() >= 10:
-                        self.keys.get()
-                    self.keys.put(rc)
+                    (self.func,
+                     self.args,
+                     self.kwargs) = self.cmds.get_nowait()
+                except Empty:
+                    self.func = None
+
+                # Execute function if requested
+                if self.func:
+                    try:
+                        rc = self.func(*self.args, **self.kwargs)
+                    except Exception, e:
+                        rc = None
+                        sys.stderr.write('ImageThread exception - ignoring:')
+                        traceback.print_exc()
+                    self.result.put(rc)
+
+                # Service the OpenCV event loop - buffer recent keys for
+                # possible use by the foreground thread, but bound it to a
+                # a small number in case WaitKey isn't called by the thread.
+                #
+                # Note: This is very CPU-inefficient if we haven't created
+                # a window, so only bother if we've seen one created
+                if self._have_windows:
+                    rc = hg.cvWaitKey(5)
+                    if rc >= 0:
+                        if self.keys.qsize() >= 10:
+                            self.keys.get()
+                        self.keys.put(rc)
+                else:
+                    # Yield CPU to prevent CPU burn
+                    time.sleep(0.01)
+
             except:
                 sys.stderr.write('ImageThread exception - shutting down:')
                 traceback.print_exc()
@@ -92,6 +134,7 @@ class ImageThread(Thread):
             # Bring to front same as if the foreground thread had created it
             if foreground:
                 windll.user32.SetForegroundWindow(hg.cvGetWindowHandle(name))
+        
 
     #
     # HighGUI methods (run in image thread)
@@ -100,6 +143,7 @@ class ImageThread(Thread):
     @threadmethod
     def NamedWindow(self, name, foreground=True):
         self._ensurewindow(name, foreground)
+        self._have_windows = True
 
     @threadmethod
     def DestroyWindow(self, name):
@@ -119,7 +163,7 @@ class ImageThread(Thread):
 
     @threadmethod
     def CreateTrackbar(self, tb_name, win_name, value, count, on_change=None):
-        hg.cvCreateTrackbar(tb_name, win_name, value, count, on_change)
+        return hg.cvCreateTrackbar(tb_name, win_name, value, count, on_change)
 
     def WaitKey(self, wait=0):
         # Note that this runs in caller's thread
@@ -151,11 +195,11 @@ class ImageThread(Thread):
 
 _image_thread = None
 
-def cvStartWindowThread():
+def cvStartWindowThread(synchronized=True):
     global _image_thread
 
     if _image_thread is None or not _image_thread.isAlive():
-        _image_thread = ImageThread()
+        _image_thread = ImageThread(synchronized)
         _image_thread.start()
 
     return _image_thread
