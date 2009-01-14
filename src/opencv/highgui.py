@@ -164,7 +164,8 @@ def cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=None):
 
     if result:
         cb_key = 'tracker-' + trackbar_name
-        _windows_callbacks[window_name][cb_key] = (value, on_change)
+        _windows_callbacks.setdefault(window_name,{})[cb_key] = (value,
+                                                                 on_change)
 
     return result
 
@@ -234,7 +235,7 @@ def cvSetMouseCallback(window_name, on_mouse, param=None):
     # pointer until the highgui library is already associated with the new
     # function
     _cvSetMouseCallback(window_name, on_mouse, param=param)
-    _windows_callbacks[window_name]["mouse"] = on_mouse
+    _windows_callbacks.setdefault(window_name,{})["mouse"] = on_mouse
 
 # Waits for a pressed key
 cvWaitKey = cfunc('cvWaitKey', _hgDLL, c_int,
