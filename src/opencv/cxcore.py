@@ -145,31 +145,44 @@ class ListPOINTER(object):
     def from_param(self, param):
         if isinstance(param, (list,tuple)):
             return (self.etype * len(param))(*param)
+        else:
+            return param
 
 class ListByRef(object):
     '''An argument that converts a list/tuple of ctype elements into a pointer to an array of pointers to the elements'''
+    def __init__(self, etype):
+        self.etype = etype
+        self.etype_p = POINTER(etype)
+
     def from_param(self, param):
         if isinstance(param, (list,tuple)):
-            return (c_int*len(param))(*(addressof(x) for x in param))
+            val = (self.etype_p * len(param))()
+            for i,v in enumerate(param):
+                if isinstance(v, self.etype):
+                    val[i] = self.etype_p(v)
+                else:
+                    val[i] = v
+            return val
+        else:
+            return param
 
 class ListPOINTER2(object):
     '''Just like POINTER(POINTER(ctype)) but accept a list of lists of ctype'''
     def __init__(self, etype):
         self.etype = etype
+        self.etype_p = POINTER(etype)
 
     def from_param(self, param):
-        if param is None:
-            return None
-        elif isinstance(param, (list,tuple)):
-            val = (POINTER(self.etype) * len(param))()
+        if isinstance(param, (list,tuple)):
+            val = (self.etype_p * len(param))()
             for i,v in enumerate(param):
                 if isinstance(v, (list,tuple)):
                     val[i] = (self.etype * len(v))(*v)
                 else:
-                    raise TypeError('nested list or tuple required at %d' % i)
+                    val[i] = v
             return val
         else:
-            raise TypeError('list or tuple required')
+            return param
 
 class ByRefArg(object):
     '''Just like a POINTER but accept an argument and pass it byref'''
@@ -177,7 +190,7 @@ class ByRefArg(object):
         self.atype = atype
 
     def from_param(self, param):
-        return None if param is None else byref(param)
+        return byref(param) if isinstance(param, self.atype) else param
 
 def pointee(ptr, *depends_args):
     """Returns None if ptr is NULL else ptr's object with dependency tuple associated"""
@@ -408,7 +421,7 @@ IPL_BORDER_REFLECT_101    = 4
 #    a pixel can be a ctype array or a number variable, depending on its type specified by img.depth
 # img[3:4] is *invalid*
 # img[3] is *invalid*
-class IplImage(_Structure):
+class IplImage(CvArr):
     def data_as_string(self):
         return string_at(self.imageData, self.imageSize)        
     data_as_buffer = data_as_string
@@ -453,11 +466,11 @@ class IplImage(_Structure):
         
     def __del__(self):
         if self._owner == 1: # own header only
-            _cvReleaseImageHeader(c_void_p(addressof(self)))
+            _cvReleaseImageHeader(IplImage_p(self))
         elif self._owner == 2: # own data but not header
             _cvReleaseData(self)
         elif self._owner == 3: # own header and data
-            _cvReleaseImage(c_void_p(addressof(self)))
+            _cvReleaseImage(IplImage_p(self))
 
     def __repr__(self):
         '''Print the fields'''
@@ -680,7 +693,7 @@ CvMatCols_p = POINTER(CvMatCols)
 #      for y in mat.colrange():
 #        <do something with column y>
 #    would iterate on the columns of mat (y = cvGetCols(mat, i, i+1)).
-class CvMat(_Structure):
+class CvMat(CvArr):
     def data_as_string(self):
         return string_at(self.data.ptr, self.step * self.rows)        
     data_as_buffer = data_as_string
@@ -777,7 +790,7 @@ class CvMat(_Structure):
             
     def __del__(self):
         if self._owner is True:
-            _cvReleaseMat(c_void_p(addressof(self)))
+            _cvReleaseMat(CvMat_p(self))
 
     _fields_ = [("type", c_int),
                 ("step", c_int),
@@ -821,7 +834,7 @@ class CvMatND(_Structure):
     
     def __del__(self):
         if self._owner is True:
-            _cvReleaseMat(c_void_p(addressof(self)))
+            _cvReleaseMat(CvMatND_p(self))
                 
 CvMatND_p = POINTER(CvMatND)
 CvMatND_r = ByRefArg(CvMatND)
@@ -845,7 +858,7 @@ CV_STORAGE_MAGIC_VAL = 0x42890000
 class CvMemStorage(_Structure): # forward declaration
     
     def __del__(self):
-        _cvReleaseMemStorage(c_void_p(addressof(self)))
+        _cvReleaseMemStorage(CvMemStorage_p(self))
     
 CvMemStorage_p = POINTER(CvMemStorage)
 CvMemStorage_r = ByRefArg(CvMemStorage)
@@ -867,7 +880,7 @@ CvMemStoragePos_r = ByRefArg(CvMemStoragePos)
 # Sequence
 #-----------------------------------------------------------------------------
 
-class _CvSeqStructure(_Structure):
+class _CvSeqStructure(CvArr):
     def asarrayptr(self, elem_type):
         """Converts this CvSeq into an array of element pointers. The pointers are of type 'elem_type'."""
         reader = cvStartReadSeq(self)
@@ -896,7 +909,7 @@ class _CvSeqStructure(_Structure):
             element : an element, whose content is to be copied
                 the element should be an instance of a subclass of _Structure
         """        
-        cvSeqPush(self, element)
+        cvSeqPush(self, c_void_p(addressof(element)))
         
     def vrange(self):
         """
@@ -978,14 +991,9 @@ CvSetElem._fields_ = [
     ('flags', c_int),
     ('next_free', CvSetElem_p)]
     
-def CV_SET_FIELDS():
-    return CV_SEQUENCE_FIELDS() + [
-        ('free_elems', CvSetElem_p),
-        ('active_count', c_int),
-    ]
-
-class CvSet(_CvSeqStructure):
-    _fields_ = CV_SET_FIELDS()
+class CvSet(CvSeq):
+    _fields_ = [('free_elems', CvSetElem_p),
+                ('active_count', c_int)]
 CvSet_p = POINTER(CvSet)
 CvSet_r = ByRefArg(CvSet)
     
@@ -1003,7 +1011,7 @@ def CV_IS_SET_ELEM(ptr):
 CV_SPARSE_MAT_MAGIC_VAL    = 0x42440000
 CV_TYPE_NAME_SPARSE_MAT    = "opencv-sparse-matrix"
 
-class CvSparseMat(_Structure):
+class CvSparseMat(CvArr):
     _fields_ = [('type', c_int),
                 ('dims', c_int),
                 ('refcount', c_int_p),
@@ -1016,7 +1024,7 @@ class CvSparseMat(_Structure):
                 ('size', c_int * CV_MAX_DIM)]
                 
     def __del__(self):
-        _cvReleaseSparseMat(c_void_p(addressof(self)))
+        _cvReleaseSparseMat(CvSparseMat_p(self))
         
 CvSparseMat_p = POINTER(CvSparseMat)
 CvSparseMat_r = ByRefArg(CvSparseMat)
@@ -1287,16 +1295,13 @@ def CV_GRAPH_VERTEX_FIELDS():
 CvGraphEdge._fields_ = CV_GRAPH_EDGE_FIELDS()
 CvGraphVtx._fields_ = CV_GRAPH_VERTEX_FIELDS()
 
-class CvGraphVtx2D(_Structure):
-    _fields_ = CV_GRAPH_VERTEX_FIELDS() + [('ptr', CvPoint2D32f_p)]
+class CvGraphVtx2D(CvGraphVtx):
+    _fields_ = [('ptr', CvPoint2D32f_p)]
 CvGraphVtx2D_p = POINTER(CvGraphVtx2D)
     
 #    Graph is "derived" from the set (this is set a of vertices) and includes another set (edges)
-def CV_GRAPH_FIELDS():
-    return CV_SET_FIELDS() + [('edges', CvSet_p)]
-    
-class CvGraph(_CvSeqStructure): 
-    _fields_ = CV_GRAPH_FIELDS()
+class CvGraph(CvSet): 
+    _fields_ = [('edges', CvSet_p)]
 CvGraph_p = POINTER(CvGraph)
 CvGraph_r = ByRefArg(CvGraph)
     
@@ -1315,7 +1320,7 @@ class CvGraphScanner(_Structure):
     ]
     
     def __del__(self):
-        _cvReleaseGraphScanner(c_void_p(addressof(self)))
+        _cvReleaseGraphScanner(CvGraphScanner_p(self))
         
 CvGraphScanner_p = POINTER(CvGraphScanner)
 CvGraphScanner_r = ByRefArg(CvGraphScanner)
@@ -1326,20 +1331,15 @@ CvGraphScanner_r = ByRefArg(CvGraphScanner)
 #-----------------------------------------------------------------------------
 
 # Chain/contour
-class CvChain(_CvSeqStructure):
-    _fields_ = CV_SEQUENCE_FIELDS() + [('origin', CvPoint)]
+class CvChain(CvSeq):
+    _fields_ = [('origin', CvPoint)]
 CvChain_p = POINTER(CvChain)
 CvChain_r = ByRefArg(CvChain)
     
-def CV_CONTOUR_FIELDS():
-    return CV_SEQUENCE_FIELDS() + [
-        ('rect', CvRect),
-        ('color', c_int),
-        ('reserved', c_int*3),
-    ]
-
-class CvContour(_CvSeqStructure):
-    _fields_ = CV_CONTOUR_FIELDS()
+class CvContour(CvSeq):
+    _fields_ = [('rect', CvRect),
+                ('color', c_int),
+                ('reserved', c_int*3)]
 CvContour_p = POINTER(CvContour)    
 CvContour_r = ByRefArg(CvContour)
 
@@ -1476,7 +1476,7 @@ class CvFileStorage(_Structure):
     _fields_ = []
     
     def __del__(self):
-        _cvReleaseFileStorage(c_void_p(addressof(self)))
+        _cvReleaseFileStorage(CvFileStorage_p(self))
     
 CvFileStorage_p = POINTER(CvFileStorage)
 CvFileStorage_r = ByRefArg(CvFileStorage)
@@ -3826,7 +3826,7 @@ Sets up sequence block size
 # Adds element to sequence end
 cvSeqPush = cfunc('cvSeqPush', _cxDLL, c_void_p,
     ('seq', CvSeq_r, 1), # CvSeq* seq
-    ('element', CvArr_r, 1, None), # void* element
+    ('element', c_void_p, 1, None), # void* element
 )
 cvSeqPush.__doc__ = """char* cvSeqPush(CvSeq seq, void* element=NULL)
 

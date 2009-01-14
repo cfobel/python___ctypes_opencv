@@ -34,7 +34,7 @@ def minarea_seq(img, count, storage):
     for i in range(count):
         pt0 = cvPoint( randint(img.width/4, img.width*3/4),
                        randint(img.height/4, img.height*3/4) )
-        cvSeqPush( seq, pt0 )
+        cvSeqPush( seq, CvPoint_p(pt0) )
     box = cvMinAreaRect2( seq )
     box_vtx = cvBoxPoints( box )
     success, center, radius = cvMinEnclosingCircle( seq )

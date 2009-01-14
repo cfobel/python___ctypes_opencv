@@ -305,7 +305,7 @@ class CvCapture(_Structure):
     fields = []
     
     def __del__(self):
-        _cvReleaseCapture(c_void_p(addressof(self)))
+        _cvReleaseCapture(CvCapture_p(self))
         
 CvCapture_p = POINTER(CvCapture)
 CvCapture_r = ByRefArg(CvCapture)
@@ -434,7 +434,7 @@ class CvVideoWriter(_Structure):
     _fields_ = []
     
     def __del__(self):
-        _cvReleaseVideoWriter(c_void_p(addressof(self)))
+        _cvReleaseVideoWriter(CvVideoWriter_p(self))
         
 CvVideoWriter_p = POINTER(CvVideoWriter)
 CvVideoWriter_r = ByRefArg(CvVideoWriter)

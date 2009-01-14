@@ -102,8 +102,8 @@ class CvContourScanner(_Structure):
     _fields_ = []
 
 # Freeman chain reader state
-class CvChainPtReader(_Structure):
-    _fields_ = CV_SEQ_READER_FIELDS() + [
+class CvChainPtReader(CvSeqReader):
+    _fields_ = [
         ('code', c_char),
         ('pt', CvPoint),
         ('deltas', ((c_char*2)*8)),
@@ -112,8 +112,8 @@ CvChainPtReader_p = POINTER(CvChainPtReader)
 CvChainPtReader_r = ByRefArg(CvChainPtReader)
     
 # Contour tree header
-class CvContourTree(_CvSeqStructure):
-    _fields_ = CV_SEQUENCE_FIELDS() + [
+class CvContourTree(CvSeq):
+    _fields_ = [
         ('p1', CvPoint), # the first point of the binary tree root segment
         ('p2', CvPoint), # the last point of the binary tree root segment
     ]
@@ -160,17 +160,12 @@ CvQuadEdge2D_r = ByRefArg(CvQuadEdge2D)
     
 CvSubdiv2DPoint._fields_ = CV_SUBDIV2D_POINT_FIELDS()
 
-def CV_SUBDIV2D_FIELDS():
-    return CV_GRAPH_FIELDS() + [
-        ('quad_edges', c_int),
-        ('is_geometry_valid', c_int),
-        ('recent_edge', CvSubdiv2DEdge),
-        ('topleft', CvPoint2D32f),
-        ('bottomright', CvPoint2D32f),
-    ]
-
-class CvSubdiv2D(_CvSeqStructure):
-    _fields_ = CV_SUBDIV2D_FIELDS()
+class CvSubdiv2D(CvGraph):
+    _fields_ = [('quad_edges', c_int),
+                ('is_geometry_valid', c_int),
+                ('recent_edge', CvSubdiv2DEdge),
+                ('topleft', CvPoint2D32f),
+                ('bottomright', CvPoint2D32f)]
 CvSubdiv2D_p = POINTER(CvSubdiv2D)    
 CvSubdiv2D_r = ByRefArg(CvSubdiv2D)    
     
@@ -257,7 +252,7 @@ class CvConDensation(_Structure):
     ]
     
     def __del__(self):
-        _cvReleaseCondensation(c_void_p(addressof(self)))
+        _cvReleaseCondensation(CvConDensation_p(self))
         
 CvConDensation_p = POINTER(CvConDensation)
 CvConDensation_r = ByRefArg(CvConDensation)
@@ -303,7 +298,7 @@ class CvKalman(_Structure):
     ]
     
     def __del__(self):
-        _cvReleaseKalman(c_void_p(addressof(self)))
+        _cvReleaseKalman(CvKalman_p(self))
         
 CvKalman_p = POINTER(CvKalman)
 CvKalman_r = ByRefArg(CvKalman)
@@ -365,7 +360,7 @@ class CvHaarClassifierCascade(_Structure):
     ]
     
     def __del__(self):
-        _cvReleaseHaarClassifierCascade(c_void_p(addressof(self)))
+        _cvReleaseHaarClassifierCascade(CvHaarClassifierCascade_p(self))
         
 CvHaarClassifierCascade_p = POINTER(CvHaarClassifierCascade)
 CvHaarClassifierCascade_r = ByRefArg(CvHaarClassifierCascade)
@@ -805,7 +800,7 @@ class IplConvKernel(_Structure):
     ]
     
     def __del__(self):
-        _cvReleaseStructuringElement(c_void_p(addressof(self)))
+        _cvReleaseStructuringElement(IplConvKernel_p(self))
     
 IplConvKernel_p = POINTER(IplConvKernel)
 IplConvKernel_r = ByRefArg(IplConvKernel)
@@ -1441,7 +1436,7 @@ class CvHistogram(_Structure):
                 
     def __del__(self):
         if self._owner is True:
-            _cvReleaseHist(c_void_p(addressof(self)))
+            _cvReleaseHist(CvHistogram_p(self))
         
 CvHistogram_p = POINTER(CvHistogram)
 CvHistogram_r = ByRefArg(CvHistogram)
@@ -1623,7 +1618,7 @@ def cvCopyHist(src, dst=None):
     
 # Calculate the histogram
 cvCalcHist = cfunc('cvCalcArrHist', _cvDLL, None,
-    ('image', ListByRef(), 1), # CvArr** image
+    ('image', ListByRef(CvArr), 1), # CvArr** image
     ('hist', CvHistogram_r, 1), # CvHistogram* hist
     ('accumulate', c_int, 1, 0), # int accumulate
     ('mask', CvArr_r, 1, None), # CvArr* mask
@@ -1637,7 +1632,7 @@ cvCalcArrHist = cvCalcHist
 
 # Calculates back projection
 cvCalcBackProject = cfunc('cvCalcArrBackProject', _cvDLL, None,
-    ('image', ListByRef(), 1), # CvArr** image
+    ('image', ListByRef(CvArr), 1), # CvArr** image
     ('back_project', CvArr_r, 1), # CvArr* back_project
     ('hist', CvHistogram_r, 1), # CvHistogram* hist
 )
@@ -1648,7 +1643,7 @@ Calculates back projection
 
 # Calculates back projection
 cvCalcBackProjectPatch = cfunc('cvCalcArrBackProjectPatch', _cvDLL, None,
-    ('image', ListByRef(), 1), # CvArr** image
+    ('image', ListByRef(CvArr), 1), # CvArr** image
     ('dst', CvArr_r, 1), # CvArr* dst
     ('range', CvSize, 1), # CvSize range
     ('hist', CvHistogram_r, 1), # CvHistogram* hist
@@ -1676,15 +1671,15 @@ Divides one histogram by another
 
 def cvQueryHistValue_1D(hist, i1):
     """Queries value of histogram bin"""
-    return cvGetReal1D(hist.bins.contents, i1)
+    return cvGetReal1D(hist.bins, i1)
 
 def cvQueryHistValue_2D(hist, i1, i2):
     """Queries value of histogram bin"""
-    return cvGetReal2D(hist.bins.contents, i1, i2)
+    return cvGetReal2D(hist.bins, i1, i2)
 
 def cvQueryHistValue_3D(hist, i1, i2, i3):
     """Queries value of histogram bin"""
-    return cvGetReal2D(hist.bins.contents, i1, i2, i3)
+    return cvGetReal2D(hist.bins, i1, i2, i3)
 
 # Equalizes histogram of grayscale image
 cvEqualizeHist = cfunc('cvEqualizeHist', _cvDLL, None,
@@ -1698,15 +1693,15 @@ Equalizes histogram of grayscale image
 
 def cvGetHistValue_1D(hist, i1, i2):
     """Returns pointer to histogram bin"""
-    return cvPtr1D(hist.bins.contents, i1, 0)
+    return cvPtr1D(hist.bins, i1, 0)
 
 def cvQueryHistValue_2D(hist, i1, i2):
     """Returns pointer to histogram bin"""
-    return cvPtr2D(hist.bins.contents, i1, i2, 0)
+    return cvPtr2D(hist.bins, i1, i2, 0)
 
 def cvQueryHistValue_3D(hist, i1, i2, i3):
     """Returns pointer to histogram bin"""
-    return cvPtr3D(hist.bins.contents, i1, i2, i3, 0)
+    return cvPtr3D(hist.bins, i1, i2, i3, 0)
 
 
 #-----------------------------------------------------------------------------
@@ -3231,7 +3226,7 @@ class CvPOSITObject(_Structure):
     ]
     
     def __del__(self):
-        _cvReleasePOSITObject(c_void_p(addressof(self)))
+        _cvReleasePOSITObject(CvPOSITObject_p(self))
         
 CvPOSITObject_p = POINTER(CvPOSITObject)
 CvPOSITObject_r = ByRefArg(CvPOSITObject)
@@ -3395,7 +3390,7 @@ if cvVersion == 110:
         ]
         
         def __del__(self):
-            _cvReleaseStereoBMState(c_void_p(addressof(self)))
+            _cvReleaseStereoBMState(CvStereoBMState_p(self))
             
     CvStereoBMState_p = POINTER(CvStereoBMState)
     CvStereoBMState_r = ByRefArg(CvStereoBMState)
@@ -3467,7 +3462,7 @@ if cvVersion == 110:
        ]
         
         def __del__(self):
-            _cvReleaseStereoGCState(c_void_p(addressof(self)))
+            _cvReleaseStereoGCState(CvStereoGCState_p(self))
             
     CvStereoGCState_p = POINTER(CvStereoGCState)
     CvStereoGCState_r = ByRefArg(CvStereoGCState)
