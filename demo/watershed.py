@@ -84,8 +84,11 @@ if __name__ == "__main__":
             while contours:
                 cvDrawContours( markers, contours, cvScalarAll(comp_count+1),
                                 cvScalarAll(comp_count+1), -1, -1, 8, cvPoint(0,0) );
-                contours=contours.h_next
+                contours= pointee(contours.h_next, storage)
                 comp_count+=1
+            if comp_count == 0:
+                continue
+                
             color_tab = cvCreateMat( comp_count, 1, CV_8UC3 );
             for i in range(comp_count):
                 color_tab[i] = cvScalar( cvRandInt(rng)%180 + 50, 
