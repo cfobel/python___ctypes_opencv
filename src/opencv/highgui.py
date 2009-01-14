@@ -31,6 +31,8 @@ CV_WINDOW_AUTOSIZE = 1
 # Python side object alive.  Keyed by window name, with a window value being
 # a dictionary of callbacks, keyed by "mouse" mouse callback, or "trackbar-name"
 # for a trackbar named "name".  
+#
+# See module bottom for atexit registration to destroy windows at process exit.
 _windows_callbacks = {}
 
 # Creates window
@@ -129,13 +131,17 @@ Shows the image in the specified window
 CvTrackbarCallback = CFUNCTYPE(None, # void
     c_int) # int pos
 
+# Define NULL pointer that matches callback type for when no callback is needed
+CvTrackbarCallback_NULL = cast(None, CvTrackbarCallback)
+
+
 # Creates the trackbar and attaches it to the specified window
 _cvCreateTrackbar = cfunc('cvCreateTrackbar', _hgDLL, c_int,
     ('trackbar_name', c_char_p, 1), # const char* trackbar_name
     ('window_name', c_char_p, 1), # const char* window_name
     ('value', ByRefArg(c_int), 1), # int* value
     ('count', c_int, 1), # int count
-    ('on_change', CvTrackbarCallback, 1, None), # CvTrackbarCallback on_change 
+    ('on_change', CvTrackbarCallback, 1, CvTrackbarCallback_NULL), # CvTrackbarCallback on_change 
 )
 
 def cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=None):
@@ -147,7 +153,9 @@ def cvCreateTrackbar(trackbar_name, window_name, value, count, on_change=None):
     if not isinstance(value, c_int):
         value = c_int(value)
 
-    if on_change is not None:
+    if on_change is None:
+        on_change = CvTrackbarCallback_NULL
+    else:
         on_change = CvTrackbarCallback(on_change) # convert to C callback function
     # Instantiate (or re-use) trackbar first before updating callback
     # references to ensure new ones are in place before old ones get removed
@@ -523,7 +531,17 @@ Starts a new thread for rendering in X Window
 # --- 4 Utility and System Functions -----------------------------------------
 
 
+#
+#-----------------------------------------------------------------------------
+#
 
+# Automatically destroy any remaining tracked windows at process exit,
+# otherwise our references to ctypes objects may be destroyed by the normal
+# interpreter cleanup before the highgui library cleans up fully, leaving us
+# exposed to exceptions.
+
+import atexit
+atexit.register(cvDestroyAllWindows)
 
 #=============================================================================
 # Wrap up all the functions and constants into __all__
