@@ -216,6 +216,9 @@ CvMouseCallback = CFUNCTYPE(None, # void
     c_int, # int flags
     c_void_p) # void* param
 
+# Define NULL pointer that matches callback type for when no callback is needed
+CvMouseCallback_NULL = cast(None, CvMouseCallback)
+
 # Assigns callback for mouse events
 _cvSetMouseCallback = cfunc('cvSetMouseCallback', _hgDLL, None,
     ('window_name', c_char_p, 1), # const char* window_name
@@ -229,13 +232,25 @@ def cvSetMouseCallback(window_name, on_mouse, param=None):
     Assigns callback for mouse events
     """
 
-    on_mouse = CvMouseCallback(on_mouse) # convert to C callback function
+    if param is None or isinstance(param, c_void_p):
+        orig_param = None
+    else:
+        orig_param = param
+        param = c_void_p(addressof(param))
+
+    if on_mouse is None:
+        on_mouse = CvMouseCallback_NULL
+    else:
+        on_mouse = CvMouseCallback(on_mouse) # convert to C callback function
 
     # Set the new callback first, so we don't release the callback function
     # pointer until the highgui library is already associated with the new
-    # function
+    # function.  Also, save references to the parameter (and if we wrapped it
+    # to the original object) so they are guaranteed to remain alive while
+    # the OpenCV code may reference them.
     _cvSetMouseCallback(window_name, on_mouse, param=param)
-    _windows_callbacks.setdefault(window_name,{})["mouse"] = on_mouse
+    _windows_callbacks.setdefault(window_name,{})["mouse"] = (on_mouse,
+                                                              param, orig_param)
 
 # Waits for a pressed key
 cvWaitKey = cfunc('cvWaitKey', _hgDLL, c_int,
