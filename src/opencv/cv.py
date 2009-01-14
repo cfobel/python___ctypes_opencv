@@ -1691,17 +1691,17 @@ cvEqualizeHist.__doc__ = """void cvEqualizeHist(const CvArr src, CvArr dst)
 Equalizes histogram of grayscale image
 """
 
-def cvGetHistValue_1D(hist, i1, i2):
+def cvGetHistValue_1D(hist, i1):
     """Returns pointer to histogram bin"""
-    return cvPtr1D(hist.bins, i1, 0)
+    return cast(cvPtr1D(hist.bins, i1), c_float_p)
 
-def cvQueryHistValue_2D(hist, i1, i2):
+def cvGetHistValue_2D(hist, i1, i2):
     """Returns pointer to histogram bin"""
-    return cvPtr2D(hist.bins, i1, i2, 0)
+    return cast(cvPtr2D(hist.bins, i1, i2), c_float_p)
 
-def cvQueryHistValue_3D(hist, i1, i2, i3):
+def cvGetHistValue_3D(hist, i1, i2, i3):
     """Returns pointer to histogram bin"""
-    return cvPtr3D(hist.bins, i1, i2, i3, 0)
+    return cast(cvPtr3D(hist.bins, i1, i2, i3), c_float_p)
 
 
 #-----------------------------------------------------------------------------
