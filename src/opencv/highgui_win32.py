@@ -133,8 +133,9 @@ class ImageThread(Thread):
             hg.cvNamedWindow(name)
             # Bring to front same as if the foreground thread had created it
             if foreground:
-                windll.user32.SetForegroundWindow(hg.cvGetWindowHandle(name))
-        
+                windll.user32.SetForegroundWindow(hg.cvGetWindowHandle(name)) 
+            self._have_windows = True
+       
 
     #
     # HighGUI methods (run in image thread)
@@ -143,7 +144,6 @@ class ImageThread(Thread):
     @threadmethod
     def NamedWindow(self, name, foreground=True):
         self._ensurewindow(name, foreground)
-        self._have_windows = True
 
     @threadmethod
     def DestroyWindow(self, name):
