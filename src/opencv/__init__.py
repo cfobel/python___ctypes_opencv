@@ -40,12 +40,13 @@ class _cx(object):
     """OpenCV namespace for functions/types/constants with any "cv"/"cv_"
     prefix removed.  Symbols not starting with cv/cv_ retain their full name.
 
-    Names for which removing the prefix would result in an invalid identifier
-    (such as CV_32F) retain the leading underscore (becoming "32F").  If the
-    removal would create a collision between a function and structure
-    (e.g., cvSVD/CV_SVD) or data type (e.g., cvPoint2D3f/CvPoint2D3f), the
-    function has precedence, while the structure/data type receives a leading
-    underscore (e.g., _SVD/_Point2D3f).
+    A leading underscore is retained in the following cases:
+    - Structures/Data types (CvXxx).  E.g., cx._Mat is the CvMat structure
+      and cx.Mat is the cvMat constructor
+    - Names for which removing the full prefix yields an invalid identifier.
+      Generally just constants with leading digits.  E.g., CV_32F is cx._32F
+    - Names which otherwise collide, where a preference is for cvXxx
+      functions.  E.g., CV_SVD is cx._SVD while the cvSVD function is cx.SVD
     """
     pass
 
@@ -53,13 +54,15 @@ cx = _cx()
 
 # Process names in reverse order so functions/factories cvXXX will show up
 # before structures (CvXXX) or constants (CV_) and thus functions/factories
-# get preference.
+# get preference in terms of collisions
 
 for sym, val in sorted(locals().items(), reverse=True):
     if sym.startswith('__'):
         continue
 
-    if sym.lower().startswith('cv'):
+    if sym.startswith('Cv'):
+        sname = '_' + sym[2:]
+    elif sym.lower().startswith('cv'):
         if sym[2:3] == '_' and not sym[3:4].isdigit():
             sname = sym[3:]
         else:
