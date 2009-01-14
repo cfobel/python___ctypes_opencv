@@ -3131,7 +3131,7 @@ cvCheckArr = cfunc('cvCheckArr', _cxDLL, c_int,
     ('min_val', c_double, 1, 0), # double min_val
     ('max_val', c_double, 1, 0), # double max_val
 )
-cvCheckArr.__doc__ = """int cvCheckArr(const CvArr arr, int flags=0, double min_val=0, double max_val=)
+cvCheckArr.__doc__ = """int cvCheckArr(const CvArr arr, int flags=0, double min_val=0, double max_val=0)
 
 Checks every element of input array for invalid values
 """
@@ -3290,7 +3290,7 @@ cvFlip = cfunc('cvFlip', _cxDLL, None,
     ('dst', CvArr_r, 1, None), # CvArr* dst
     ('flip_mode', c_int, 1, 0), # int flip_mode
 )
-cvFlip.__doc__ = """void cvFlip(const CvArr src, CvArr dst=NULL, int flip_mode=)
+cvFlip.__doc__ = """void cvFlip(const CvArr src, CvArr dst=NULL, int flip_mode=0)
 
 Flip a 2D array around vertical, horizontall or both axises
 """
@@ -3336,7 +3336,7 @@ CV_SVD_SYM = 2
 cvInvert = cfunc('cvInvert', _cxDLL, c_double,
     ('src', CvArr_r, 1), # const CvArr* src
     ('dst', CvArr_r, 1), # CvArr* dst
-    ('method', c_int, 1), # int method
+    ('method', c_int, 1, CV_LU), # int method
 )
 cvInvert.__doc__ = """double cvInvert(const CvArr src, CvArr dst, int method=CV_LU)
 
@@ -3350,7 +3350,7 @@ cvSolve = cfunc('cvSolve', _cxDLL, c_int,
     ('src1', CvArr_r, 1), # const CvArr* src1
     ('src2', CvArr_r, 1), # const CvArr* src2
     ('dst', CvArr_r, 1), # CvArr* dst
-    ('method', c_int, 1), # int method
+    ('method', c_int, 1, CV_LU), # int method
 )
 cvSolve.__doc__ = """int cvSolve(const CvArr src1, const CvArr src2, CvArr dst, int method=CV_LU)
 
@@ -3775,7 +3775,7 @@ Allocates memory buffer in the storage
 cvMemStorageAllocString = cfunc('cvMemStorageAllocString', _cxDLL, CvString,
     ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('ptr', c_char_p, 1), # const char* ptr
-    ('len', c_int, 1), # int len
+    ('len', c_int, 1, -1), # int len
 )
 cvMemStorageAllocString.__doc__ = """CvString cvMemStorageAllocString(CvMemStorage storage, const char* ptr, int len=-1)
 
@@ -4728,7 +4728,7 @@ cvRectangle = cfunc('cvRectangle', _cxDLL, None,
     ('line_type', c_int, 1, 8), # int line_type
     ('shift', c_int, 1, 0), # int shift
 )
-cvRectangle.__doc__ = """void cvRectangle(CvArr img, CvPoint pt1, CvPoint pt2, CvScalar color,                  int thickness=1, int line_type=8, int shift=0)
+cvRectangle.__doc__ = """void cvRectangle(CvArr img, CvPoint pt1, CvPoint pt2, CvScalar color, int thickness=1, int line_type=8, int shift=0)
 
 Draws simple, thick or filled rectangle
 """
@@ -4940,7 +4940,7 @@ cvDrawContours = cfunc('cvDrawContours', _cxDLL, None,
     ('line_type', c_int, 1, 8), # int line_type
     ('offset', CvPoint, 1, CvPoint(0,0)), # CvPoint offset      
 )
-cvDrawContours.__doc__ = """void cvDrawContours(CvArr img, CvSeq contour, CvScalar external_color, CvScalar hole_color, int max_level, int thickness=1, int line_type=8)
+cvDrawContours.__doc__ = """void cvDrawContours(CvArr img, CvSeq contour, CvScalar external_color, CvScalar hole_color, int max_level, int thickness=1, int line_type=8, CvPoint offset=CV_DEFAULT(cvPoint(0,0)))
 
 Draws contour outlines or interiors in the image
 """
@@ -5055,7 +5055,7 @@ cvStartWriteStruct = cfunc('cvStartWriteStruct', _cxDLL, None,
     ('name', c_char_p, 1), # const char* name
     ('struct_flags', c_int, 1), # int struct_flags
     ('type_name', c_char_p, 1, None), # const char* type_name
-    ('attributes', CvAttrList, 1), # CvAttrList attributes
+    ('attributes', CvAttrList, 1, cvAttrList()), # CvAttrList attributes
 )
 cvStartWriteStruct.__doc__ = """void cvStartWriteStruct(CvFileStorage fs, const char* name, int struct_flags, const char* type_name=NULL, CvAttrList attributes=cvAttrList())
 
@@ -5130,9 +5130,9 @@ cvWrite = cfunc('cvWrite', _cxDLL, None,
     ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
     ('ptr', c_void_p, 1), # const void* ptr
-    ('attributes', CvAttrList, 1), # CvAttrList attributes
+    ('attributes', CvAttrList, 1, cvAttrList()), # CvAttrList attributes
 )
-cvWrite.__doc__ = """void cvWrite(CvFileStorage fs, const char* name, const void* ptr, CvAttrList attributes=cvAttrList)
+cvWrite.__doc__ = """void cvWrite(CvFileStorage fs, const char* name, const void* ptr, CvAttrList attributes=cvAttrList())
 
 Writes user object
 """

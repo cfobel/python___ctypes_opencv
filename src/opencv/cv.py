@@ -472,7 +472,7 @@ cvCornerHarris = cfunc('cvCornerHarris', _cvDLL, None,
     ('harris_responce', CvArr_r, 1), # CvArr* harris_responce
     ('block_size', c_int, 1), # int block_size
     ('aperture_size', c_int, 1, 3), # int aperture_size
-    ('k', c_double, 1, 0), # double k
+    ('k', c_double, 1, 0.04), # double k
 )
 cvCornerHarris.__doc__ = """void cvCornerHarris(const CvArr image, CvArr harris_responce, int block_size, int aperture_size=3, double k=0.04)
 
@@ -516,7 +516,7 @@ _cvGoodFeaturesToTrack = cfunc('cvGoodFeaturesToTrack', _cvDLL, None,
     ('k', c_double, 1, 0.04), # double k
 )
 
-def cvGoodFeaturesToTrack(image, eig_image, temp_image, corners, corner_count, quality_level, min_distance, mask=None, block_size=3, use_harris=0, k=0):
+def cvGoodFeaturesToTrack(image, eig_image, temp_image, corners, corner_count, quality_level, min_distance, mask=None, block_size=3, use_harris=0, k=0.04):
     """c_array_of_CvPoint2D32f cvGoodFeaturesToTrack(const CvArr image, CvArr eig_image, CvArr temp_image, array_of_CvPoint2D32f corners, int corner_count, double quality_level, double min_distance, const CvArr mask=NULL, int block_size=3, int use_harris=0, double k=0.04)
 
     Determines strong corners on image
@@ -660,7 +660,7 @@ CV_INTER_AREA = 3 #resampling using pixel area relation. It is preferred method 
 cvResize = cfunc('cvResize', _cvDLL, None,
     ('src', CvArr_r, 1), # const CvArr* src
     ('dst', CvArr_r, 1), # CvArr* dst
-    ('interpolation', c_int, 1), # int interpolation
+    ('interpolation', c_int, 1, CV_INTER_LINEAR), # int interpolation
 )
 cvResize.__doc__ = """void cvResize(const CvArr src, CvArr dst, int interpolation=CV_INTER_LINEAR)
 
@@ -675,8 +675,8 @@ cvWarpAffine = cfunc('cvWarpAffine', _cvDLL, None,
     ('src', CvArr_r, 1), # const CvArr* src
     ('dst', CvArr_r, 1), # CvArr* dst
     ('map_matrix', CvMat_r, 1), # const CvMat* map_matrix
-    ('flags', c_int, 1), # int flags
-    ('fillval', CvScalar, 1), # CvScalar fillval
+    ('flags', c_int, 1, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS), # int flags
+    ('fillval', CvScalar, 1, cvScalarAll(0)), # CvScalar fillval
 )
 cvWarpAffine.__doc__ = """void cvWarpAffine(const CvArr src, CvArr dst, const CvMat map_matrix, int flags=CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, CvScalar fillval=cvScalarAll(0)
 
@@ -898,7 +898,7 @@ CV_BILATERAL = 4
 cvSmooth = cfunc('cvSmooth', _cvDLL, None,
     ('src', CvArr_r, 1), # const CvArr* src
     ('dst', CvArr_r, 1), # CvArr* dst
-    ('smoothtype', c_int, 1), # int smoothtype
+    ('smoothtype', c_int, 1, CV_GAUSSIAN), # int smoothtype
     ('param1', c_int, 1, 3), # int param1
     ('param2', c_int, 1, 0), # int param2
     ('param3', c_double, 1, 0), # double param3
@@ -913,7 +913,7 @@ cvFilter2D = cfunc('cvFilter2D', _cvDLL, None,
     ('src', CvArr_r, 1), # const CvArr* src
     ('dst', CvArr_r, 1), # CvArr* dst
     ('kernel', CvMat_r, 1), # const CvMat* kernel
-    ('anchor', CvPoint, 1), # CvPoint anchor
+    ('anchor', CvPoint, 1, cvPoint(-1,-1)), # CvPoint anchor
 )
 cvFilter2D.__doc__ = """void cvFilter2D(const CvArr src, CvArr dst, const CvMat kernel, CvPoint anchor=cvPoint(-1, -1)
 
@@ -926,7 +926,7 @@ cvCopyMakeBorder = cfunc('cvCopyMakeBorder', _cvDLL, None,
     ('dst', CvArr_r, 1), # CvArr* dst
     ('offset', CvPoint, 1), # CvPoint offset
     ('bordertype', c_int, 1), # int bordertype
-    ('value', CvScalar, 1), # CvScalar value
+    ('value', CvScalar, 1, cvScalarAll(0)), # CvScalar value
 )
 cvCopyMakeBorder.__doc__ = """void cvCopyMakeBorder(const CvArr src, CvArr dst, CvPoint offset, int bordertype, CvScalar value=cvScalarAll(0)
 
@@ -1080,8 +1080,8 @@ cvAdaptiveThreshold = cfunc('cvAdaptiveThreshold', _cvDLL, None,
     ('src', CvArr_r, 1), # const CvArr* src
     ('dst', CvArr_r, 1), # CvArr* dst
     ('max_value', c_double, 1), # double max_value
-    ('adaptive_method', c_int, 1), # int adaptive_method
-    ('threshold_type', c_int, 1), # int threshold_type
+    ('adaptive_method', c_int, 1, CV_ADAPTIVE_THRESH_MEAN_C), # int adaptive_method
+    ('threshold_type', c_int, 1, CV_THRESH_BINARY), # int threshold_type
     ('block_size', c_int, 1, 3), # int block_size
     ('param1', c_double, 1, 5), # double param1
 )
@@ -1100,7 +1100,7 @@ Applies adaptive threshold to array
 cvPyrDown = cfunc('cvPyrDown', _cvDLL, None,
     ('src', CvArr_r, 1), # const CvArr* src
     ('dst', CvArr_r, 1), # CvArr* dst
-    ('filter', c_int, 1), # int filter
+    ('filter', c_int, 1, CV_GAUSSIAN_5x5), # int filter
 )
 cvPyrDown.__doc__ = """void cvPyrDown(const CvArr src, CvArr dst, int filter=CV_GAUSSIAN_5x5)
 
@@ -1111,7 +1111,7 @@ Downsamples image
 cvPyrUp = cfunc('cvPyrUp', _cvDLL, None,
     ('src', CvArr_r, 1), # const CvArr* src
     ('dst', CvArr_r, 1), # CvArr* dst
-    ('filter', c_int, 1), # int filter
+    ('filter', c_int, 1, CV_GAUSSIAN_5x5), # int filter
 )
 cvPyrUp.__doc__ = """void cvPyrUp(const CvArr src, CvArr dst, int filter=CV_GAUSSIAN_5x5)
 
@@ -1130,8 +1130,8 @@ cvFloodFill = cfunc('cvFloodFill', _cvDLL, None,
     ('image', CvArr_r, 1), # CvArr* image
     ('seed_point', CvPoint, 1), # CvPoint seed_point
     ('new_val', CvScalar, 1), # CvScalar new_val
-    ('lo_diff', CvScalar, 1), # CvScalar lo_diff
-    ('up_diff', CvScalar, 1), # CvScalar up_diff
+    ('lo_diff', CvScalar, 1, cvScalarAll(0)), # CvScalar lo_diff
+    ('up_diff', CvScalar, 1, cvScalarAll(0)), # CvScalar up_diff
     ('comp', CvConnectedComp_r, 1, None), # CvConnectedComp* comp
     ('flags', c_int, 1, 4), # int flags
     ('mask', CvArr_r, 1, None), # CvArr* mask
@@ -1379,7 +1379,7 @@ _cvHoughCircles = cfunc('cvHoughCircles', _cvDLL, CvSeq_p,
 )
 
 def cvHoughCircles(image, circle_storage, method, dp, min_dist, param1=100, param2=100, min_radius=0, max_radius=0):
-    """CvSeq cvHoughCircles(CvArr image, void* circle_storage, int method, double dp, double min_dist, double param1=100, double param2=100)
+    """CvSeq cvHoughCircles(CvArr image, void* circle_storage, int method, double dp, double min_dist, double param1=100, double param2=100, min_radius=0, max_radius=0)
 
     Finds circles in grayscale image using Hough transform
     """
@@ -1393,7 +1393,7 @@ CV_DIST_MASK_PRECISE = 0
 cvDistTransform = cfunc('cvDistTransform', _cvDLL, None,
     ('src', CvArr_r, 1), # const CvArr* src
     ('dst', CvArr_r, 1), # CvArr* dst
-    ('distance_type', c_int, 1), # int distance_type
+    ('distance_type', c_int, 1, CV_DIST_L2), # int distance_type
     ('mask_size', c_int, 1, 3), # int mask_size
     ('mask', c_float_p, 1, None), # const float* mask
     ('labels', CvArr_r, 1, None), # CvArr* labels
@@ -1772,7 +1772,7 @@ Computes earth mover distance between two weighted point sets (called signatures
 _cvApproxChains = cfunc('cvApproxChains', _cvDLL, CvSeq_p,
     ('src_seq', CvSeq_r, 1), # CvSeq* src_seq
     ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
-    ('method', c_int, 1), # int method
+    ('method', c_int, 1, CV_CHAIN_APPROX_SIMPLE), # int method
     ('parameter', c_double, 1, 0), # double parameter
     ('minimal_perimeter', c_int, 1, 0), # int minimal_perimeter
     ('recursive', c_int, 1, 0), # int recursive
@@ -1874,8 +1874,8 @@ Calculates area of the whole contour or contour section
 # Calculates contour perimeter or curve length
 cvArcLength = cfunc('cvArcLength', _cvDLL, c_double,
     ('curve', CvSeq_r, 1), # const void* curve
-    ('slice', CvSlice, 1), # CvSlice slice
-    ('is_closed', c_int, 1), # int is_closed
+    ('slice', CvSlice, 1, CV_WHOLE_SEQ), # CvSlice slice
+    ('is_closed', c_int, 1, -1), # int is_closed
 )
 cvArcLength.__doc__ = """double cvArcLength(const CvSeq curve, CvSlice slice=CV_WHOLE_SEQ, int is_closed=-1)
 
@@ -2756,13 +2756,13 @@ _cvHaarDetectObjects = cfunc('cvHaarDetectObjects', _cvDLL, CvSeq_p,
     ('image', CvArr_r, 1), # const CvArr* image
     ('cascade', CvHaarClassifierCascade_r, 1), # CvHaarClassifierCascade* cascade
     ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
-    ('scale_factor', c_double, 1, 1), # double scale_factor
+    ('scale_factor', c_double, 1, 1.1), # double scale_factor
     ('min_neighbors', c_int, 1, 3), # int min_neighbors
     ('flags', c_int, 1, 0), # int flags
     ('min_size', CvSize, 1, cvSize(0,0)), # CvSize min_size
 )
 
-def cvHaarDetectObjects(image, cascade, storage, scale_factor=1, min_neighbors=3, flags=0, min_size=cvSize(0,0)):
+def cvHaarDetectObjects(image, cascade, storage, scale_factor=1.1, min_neighbors=3, flags=0, min_size=cvSize(0,0)):
     """CvSeq cvHaarDetectObjects(const CvArr image, CvHaarClassifierCascade cascade, CvMemStorage storage, double scale_factor=1.1, int min_neighbors=3, int flags=0, CvSize min_size=cvSize(0, 0)
 
     Detects objects in the image
@@ -2916,6 +2916,7 @@ if cvVersion == 110:
         ('E', CvMat_r, 1, None), # CvMat* E
         ('F', CvMat_r, 1, None), # CvMat* F
         ('term_crit', CvTermCriteria, 1, cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 30, 1e-6)), # CvTermCriteria term_crit
+        ('flags', c_int, 1, CV_CALIB_FIX_INTRINSIC),
     )
     
     def cvStereoCalibrate(object_points, image_points1, image_points2, point_counts, camera_matrix1, dist_coeffs1, camera_matrix2, dist_coeffs2, image_size, R, T, E=None, F=None, term_crit=cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,30,1e-6), flags=CV_CALIB_FIX_INTRINSIC):
@@ -3295,7 +3296,7 @@ if cvVersion == 110:
         ('points1', CvMat_r, 1), # const CvMat* points1
         ('points2', CvMat_r, 1), # const CvMat* points2
         ('fundamental_matrix', CvMat_r, 1), # CvMat* fundamental_matrix
-        ('method', c_int, 1), # int method
+        ('method', c_int, 1, CV_FM_RANSAC), # int method
         ('param1', c_double, 1, 3), # double param1
         ('param2', c_double, 1, 0), # double param2
         ('status', CvMat_r, 1, None), # CvMat* status
@@ -3318,7 +3319,7 @@ elif cvVersion == 100:
         ('points1', CvMat_r, 1), # const CvMat* points1
         ('points2', CvMat_r, 1), # const CvMat* points2
         ('fundamental_matrix', CvMat_r, 1), # CvMat* fundamental_matrix
-        ('method', c_int, 1), # int method
+        ('method', c_int, 1, CV_FM_RANSAC), # int method
         ('param1', c_double, 1, 1), # double param1
         ('param2', c_double, 1, 0), # double param2
         ('status', CvMat_r, 1, None), # CvMat* status
