@@ -97,10 +97,10 @@ if __name__ == '__main__':
 
     cvNamedWindow( "Histogram", 1 )
     cvNamedWindow( "CamShiftDemo", 1 )
-    cvSetMouseCallback( "CamShiftDemo", on_mouse, 0 )
-    cvCreateTrackbar( "Vmin", "CamShiftDemo", vmin, 256, 0 )
-    cvCreateTrackbar( "Vmax", "CamShiftDemo", vmax, 256, 0 )
-    cvCreateTrackbar( "Smin", "CamShiftDemo", smin, 256, 0 )
+    cvSetMouseCallback( "CamShiftDemo", on_mouse )
+    cvCreateTrackbar( "Vmin", "CamShiftDemo", vmin, 256 )
+    cvCreateTrackbar( "Vmax", "CamShiftDemo", vmax, 256 )
+    cvCreateTrackbar( "Smin", "CamShiftDemo", smin, 256 )
 
     while True:
         frame = cvQueryFrame( capture )

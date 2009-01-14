@@ -25,6 +25,11 @@ try:
 except ImportError:
     pass
 
+# On Win32, bring in support for a Python implementation of a background
+# image thread.
+import sys
+if sys.platform == 'win32':
+    from highgui_win32 import *
 
 # ----------------------------------------------------------------------------
 # Begin of code section contributed by David Bolen
