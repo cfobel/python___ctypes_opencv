@@ -52,12 +52,13 @@ try:
     import PIL
 
     def pil_to_ipl(im_pil):
-        im_ipl = cvCreateImageHeader(cvSize(im_pil.size[0], im_pil.size[1]),
+        im_ipl = cvCreateImage(cvSize(im_pil.size[0], im_pil.size[1]),
 IPL_DEPTH_8U, 3)
+        im_ipl._owner = 1 # own header only
         data = im_pil.tostring('raw', 'RGB', im_pil.size[0] * 3)
         cvSetData(im_ipl, cast(data, POINTER(c_byte)), im_pil.size[0] * 3)
         cvCvtColor(im_ipl, im_ipl, CV_RGB2BGR)
-        return im_ipl
+        return cvCloneImage(im_ipl)
 
     def ipl_to_pil(im_ipl):
         size = (im_ipl.width, im_ipl.height)
