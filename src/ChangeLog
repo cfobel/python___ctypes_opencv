@@ -5,6 +5,28 @@ ctypes-opencv - A Python wrapper for OpenCV using ctypes
 Change Log
 ==========
 
+ctypes-opencv-0.7.2 development release
+---------------------------------------
+
+- Improved pil_to_ipl() and ipl_to_pil()
+- Fixed a bug in pil_to_ipl(), by Jeremy Bethmont
+- Small tweak to highgui_win32, by David Bolen
+- Fixed a synchronization issue in highgui_win32, by David Bolen
+- Added background image thread for Windows, by David Bolen
+- Fixed a bug in calling cvSetMouseCallback() in camshiftdemo.py
+- Mouse callback and parameter support, by David Bolen
+- Fixes for cvGetHist*, by David Bolen
+- General prototype/parameter default cleanup, by David Bolen
+- Suppressed KeyError exception with mouse callback/trackbar on unknown window, by David Bolen
+- Fixed a bug in watershed.py
+- Fix for crash at process termination with open windows with trackbars, by David Bolen
+- Small tweak to cx namespace, by David Bolen
+- Fixed issues in round-tripping data with ByRefArg and List* wrappers, by David Bolen
+- Fixed cvSeqPush() by David Bolen, its 'element' argument is now a pointer
+- Added default value for cvSetIdentify(), by David Bolen
+- Updated cvThreshold prototype for OpenCV 1.1, by David Bolen
+- Fixed a bug in histogram-related functions, by David Bolen
+
 ctypes-opencv-0.7.1 development release
 ---------------------------------------
 
