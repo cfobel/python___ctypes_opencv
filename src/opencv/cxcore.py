@@ -119,7 +119,7 @@ def default_errcheck(result, func, args):
     return args
 
     
-# hack the ctypes.Structure class to include printing the fields
+# Enhanced ctypes.Structure class
 class _Structure(Structure):
     def __repr__(self):
         '''Print the fields'''
@@ -127,6 +127,7 @@ class _Structure(Structure):
         for field in self._fields_:
             res.append('%s=%s' % (field[0], repr(getattr(self, field[0]))))
         return self.__class__.__name__ + '(' + ','.join(res) + ')'
+
     @classmethod
     def from_param(cls, obj):
         '''Magically construct from a tuple'''
@@ -135,6 +136,46 @@ class _Structure(Structure):
         if isinstance(obj, tuple):
             return cls(*obj)
         raise TypeError
+
+    # Permit structures with equivalent values to compare equally to each
+    # other or to types (basically tuples at this point) supported by the
+    # above from_param method to construct equivalent structures.  Since
+    # ctypes data types with the same value don't compare as equal (e.g.,
+    # c_int(10) != c_int(10)) compare against the underlying value if
+    # present, or the address pointed to by a pointer type.  Otherwise,
+    # just leave it up to the field object.
+
+    def _values(self, obj):
+        values = []
+        for f in obj._fields_:
+            v = getattr(obj, f[0])
+            # If we look like a pointer type, just worry about the address
+            # to which we are pointing, otherwise try to obtain the ctypes
+            # data type value.  Note that ctypes can raise ValueError if we
+            # accidentally try to access faulty pointers, so just safety
+            # block the whole process.
+            try:
+                if isinstance(v, ctypes._Pointer):
+                    # We'd like two NULL pointers to be equal, but ctypes will
+                    # fail obtaining the address, so use None for such pointers
+                    v = addressof(v.contents) if v else None
+                elif isinstance(v, ctypes._SimpleCData):
+                    v = v.value
+            except Exception:
+                pass
+            values.append(v)
+        return values
+
+    def __eq__(self, other):
+        try:
+            other = self.__class__.from_param(other)
+        except:
+            return False
+
+        return self._values(self) == self._values(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
         
 class ListPOINTER(object):
