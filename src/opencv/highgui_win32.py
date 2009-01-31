@@ -99,7 +99,8 @@ class ImageThread(Thread):
                         rc = None
                         sys.stderr.write('ImageThread exception - ignoring:')
                         traceback.print_exc()
-                    self.result.put(rc)
+                    if self.synchronized:
+                        self.result.put(rc)
 
                 # Service the OpenCV event loop - buffer recent keys for
                 # possible use by the foreground thread, but bound it to a
