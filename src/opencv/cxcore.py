@@ -121,6 +121,8 @@ def default_errcheck(result, func, args):
     
 # Enhanced ctypes.Structure class
 class _Structure(Structure):
+    _fields_ = []
+    
     def __repr__(self):
         '''Print the fields'''
         res = []
