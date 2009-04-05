@@ -1969,10 +1969,9 @@ def cvGetSubRect(arr, submat, rect):
     """
     if submat is None:
         submat = CvMat()
-        _cvGetSubRect(arr, submat, rect)
-        submat._depends = (arr,)
-        return submat
-    return pointee(_cvGetSubRect(arr, submat, rect), arr, submat)
+    _cvGetSubRect(arr, submat, rect)
+    submat._depends = (arr,)
+    return submat
 
 cvGetSubArr = cvGetSubRect
 
