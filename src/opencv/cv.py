@@ -902,8 +902,9 @@ cvSmooth = cfunc('cvSmooth', _cvDLL, None,
     ('param1', c_int, 1, 3), # int param1
     ('param2', c_int, 1, 0), # int param2
     ('param3', c_double, 1, 0), # double param3
+    ('param4', c_double, 1, 0), # double param4
 )
-cvSmooth.__doc__ = """void cvSmooth(const CvArr src, CvArr dst, int smoothtype=CV_GAUSSIAN, int param1=3, int param2=0, double param3=0)
+cvSmooth.__doc__ = """void cvSmooth(const CvArr src, CvArr dst, int smoothtype=CV_GAUSSIAN, int param1=3, int param2=0, double param3=0, double param4=0)
 
 Smooths the image in one of several ways
 """

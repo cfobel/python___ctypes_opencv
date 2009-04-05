@@ -783,7 +783,8 @@ class CvMat(CvArr):
             rows = (sy.start-sy.stop) / (-sy.step)
         step = sy.step*self.step
         
-        data_address = addressof(self.data.ptr.contents)+self.step*sy.start+sx.start
+        datatype = type2ctype(self.type)
+        data_address = addressof(self.data.ptr.contents)+self.step*sy.start+sx.start*sizeof(datatype)
         
         z = cvMat(rows, cols, self.type, c_void_p(data_address), step)
         z._depends = (self,) # make sure z is deleted before self is deleted, don't care about self.data!!
@@ -5470,7 +5471,7 @@ Makes a clone of the object
 # Saves object to file
 cvSave = cfunc('cvSave', _cxDLL, None,
     ('filename', c_char_p, 1), # const char* filename
-    ('struct_ptr', c_void_p, 1), # const void* struct_ptr
+    ('struct_ptr', CvArr_r, 1), # const void* struct_ptr
     ('name', c_char_p, 1, None), # const char* name
     ('comment', c_char_p, 1, None), # const char* comment
     ('attributes', CvAttrList, 1, CvAttrList()), # CvAttrList attributes

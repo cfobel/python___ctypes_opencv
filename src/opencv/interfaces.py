@@ -17,6 +17,7 @@
 
 from ctypes import *
 from opencv.cxcore import *
+from opencv.highgui import CV_CVTIMG_SWAP_RB
 
 
 #=============================================================================
@@ -85,9 +86,11 @@ try:
     from_memory.restype = py_object
     
     def as_numpy_2darray(ctypes_ptr, width_step, width, height, dtypename, nchannels=1):
+        esize = NP.dtype(dtypename).itemsize
+        if width_step == 0:
+            width_step = width*esize
         buf = from_memory(ctypes_ptr, width_step*height)
         arr = NP.frombuffer(buf, dtype=dtypename, count=width*nchannels*height)
-        esize = NP.dtype(dtypename).itemsize
         if nchannels > 1:
             arr = arr.reshape(height, width, nchannels)
             arr.strides = (width_step, esize*nchannels, esize)
