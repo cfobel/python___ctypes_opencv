@@ -866,7 +866,7 @@ class CvMatNDdim(_Structure):
 CvMatNDdim_p = POINTER(CvMatNDdim)
 CvMatNDdim_r = ByRefArg(CvMatNDdim)
                 
-class CvMatND(_Structure):
+class CvMatND(CvArr):
     _fields_ = [("type", c_int),
                 ("dims", c_int),
                 ("refcount", c_void_p),
