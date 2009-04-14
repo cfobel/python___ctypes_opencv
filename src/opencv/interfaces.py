@@ -116,6 +116,16 @@ try:
             
     IplImage.as_numpy_array = _iplimage_as_numpy_array
 
+
+    def cvCreateImageFromNumpyArray(a):
+        """Creates an IplImage from a numpy array. Raises TypeError if not successful.
+
+        Inline function: cvGetImage(cvCreateMatFromNumpyArray(a))
+        """
+        return cvGetImage(cvCreateMatFromNumpyArray(a))
+
+
+
     matdepth2dtype = {
         CV_8U: 'uint8',
         CV_8S: 'int8',
@@ -131,7 +141,39 @@ try:
         return as_numpy_2darray(self.data.ptr, self.step, self.cols, self.rows, matdepth2dtype[CV_MAT_DEPTH(self.type)], CV_MAT_CN(self.type))
         
     CvMat.as_numpy_array = _cvmat_as_numpy_array
-    
+
+
+    def cvCreateMatFromNumpyArray(a):
+        """Creates a CvMat from a numpy array. Raises TypeError if not successful.
+
+        The numpy array must be of rank 1 or 2.
+        If it is of rank 1, it is converted into a row vector.
+        If it is of rank 2, it is converted into a matrix.
+        """
+        if not isinstance(a, NP.ndarray):
+            raise TypeError("'a' is not a numpy ndarray.")
+
+        for i in matdepth2dtype:
+            if NP.dtype(matdepth2dtype[i]) == a.dtype:
+                mattype = i
+                break
+        else:
+            raise TypeError("The dtype of 'a' is not supported.")
+
+        rank = len(a.shape)
+        if rank == 1:
+            b = cvMat(a.shape[0], 1, mattype, a.ctypes.data, a.strides[0])
+        elif rank == 2:
+            b = cvMat(a.shape[0], a.shape[1], mattype, a.ctypes.data, a.strides[0])
+        else:
+            raise TypeError("The rank of 'a' must be either 1 or 2.")
+
+        b.depends = (a,)
+
+        return b
+
+
+
     def _cvmatnd_as_numpy_array(self):
         """Converts a CvMatND into ndarray"""
         nc = CV_MAT_CN(self.type)
@@ -153,6 +195,29 @@ try:
         return arr
         
     CvMatND.as_numpy_array = _cvmatnd_as_numpy_array
+
+	
+    def cvCreateMatNDFromNumpyArray(a):
+        """Creates a CvMatND from a numpy array. Raises TypeError if not successful."""
+        if not isinstance(a, NP.ndarray):
+            raise TypeError("'a' is not a numpy ndarray.")
+
+        for i in matdepth2dtype:
+            if NP.dtype(matdepth2dtype[i]) == a.dtype:
+                mattype = i
+                break
+        else:
+            raise TypeError("The dtype of 'a' is not supported.")
+
+        b = cvMatND(a.shape, mattype, a.ctypes.data)
+        for i in range(len(a.strides)):
+            b.dim[i].stype = a.strides[i]
+        b.depends = (a,)
+
+        return b
+
+    __all__ += ['cvCreateImageFromNumpyArray', 'cvCreateMatFromNumpyArray', 
+        'cvCreateMatNDFromNumpyArray']
 except ImportError:
     pass
 
