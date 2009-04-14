@@ -2086,6 +2086,9 @@ def cvInitMatNDHeader(mat, sizes, type, data=None):
         mat._depends = (data,)
     return mat
     
+def cvMatND(sizes, mattype, data=None):
+    return cvInitMatNDHeader(CvMatND(), sizes, mattype, data=data)
+    
 _cvCloneMatND = cfunc('cvCloneMatND', _cxDLL, CvMatND_p,
     ('mat', CvMatND_r, 1), # const CvMatND* mat 
 )
