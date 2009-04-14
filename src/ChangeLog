@@ -5,6 +5,23 @@ ctypes-opencv - A Python wrapper for OpenCV using ctypes
 Change Log
 ==========
 
+ctypes-opencv-0.7.3 bugfix release
+---------------------------------------
+
+- Added 3 functions: cvCreateMatFromNumpyArray(), cvCreateMatNDFromNumpyArray(), cvCreateImageFromNumpyArray()
+- Fixed a tiny bug in CvMatND
+- Added cvMatND()
+- Fixed issue 26: Can't save matrix with cvSave
+- Fixed issue 27: cvMat by Column Access
+- Fixed issue 28: as_numpy_array
+- Fixed issue 30: Required module not imported in interfaces.py
+- Fixed issue 31: ctypesArgumentError when calling cvCalibrateCamera2 	 
+- Fixed issue 32: function cvSmooth does not accept enought arguments
+- Fixed issue 33: cvGetSubRect
+- Added _fields_ = [] to _Structure, by David Bolen
+- Fixed a tiny bug in highgui_win32.py, by David Bolen
+- Implemented equivalence for structure data types, by David Bolen
+
 ctypes-opencv-0.7.2 development release
 ---------------------------------------
 
