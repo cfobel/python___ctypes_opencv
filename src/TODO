@@ -3,3 +3,7 @@ Provide an interface for machine learning classes. Atm, it's pretty tough. Perha
 NDarray slicing and indexing for CvMatND
 
 Provide a stereo_calib.py demo counterpart for stereo_calib.cpp
+
+Image conversion to/from GTK
+Image conversion to/from PIL
+

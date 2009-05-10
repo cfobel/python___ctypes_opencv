@@ -466,6 +466,7 @@ IPL_BORDER_REFLECT_101    = 4
 # img[3] is *invalid*
 class IplImage(CvArr):
     def data_as_string(self):
+        """Converts the internal data array into a string without doing a memory copy."""
         return string_at(self.imageData, self.imageSize)        
     data_as_buffer = data_as_string
 
@@ -738,6 +739,7 @@ CvMatCols_p = POINTER(CvMatCols)
 #    would iterate on the columns of mat (y = cvGetCols(mat, i, i+1)).
 class CvMat(CvArr):
     def data_as_string(self):
+        """Converts the internal data array into a string without doing a memory copy."""
         return string_at(self.data.ptr, self.step * self.rows)        
     data_as_buffer = data_as_string
 
