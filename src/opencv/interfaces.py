@@ -17,7 +17,7 @@
 
 from ctypes import *
 from opencv.cxcore import *
-from opencv.highgui import CV_CVTIMG_SWAP_RB
+from opencv.highgui import *
 
 
 #=============================================================================
