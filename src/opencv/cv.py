@@ -35,6 +35,7 @@ class CvMoments(_Structure):
         # spatial moments
         ('m00', c_double),
         ('m10', c_double),
+        ('m01', c_double),
         ('m20', c_double),
         ('m11', c_double),
         ('m02', c_double),
