@@ -710,7 +710,7 @@ def cvGetAffineTransform(src, dst, map_matrix=None):
     return map_matrix
 
 # Calculates affine matrix of 2d rotation
-cv2DRotationMatrix = cfunc('cv2DRotationMatrix', _cvDLL, CvMat_p,
+_cv2DRotationMatrix = cfunc('cv2DRotationMatrix', _cvDLL, CvMat_p,
     ('center', CvPoint2D32f, 1), # CvPoint2D32f center
     ('angle', c_double, 1), # double angle
     ('scale', c_double, 1), # double scale
