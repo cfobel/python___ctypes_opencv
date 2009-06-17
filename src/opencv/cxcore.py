@@ -732,11 +732,11 @@ CvMatCols_p = POINTER(CvMatCols)
 #  - Iteration of rows. For example:
 #      for x in mat:
 #        <do something with row x>
-#    would iterate on the rows of mat (x = cvGetRows(mat, i, i+1)).
+#    would iterate on the rows of mat (x = cvGetRows(mat, None, i, i+1)).
 #  - Iteration of columns. For example:
 #      for y in mat.colrange():
 #        <do something with column y>
-#    would iterate on the columns of mat (y = cvGetCols(mat, i, i+1)).
+#    would iterate on the columns of mat (y = cvGetCols(mat, None, i, i+1)).
 class CvMat(CvArr):
     def data_as_string(self):
         """Converts the internal data array into a string without doing a memory copy."""
@@ -826,11 +826,11 @@ class CvMat(CvArr):
         
     def __iter__(self):
         for i in range(self.rows):
-            yield cvGetRows(self, i, i+1)
+            yield cvGetRows(self, None, i, i+1)
         
     def colrange(self):
         for i in range(self.cols):
-            yield cvGetCols(self, i, i+1)
+            yield cvGetCols(self, None, i, i+1)
             
     _owner = False
             
