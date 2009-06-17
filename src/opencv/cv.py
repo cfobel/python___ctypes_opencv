@@ -99,8 +99,15 @@ CV_LINK_RUNS                = 5
 #Viji Periapoilan 4/16/2007(end)
 
 # this structure is supposed to be treated like a blackbox, OpenCV's design
+# our CvContourScanner actually corresponds to OpenCV's _CvContourScanner
 class CvContourScanner(_Structure):
     _fields_ = []
+    
+    def __del__(self):
+        _cvEndFindContours(CvContourScanner_p(self))
+    
+CvContourScanner_p = POINTER(CvContourScanner)
+CvContourScanner_r = ByRefArg(CvContourScanner)
 
 # Freeman chain reader state
 class CvChainPtReader(CvSeqReader):
@@ -1170,7 +1177,7 @@ def cvFindContours(image, storage, first_contour_ptr=None, header_size=sizeof(Cv
     return (n, pointee(first_contour_ptr, storage))
 
 # Initializes contour scanning process
-_cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner,
+_cvStartFindContours = cfunc('cvStartFindContours', _cvDLL, CvContourScanner_p,
     ('image', CvArr_r, 1), # CvArr* image
     ('storage', CvMemStorage_r, 1), # CvMemStorage* storage
     ('header_size', c_int, 1, sizeof(CvContour)), # int header_size
@@ -1184,13 +1191,12 @@ def cvStartFindContours(image, storage, header_size=sizeof(CvContour), mode=CV_R
 
     Initializes contour scanning process
     """
-    z = _cvStartFindContours(image, storage, header_size, mode, method, offset)
-    z._depends = (storage,) # to make sure storage is always deleted after z is deleted
-    return z
+    # to make sure storage is always deleted after z is deleted
+    return pointee(_cvStartFindContours(image, storage, header_size, mode, method, offset), storage)
 
 # Finds next contour in the image
 _cvFindNextContour = cfunc('cvFindNextContour', _cvDLL, CvSeq_p,
-    ('scanner', CvContourScanner, 1), # CvContourScanner scanner 
+    ('scanner', CvContourScanner_r, 1), # _CvContourScanner* scanner 
 )
 
 def cvFindNextContour(scanner):
@@ -1202,7 +1208,7 @@ def cvFindNextContour(scanner):
 
 # Replaces retrieved contour
 cvSubstituteContour = cfunc('cvSubstituteContour', _cvDLL, None,
-    ('scanner', CvContourScanner, 1), # CvContourScanner scanner
+    ('scanner', CvContourScanner_r, 1), # _CvContourScanner* scanner
     ('new_contour', CvSeq_r, 1), # CvSeq* new_contour 
 )
 cvSubstituteContour.__doc__ = """void cvSubstituteContour(CvContourScanner scanner, CvSeq new_contour)
@@ -1212,15 +1218,12 @@ Replaces retrieved contour
 
 # Finishes scanning process
 _cvEndFindContours = cfunc('cvEndFindContours', _cvDLL, CvSeq_p,
-    ('scanner', ByRefArg(CvContourScanner), 1), # CvContourScanner* scanner 
+    ('scanner', ByRefArg(CvContourScanner_p), 1), # _CvContourScanner** scanner 
 )
+_cvEndFindContours.__doc__ = """CvSeq cvEndFindContours(CvContourScanner scanner)
 
-def cvEndFindContours(scanner):
-    """CvSeq cvEndFindContours(CvContourScanner scanner)
-
-    Finishes scanning process
-    """
-    return _cvEndFindContours(scanner)
+Finishes scanning process
+"""
 
 
 #-----------------------------------------------------------------------------
