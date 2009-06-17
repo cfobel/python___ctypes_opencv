@@ -3428,7 +3428,7 @@ if cvVersion == 110:
         ('left', CvArr_r, 1), # const CvArr* left
         ('right', CvArr_r, 1), # const CvArr* right
         ('disparity', CvArr_r, 1), # const CvArr* disparity
-        ('state', CvStereoBMState, 1), # const CvStereoBMState* state
+        ('state', CvStereoBMState_r, 1), # const CvStereoBMState* state
     )    
     
     def cvFindStereoCorrespondenceBM(left, right, disparity, state):
