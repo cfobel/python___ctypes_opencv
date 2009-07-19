@@ -1174,7 +1174,7 @@ CvPoint_p = POINTER(CvPoint)
 CvPoint_r = ByRefArg(CvPoint)
                 
 def cvPoint(x, y):
-    return CvPoint(c_int(x), c_int(y))
+    return CvPoint(c_int(int(x)), c_int(int(y)))
 
 # 2D point with floating-point coordinates
 class CvPoint2D32f(_Structure):
