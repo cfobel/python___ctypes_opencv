@@ -37,7 +37,7 @@ if __name__=="__main__":
 
     img0 = cvLoadImage(filename,-1)
     if not img0:
-    	print("Can't open image '%s'" % filename)
+        print("Can't open image '%s'" % filename)
         sys.exit(1);
 
     print("Hot keys:")
