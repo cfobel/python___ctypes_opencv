@@ -135,7 +135,7 @@ if __name__ == "__main__":
     for name in names:
         img0 = cvLoadImage( name, 1 );
         if not img0:
-            print "Couldn't load %s" % name
+            print("Couldn't load %s" % name)
             continue;
         img = cvCloneImage( img0 );
         # create window and a trackbar (slider) with parent "image" and set callback

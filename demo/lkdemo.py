@@ -2,7 +2,7 @@
 # OpenCV's Python demo
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
 
-print "OpenCV Python version of lkdemo"
+print("OpenCV Python version of lkdemo")
 
 import sys
 
@@ -70,16 +70,16 @@ if __name__ == '__main__':
 
     # check that capture device is OK
     if not capture:
-        print "Error opening capture device"
+        print("Error opening capture device")
         sys.exit (1)
         
     # display a small howto use it
-    print "Hot keys: \n" \
+    print("Hot keys: \n" \
           "\tESC - quit the program\n" \
           "\tr - auto-initialize tracking\n" \
           "\tc - delete all the points\n" \
           "\tn - switch the \"night\" mode on/off\n" \
-          "To add/remove a feature point click it\n"
+          "To add/remove a feature point click it\n")
 
     # first, create the necessary windows
     cvNamedWindow ('LkDemo', CV_WINDOW_AUTOSIZE)

@@ -95,7 +95,7 @@ class ImageThread(Thread):
                 if self.func:
                     try:
                         rc = self.func(*self.args, **self.kwargs)
-                    except Exception, e:
+                    except Exception:
                         rc = None
                         sys.stderr.write('ImageThread exception - ignoring:')
                         traceback.print_exc()

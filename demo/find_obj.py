@@ -18,7 +18,7 @@ image = None
 def compareSURFDescriptors(d1, d2, best, length):
     total_cost = 0
     assert( length % 4 == 0 )
-    for i in xrange(0, length, 4):
+    for i in range(0, length, 4):
         t0 = d1[i] - d2[i]
         t1 = d1[i+1] - d2[i+1]
         t2 = d1[i+2] - d2[i+2]
@@ -36,7 +36,7 @@ def naiveNearestNeighbor(vec, laplacian, model_keypoints, model_descriptors):
     kp_arr = model_keypoints.asarray(CvSURFPoint)
     mv_arr = model_descriptors.asarrayptr(POINTER(c_float))
 
-    for i in xrange(model_descriptors.total):
+    for i in range(model_descriptors.total):
         if  laplacian != kp_arr[i].laplacian:
             continue
         d = compareSURFDescriptors(vec, mv_arr[i], dist2, length)
@@ -56,7 +56,7 @@ def findPairs(objectKeypoints, objectDescriptors, imageKeypoints, imageDescripto
     kp_arr = objectKeypoints.asarray(CvSURFPoint)
     de_arr = objectDescriptors.asarrayptr(POINTER(c_float))
 
-    for i in xrange(objectDescriptors.total):
+    for i in range(objectDescriptors.total):
         nn = naiveNearestNeighbor( de_arr[i], kp_arr[i].laplacian, imageKeypoints, imageDescriptors );
         if nn >= 0:
             ptpairs.append((i,nn))
@@ -79,7 +79,7 @@ def locatePlanarObject(objectKeypoints, objectDescriptors, imageKeypoints, image
     except RuntimeError:
         return 0
 
-    for i in xrange(4):
+    for i in range(4):
         x = src_corners[i].x
         y = src_corners[i].y
         Z = 1./(h[2,0]*x + h[2,1]*y + h[2,2])
@@ -98,10 +98,10 @@ if __name__ == '__main__':
         scene_filename = "box_in_scene.png"
         
     if cvVersion < 110:
-        print >> stderr, "You need OpenCV 1.1 installed for this demo to work. OpenCV version", CV_VERSION, " is detected."
+        print("You need OpenCV 1.1 installed for this demo to work. OpenCV version %d is detected." % CV_VERSION)
         exit(-1)
         
-    print "Warning: function findPairs() implemented in this demo is *very* slow, due to too many low-level operations. Be patient, or rewrite a faster implementation for this function (e.g. in C/C++ or SciPy).\n"
+    print("Warning: function findPairs() implemented in this demo is *very* slow, due to too many low-level operations. Be patient, or rewrite a faster implementation for this function (e.g. in C/C++ or SciPy).\n")
 
     storage = cvCreateMemStorage(0)
 
@@ -123,9 +123,9 @@ if __name__ == '__main__':
     object = cvLoadImage( object_filename, CV_LOAD_IMAGE_GRAYSCALE )
     image = cvLoadImage( scene_filename, CV_LOAD_IMAGE_GRAYSCALE )
     if not object or not image:
-        print >> stderr, "Can not load %s and/or %s\n" \
+        print("Can not load %s and/or %s\n" \
             "Usage: find_obj [<object_filename> <scene_filename>]\n" \
-            % (object_filename, scene_filename)
+            % (object_filename, scene_filename))
         exit(-1)
     
     object_color = cvCreateImage(cvGetSize(object), 8, 3)
@@ -137,11 +137,11 @@ if __name__ == '__main__':
 
     tt = float(cvGetTickCount())
     objectKeypoints, objectDescriptors = cvExtractSURF( object, None, None, True, storage, params )
-    print "Object Descriptors: %d\n" % objectDescriptors.total
+    print("Object Descriptors: %d\n" % objectDescriptors.total)
     imageKeypoints, imageDescriptors = cvExtractSURF( image, None, None, True, storage, params )
-    print "Image Descriptors: %d\n" % imageDescriptors.total
+    print("Image Descriptors: %d\n" % imageDescriptors.total)
     tt = float(cvGetTickCount()) - tt
-    print "Extraction time = %gms\n" % (tt/(cvGetTickFrequency()*1000.))
+    print("Extraction time = %gms\n" % (tt/(cvGetTickFrequency()*1000.)))
     src_corners = (CvPoint*4)((0,0), (object.width,0), (object.width, object.height), (0, object.height))
     dst_corners = (CvPoint*4)()
     correspond = cvCreateImage( cvSize(image.width, object.height+image.height), 8, 1 )
@@ -151,19 +151,19 @@ if __name__ == '__main__':
     cvCopy( image, correspond )
     cvResetImageROI( correspond )
     if locatePlanarObject( objectKeypoints, objectDescriptors, imageKeypoints, imageDescriptors, src_corners, dst_corners ):
-        for i in xrange(4):
+        for i in range(4):
             r1 = dst_corners[i%4]
             r2 = dst_corners[(i+1)%4]
             cvLine( correspond, cvPoint(r1.x, r1.y+object.height ), cvPoint(r2.x, r2.y+object.height ), colors[8] )
 
     ptpairs = findPairs(objectKeypoints, objectDescriptors, imageKeypoints, imageDescriptors)
-    for i in xrange(len(ptpairs)):
+    for i in range(len(ptpairs)):
         r1 = CV_GET_SEQ_ELEM(CvSURFPoint, objectKeypoints, ptpairs[i][0])[0]
         r2 = CV_GET_SEQ_ELEM(CvSURFPoint, imageKeypoints, ptpairs[i][1])[0]
         cvLine( correspond, cvPointFrom32f(r1.pt), cvPoint(cvRound(r2.pt.x), cvRound(r2.pt.y+object.height)), colors[8] )
 
     cvShowImage( "Object Correspond", correspond )
-    for i in xrange(objectKeypoints.total):
+    for i in range(objectKeypoints.total):
         r = CV_GET_SEQ_ELEM(CvSURFPoint, objectKeypoints, i )[0]
         cvCircle( object_color, cvPoint(cvRound(r.pt.x), cvRound(r.pt.y)), cvRound(r.size*1.2/9.*2), colors[0], 1, 8, 0 )
 

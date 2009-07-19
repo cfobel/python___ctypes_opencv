@@ -54,11 +54,11 @@ def hsv2rgb (hue):
 if __name__ == '__main__':
 
     # a small welcome
-    print "OpenCV Python wrapper test"
-    print "OpenCV version: %s (%d, %d, %d)" % (CV_VERSION,
+    print("OpenCV Python wrapper test")
+    print("OpenCV version: %s (%d, %d, %d)" % (CV_VERSION,
                                                CV_MAJOR_VERSION,
                                                CV_MINOR_VERSION,
-                                               CV_SUBMINOR_VERSION)
+                                               CV_SUBMINOR_VERSION))
 
     # first, create the necessary windows
     cvNamedWindow ('Camera', CV_WINDOW_AUTOSIZE)
@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     # check that capture device is OK
     if not capture:
-        print "Error opening capture device"
+        print("Error opening capture device")
         sys.exit (1)
         
     # create an image to put in the histogram

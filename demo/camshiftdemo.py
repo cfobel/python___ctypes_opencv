@@ -85,15 +85,15 @@ if __name__ == '__main__':
         capture = None
 
     if not capture:
-        print "Could not initialize capturing..."
+        print("Could not initialize capturing...")
         exit(-1)
 
-    print "Hot keys: \n" \
+    print("Hot keys: \n" \
         "\tESC - quit the program\n" \
         "\tc - stop the tracking\n" \
         "\tb - switch to/from backprojection view\n" \
         "\th - show/hide object histogram\n" \
-        "To initialize tracking, select the object with mouse\n"
+        "To initialize tracking, select the object with mouse\n")
 
     cvNamedWindow( "Histogram", 1 )
     cvNamedWindow( "CamShiftDemo", 1 )
@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
                 cvZero( histimg )
                 bin_w = histimg.width / hdims
-                for i in xrange(hdims):
+                for i in range(hdims):
                     val = cvRound( cvGetReal1D(hbins,i)*histimg.height/255 )
                     color = hsv2rgb(i*180./hdims)
                     cvRectangle( histimg, cvPoint(i*bin_w,histimg.height),

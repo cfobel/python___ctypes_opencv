@@ -94,7 +94,7 @@ if __name__ == '__main__':
     # load image and force it to be grayscale
     image03 = cvLoadImage(filename, 0)
     if not image03:
-        print "Could not load image " + filename
+        print("Could not load image " + filename)
         sys.exit(-1)
 
     # Create the destination images
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     process_image( slider_pos );
 
     #Wait for a key stroke; the same function arranges events processing                
-    print "Press any key to exit"
+    print("Press any key to exit")
     cvWaitKey(0);
 
     cvDestroyWindow("Source");

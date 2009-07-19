@@ -50,7 +50,7 @@ def detect_and_draw( img ):
         faces = cvHaarDetectObjects( small_img, cascade, storage,
                                      haar_scale, min_neighbors, haar_flags, min_size );
         t = cvGetTickCount() - t;
-        print "detection time = %gms" % (t/(cvGetTickFrequency()*1000.));
+        print("detection time = %gms" % (t/(cvGetTickFrequency()*1000.)))
         if faces:
             for r in faces:
                 pt1 = cvPoint( int(r.x*image_scale), int(r.y*image_scale))
@@ -70,7 +70,7 @@ if __name__ == '__main__':
                 input_name = sys.argv[2]
 
         elif sys.argv[1] is "--help" or sys.argv[1] is "-h":
-            print "Usage: facedetect --cascade=\"<cascade_path>\" [filename|camera_index]\n" ;
+            print("Usage: facedetect --cascade=\"<cascade_path>\" [filename|camera_index]\n")
             sys.exit(-1)
 
         else:
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     cascade = cvLoadHaarClassifierCascade( cascade_name, cvSize(1,1) );
     
     if not cascade:
-        print "ERROR: Could not load classifier cascade"
+        print("ERROR: Could not load classifier cascade")
         sys.exit(-1)
     
 

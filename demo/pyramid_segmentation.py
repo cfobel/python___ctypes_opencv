@@ -38,7 +38,7 @@ if __name__ == "__main__":
         filename = sys.argv[1]
     image[0] = cvLoadImage( filename, 1)
     if not image[0]:
-        print "Error opening %s" % filename
+        print("Error opening %s" % filename)
         sys.exit(-1)
 
     cvNamedWindow("Source", 0);

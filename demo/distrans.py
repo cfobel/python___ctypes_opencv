@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     gray = cvLoadImage( filename, 0 )
     if not gray:
-        print "Failed to load %s" % filename
+        print("Failed to load %s" % filename)
         sys.exit(-1)
 
     # Create the output image

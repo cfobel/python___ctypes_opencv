@@ -2,7 +2,7 @@
 # OpenCV's Python demo
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
 
-print "OpenCV Python version of drawing"
+print("OpenCV Python version of drawing")
 
 # import the necessary things for OpenCV
 from ctypes_opencv import *

@@ -123,8 +123,8 @@ if __name__ == '__main__':
     storage = cvCreateMemStorage(0);
     subdiv = cvCreateSubdivDelaunay2D( rect, storage );
 
-    print "Delaunay triangulation will be build now interactively."
-    print "To stop the process, press any key\n";
+    print("Delaunay triangulation will be build now interactively.")
+    print("To stop the process, press any key\n")
 
     for i in range(200):
         fp = cvPoint2D32f( random()*(rect.width-10)+5, random()*(rect.height-10)+5 )

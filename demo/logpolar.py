@@ -29,7 +29,7 @@ if __name__ == "__main__":
     
     src = cvLoadImage(filename,1)
     if not src:
-        print "Could not open %s" % filename
+        print("Could not open %s" % filename)
         sys.exit(-1)
         
     cvNamedWindow( "original",1 );

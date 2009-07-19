@@ -20,7 +20,7 @@ if __name__ == "__main__":
         capture = cvCreateFileCapture( sys.argv[1] ); 
 
     if not capture:
-        print "Could not initialize capturing..."
+        print("Could not initialize capturing...")
         sys.exit(-1)
         
     cvNamedWindow( "Laplacian", 1 );

@@ -64,7 +64,7 @@ def on_mouse( event, x, y, flags, param ):
                 cvShowImage( "image", gray_img );
             
 
-            print "%g pixels were repainted" % comp.area;
+            print("%g pixels were repainted" % comp.area)
 
             if( is_mask ):
                 cvShowImage( "mask", mask );
@@ -80,19 +80,19 @@ if __name__ == "__main__":
     
     color_img0 = cvLoadImage(filename,1)
     if not color_img0:
-        print "Could not open %s" % filename
+        print("Could not open %s" % filename)
         sys.exit(-1)
 
-    print "Hot keys:"
-    print "\tESC - quit the program"
-    print "\tc - switch color/grayscale mode"
-    print "\tm - switch mask mode"
-    print "\tr - restore the original image"
-    print "\ts - use null-range floodfill"
-    print "\tf - use gradient floodfill with fixed(absolute) range"
-    print "\tg - use gradient floodfill with floating(relative) range"
-    print "\t4 - use 4-connectivity mode"
-    print "\t8 - use 8-connectivity mode"
+    print("Hot keys:")
+    print("\tESC - quit the program")
+    print("\tc - switch color/grayscale mode")
+    print("\tm - switch mask mode")
+    print("\tr - restore the original image")
+    print("\ts - use null-range floodfill")
+    print("\tf - use gradient floodfill with fixed(absolute) range")
+    print("\tg - use gradient floodfill with floating(relative) range")
+    print("\t4 - use 4-connectivity mode")
+    print("\t8 - use 8-connectivity mode")
         
     color_img = cvCloneImage( color_img0 );
     gray_img0 = cvCreateImage( cvSize(color_img.width, color_img.height), 8, 1 );
@@ -114,18 +114,18 @@ if __name__ == "__main__":
 
         c = '%c' % (cvWaitKey(0) & 255)
         if c=='\x1b':
-            print("Exiting ...");
+            print("Exiting ...")
             sys.exit(0)
         elif c=='c':
             if( is_color ):
             
-                print("Grayscale mode is set");
+                print("Grayscale mode is set")
                 cvCvtColor( color_img, gray_img, CV_BGR2GRAY );
                 is_color = 0;
             
             else:
             
-                print("Color mode is set");
+                print("Color mode is set")
                 cvCopy( color_img0, color_img, None );
                 cvZero( mask );
                 is_color = 1;

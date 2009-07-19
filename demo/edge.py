@@ -2,7 +2,7 @@
 # OpenCV's Python demo
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
 
-print "OpenCV Python version of edge"
+print("OpenCV Python version of edge")
 
 import sys
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     image = cvLoadImage (filename)
 
     if not image:
-        print "Error loading image '%s'" % filename
+        print("Error loading image '%s'" % filename)
         sys.exit(-1)
 
     # create the output image

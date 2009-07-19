@@ -2,7 +2,7 @@
 # OpenCV's Python demo
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
 
-print "OpenCV Python version of contours"
+print("OpenCV Python version of contours")
 
 # import the necessary things for OpenCV
 from ctypes import sizeof

@@ -38,14 +38,14 @@ if __name__ == "__main__":
     rng = cvRNG(-1);
     img0 = cvLoadImage(filename,1)
     if not img0:
-        print "Error opening image '%s'" % filename
+        print("Error opening image '%s'" % filename)
         sys.exit(-1)
 
-    print "Hot keys:"
-    print "\tESC - quit the program"
-    print "\tr - restore the original image"
-    print "\tw - run watershed algorithm"
-    print "\t  (before that, roughly outline several markers on the image)"
+    print("Hot keys:")
+    print("\tESC - quit the program")
+    print("\tr - restore the original image")
+    print("\tw - run watershed algorithm")
+    print("\t  (before that, roughly outline several markers on the image)")
 
     cvNamedWindow( "image", 1 );
     cvNamedWindow( "watershed transform", 1 );

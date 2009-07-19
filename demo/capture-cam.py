@@ -27,7 +27,7 @@ FLV1 = 0x31564C46
 if __name__ == '__main__':
 
     # a small welcome
-    print "OpenCV Python capture video"
+    print("OpenCV Python capture video")
 
     # first, create the necessary window
     cvNamedWindow ('Camera', CV_WINDOW_AUTOSIZE)
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     # check that capture device is OK
     if not capture:
-        print "Error opening capture device"
+        print("Error opening capture device")
         sys.exit (1)
 
     # capture the 1st frame to get some propertie on it
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     # check the writer is OK
     if not writer:
-        print "Error opening writer"
+        print("Error opening writer")
         sys.exit (1)
         
     while 1:

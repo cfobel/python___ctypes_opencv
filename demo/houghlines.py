@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     src=cvLoadImage(filename, 0);
     if not src:
-        print "Error opening image %s" % filename
+        print("Error opening image %s" % filename)
         sys.exit(-1)
 
     dst = cvCreateImage( cvGetSize(src), 8, 1 );

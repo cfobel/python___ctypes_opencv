@@ -86,7 +86,7 @@ if __name__ == "__main__":
     src_image = cvLoadImage( file_name, 0 );
 
     if not src_image:
-        print "Image was not loaded.";
+        print("Image was not loaded.")
         sys.exit(-1)
 
 

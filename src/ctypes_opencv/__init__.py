@@ -30,7 +30,7 @@ except ImportError:
 # image thread.
 import sys
 if sys.platform == 'win32':
-    from highgui_win32 import *
+    from ctypes_opencv.highgui_win32 import *
 
 # ----------------------------------------------------------------------------
 # Begin of code section contributed by David Bolen

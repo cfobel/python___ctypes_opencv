@@ -37,14 +37,14 @@ if __name__=="__main__":
 
     img0 = cvLoadImage(filename,-1)
     if not img0:
-    	print "Can't open image '%s'" % filename
+    	print("Can't open image '%s'" % filename)
         sys.exit(1);
 
-    print "Hot keys:"
-    print "\tESC - quit the program"
-    print "\tr - restore the original image"
-    print "\ti or ENTER - run inpainting algorithm"
-    print "\t\t(before running it, paint something on the image)"
+    print("Hot keys:")
+    print("\tESC - quit the program")
+    print("\tr - restore the original image")
+    print("\ti or ENTER - run inpainting algorithm")
+    print("\t\t(before running it, paint something on the image)")
     
     cvNamedWindow( "image", 1 );
 
