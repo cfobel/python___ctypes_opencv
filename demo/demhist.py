@@ -55,7 +55,7 @@ def update_brightcont():
             v = 0;
         if( v > 255 ):
             v = 255;
-        lut[i] = v;
+        lut[i,0] = v;
     
     cvLUT( src_image, dst_image, lut );
     cvShowImage( "image", dst_image );

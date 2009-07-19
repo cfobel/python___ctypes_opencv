@@ -19,10 +19,10 @@ def cvShiftDFT(src_arr, dst_arr ):
         cvError( CV_StsUnmatchedSizes, "cvShiftDFT", "Source and Destination arrays must have equal sizes", __FILE__, __LINE__ );    
 
     if(src_arr is dst_arr):
-        tmp = cvCreateMat(size.height/2, size.width/2, cvGetElemType(src_arr));
+        tmp = cvCreateMat(int(size.height/2), int(size.width/2), cvGetElemType(src_arr));
     
-    cx = size.width/2;
-    cy = size.height/2; # image center
+    cx = int(size.width/2);
+    cy = int(size.height/2); # image center
 
     q1 = cvGetSubRect( src_arr, None, cvRect(0,0,cx, cy) );
     q2 = cvGetSubRect( src_arr, None, cvRect(cx,0,cx,cy) );
