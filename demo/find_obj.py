@@ -29,7 +29,7 @@ def compareSURFDescriptors(d1, d2, best, length):
     return total_cost
 
 def naiveNearestNeighbor(vec, laplacian, model_keypoints, model_descriptors):
-    length = model_descriptors.elem_size/sizeof(c_float)
+    length = int(model_descriptors.elem_size/sizeof(c_float))
     neighbor = -1
     dist1 = 1e6
     dist2 = 1e6

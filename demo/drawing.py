@@ -149,8 +149,8 @@ if __name__ == '__main__':
     font = cvInitFont (None, CV_FONT_HERSHEY_COMPLEX,
                           3, 3, 0.0, 5, line_type)
     text_size, ymin = cvGetTextSize ("OpenCV forever!", font)
-    pt1.x = (width - text_size.width) / 2
-    pt1.y = (height + text_size.height) / 2
+    pt1.x = int((width - text_size.width) / 2)
+    pt1.y = int((height + text_size.height) / 2)
     image2 = cvCloneImage(image)
 
     # now, draw some OpenCV pub ;-)
