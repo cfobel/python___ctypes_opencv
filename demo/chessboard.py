@@ -2,7 +2,7 @@
 
 # OpenCV's Python demo
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
-from opencv import *
+from ctypes_opencv import *
 import sys
 
 if __name__ == "__main__":

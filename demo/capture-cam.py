@@ -5,7 +5,7 @@
 import sys
 
 # import the necessary things for OpenCV
-from opencv import *
+from ctypes_opencv import *
 
 # the codec existing in cvcapp.cpp,
 # need to have a better way to specify them in the future

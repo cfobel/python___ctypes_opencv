@@ -6,7 +6,7 @@ print "OpenCV Python version of contours"
 
 # import the necessary things for OpenCV
 from ctypes import sizeof
-from opencv import *
+from ctypes_opencv import *
 
 # some default constants
 _SIZE = 500

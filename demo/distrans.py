@@ -3,8 +3,8 @@
 # OpenCV's Python demo
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
 import sys
-from opencv.cv import *
-from opencv.highgui import *
+from ctypes_opencv.cv import *
+from ctypes_opencv.highgui import *
 
 wndname = "Distance transform";
 tbarname = "Threshold";

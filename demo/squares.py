@@ -8,7 +8,7 @@
 # each image
 #
 
-from opencv import *
+from ctypes_opencv import *
 from math import sqrt
 
 thresh = 50;

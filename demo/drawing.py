@@ -5,7 +5,7 @@
 print "OpenCV Python version of drawing"
 
 # import the necessary things for OpenCV
-from opencv import *
+from ctypes_opencv import *
 
 # for making random numbers
 from random import Random

@@ -11,7 +11,7 @@
 
 from sys import argv, stderr
 from ctypes import *
-from opencv import *
+from ctypes_opencv import *
 
 image = None
 
@@ -101,7 +101,7 @@ if __name__ == '__main__':
         print >> stderr, "You need OpenCV 1.1 installed for this demo to work. OpenCV version", CV_VERSION, " is detected."
         exit(-1)
         
-    print "Warning: function findPairs() implemented in this demo is *very* slow, due to too many low-level computations. Be patient, or rewrite a faster implementation for this function (e.g. in C/C++ or SciPy).\n"
+    print "Warning: function findPairs() implemented in this demo is *very* slow, due to too many low-level operations. Be patient, or rewrite a faster implementation for this function (e.g. in C/C++ or SciPy).\n"
 
     storage = cvCreateMemStorage(0)
 

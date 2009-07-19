@@ -7,8 +7,8 @@
 import sys
 from math import sin,cos,sqrt
 from ctypes import *
-from opencv.cv import *
-from opencv.highgui import *
+from ctypes_opencv.cv import *
+from ctypes_opencv.highgui import *
 
 # toggle between CV_HOUGH_STANDARD and CV_HOUGH_PROBILISTIC
 USE_STANDARD=0

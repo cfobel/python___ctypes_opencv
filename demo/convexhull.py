@@ -5,7 +5,7 @@
 print "OpenCV Python version of convexhull"
 
 # import the necessary things for OpenCV
-from opencv import *
+from ctypes_opencv import *
 
 # to generate random values
 import random

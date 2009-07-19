@@ -4,8 +4,8 @@
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
 import sys
 import random
-from opencv.cv import *
-from opencv.highgui import *
+from ctypes_opencv.cv import *
+from ctypes_opencv.highgui import *
 
 color_img0=None;
 mask=None;

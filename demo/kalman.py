@@ -14,8 +14,8 @@
    Pressing any key (except ESC) will reset the tracking with a different speed.
    Pressing ESC will stop the program.
 """
-from opencv.cv import *
-from opencv.highgui import *
+from ctypes_opencv.cv import *
+from ctypes_opencv.highgui import *
 from math import cos, sin, sqrt
 
 if __name__ == "__main__":

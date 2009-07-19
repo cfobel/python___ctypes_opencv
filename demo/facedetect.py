@@ -10,8 +10,8 @@ Original C implementation by:  ?
 Python implementation by: Roman Stanchak
 """
 import sys
-from opencv.cv import *
-from opencv.highgui import *
+from ctypes_opencv.cv import *
+from ctypes_opencv.highgui import *
 
 
 # Global Variables

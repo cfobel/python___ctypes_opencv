@@ -10,7 +10,7 @@ Original Author (C version): ?
 Converted to Python by: Roman Stanchak
 """
 from ctypes import c_void_p
-from opencv import *
+from ctypes_opencv import *
 from random import random,randint
 
 def draw_subdiv_point( img, fp, color ):

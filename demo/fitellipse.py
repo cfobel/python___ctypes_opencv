@@ -15,7 +15,7 @@ Python implementation by: Roman Stanchak
 """
 
 import sys
-from opencv import *
+from ctypes_opencv import *
 
 image02 = None
 image03 = None

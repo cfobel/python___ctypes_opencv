@@ -2,8 +2,8 @@
 
 # OpenCV's Python demo
 # -- adapted by Minh-Tri Pham to work with ctypes-opencv
-from opencv.cv import *
-from opencv.highgui import *
+from ctypes_opencv.cv import *
+from ctypes_opencv.highgui import *
 import sys
 
 # Rearrange the quadrants of Fourier image so that the origin is at
