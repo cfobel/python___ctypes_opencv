@@ -16,8 +16,8 @@
 # ----------------------------------------------------------------------------
 
 from ctypes import *
-from opencv.cxcore import *
-from opencv.highgui import *
+from ctypes_opencv.cxcore import *
+from ctypes_opencv.highgui import *
 
 
 #=============================================================================

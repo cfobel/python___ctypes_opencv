@@ -16,7 +16,7 @@
 # ----------------------------------------------------------------------------
 """ctypes-opencv - A Python wrapper for OpenCV using ctypes
 
-ctypes-opencv is a package that brings Intel's Open Source Computer Vision Library (OpenCV) to Python. OpenCV is a collection of algorithms and sample code for various computer vision problems. The goal of ctypes-opencv is to provide Python access to all documented functionality of OpenCV.
+ctypes-opencv is a package that brings Intel's (now Willow Garage's) Open Source Computer Vision Library (OpenCV) to Python. OpenCV is a collection of algorithms and sample code for various computer vision problems. The goal of ctypes-opencv is to provide Python access to all documented functionality of OpenCV.
 """
 
 DOCLINES = __doc__.split("\n")
@@ -24,7 +24,7 @@ DOCLINES = __doc__.split("\n")
 from distutils.core import setup
 
 CLASSIFIERS = """\
-Development Status :: 4 - Beta
+Development Status :: 5 - Stable
 Intended Audience :: Developers
 Intended Audience :: End Users/Desktop
 Intended Audience :: Information Technology
@@ -46,7 +46,7 @@ Topic :: Software Development :: Libraries :: Python Modules
 
 
 setup(name = 'ctypes-opencv',
-	version = '0.7.3',
+	version = '0.8.0',
 	description = DOCLINES[0],
 	author = 'Minh-Tri Pham',
 	author_email = 'pmtri80@gmail.com',
@@ -55,7 +55,7 @@ setup(name = 'ctypes-opencv',
 	platforms = 'OS Independent, Windows, Linux, MacOS',
 	classifiers = filter(None, CLASSIFIERS.split('\n')),
 	long_description = "\n".join(DOCLINES[2:]),
-	packages = ['opencv'],
-    data_files=[('doc/ctypes-opencv', ['AUTHORS', 'ChangeLog', 'COPYING', 'README', 'THANKS', 'TODO'])],
+	packages = ['ctypes_opencv'],
+    data_files=[('doc/ctypes_opencv', ['AUTHORS', 'ChangeLog', 'COPYING', 'README', 'THANKS', 'TODO'])],
 )
 
