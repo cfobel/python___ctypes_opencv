@@ -77,7 +77,7 @@ def draw_subdiv_facet( img, edge ):
     # gather points
     t = edge;
     for i in range(count):
-        assert t>4
+        assert t.value>4
         pt = cvSubdiv2DEdgeOrg( t );
         if not pt: 
             break;
