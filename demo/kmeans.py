@@ -20,8 +20,8 @@ if __name__ == "__main__":
         
         # generate random sample from multigaussian distribution
         for k in range(cluster_count):
-            first = k*sample_count/cluster_count
-            last = (k+1)*sample_count/cluster_count if k != cluster_count else sample_count
+            first = int(k*sample_count/cluster_count)
+            last = int((k+1)*sample_count/cluster_count) if k != cluster_count else sample_count
             if first < last:
                 cvRandArr(rng, cvGetRows(points, None, first, last), CV_RAND_NORMAL,
                     cvScalar(cvRandInt(rng)%img.width,cvRandInt(rng)%img.height), cvScalar(img.width*0.1,img.height*0.1))

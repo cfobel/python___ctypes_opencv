@@ -780,9 +780,9 @@ class CvMat(CvArr):
             
         cols = sx.stop-sx.start
         if sy.step > 0:
-            rows = (sy.stop-sy.start) / sy.step
+            rows = int((sy.stop-sy.start) / sy.step)
         else:
-            rows = (sy.start-sy.stop) / (-sy.step)
+            rows = int((sy.start-sy.stop) / (-sy.step))
         step = sy.step*self.step
         
         datatype = type2ctype(self.type)

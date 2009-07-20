@@ -57,8 +57,8 @@ if __name__ == '__main__':
 
     # draw the original picture
     for i in range (6):
-        dx = (i % 2) * 250 - 30
-        dy = (i / 2) * 150
+        dx = int((i % 2) * 250 - 30)
+        dy = int((i / 2) * 150)
         
         cvEllipse (image,
                       cvPoint (dx + 150, dy + 100),

@@ -36,8 +36,8 @@ if __name__ == '__main__':
         for i in range (count):
             # generate a random point
             points.append (cvPoint (
-                my_random.randrange (0, image.width / 2) + image.width / 4,
-                my_random.randrange (0, image.width / 2) + image.width / 4
+                int(my_random.randrange (0, image.width / 2) + image.width / 4),
+                int(my_random.randrange (0, image.width / 2) + image.width / 4)
                 ))
 
         # compute the convex hull

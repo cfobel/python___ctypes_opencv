@@ -166,7 +166,7 @@ if __name__ == '__main__':
         cvSetZero (histimg)
 
         # compute the width for each bin do display
-        bin_w = histimg.width / hdims
+        bin_w = int(histimg.width / hdims)
         
         for  i in range (hdims):
             # for all the bins

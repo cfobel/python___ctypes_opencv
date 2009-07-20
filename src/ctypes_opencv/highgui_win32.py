@@ -43,7 +43,13 @@ import sys
 import time
 import traceback
 from threading import Thread
-from Queue import Queue, Empty
+
+# python 3 support
+try:
+    from Queue import Queue, Empty
+except ImportError:
+    from queue import Queue, Empty
+
 from ctypes import windll
 from functools import wraps
 

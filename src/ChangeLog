@@ -9,7 +9,7 @@ ctypes-opencv-0.8.0 bugfix and stable release
 ---------------------------------------------
 
 - A small change that breaks backward compatibility with ctypes-opencv-0.7.x: package name changed from 'opencv' to 'ctypes_opencv' to avoid conflict with the offical Python bindings of OpenCV
-- ctypes-opencv now works with Python 3.1???
+- ctypes-opencv is now compatible with Python 3, after many small bug fixes
 - Fixed issue 44: Null pointer in cvFindStereoCorespondenceBM
 - Fixed issue 43: Iteration over CvMat raises TypeError
 - Fixed issue 42: _ missing in cv2DRotationMatrix in opencv/cv.py, thanks gijsmolenaar

@@ -29,7 +29,7 @@ def findSquares4( img, storage, thresh ):
     sz = cvSize( img.width & -2, img.height & -2 );
     timg = cvCloneImage( img ); # make a copy of input image
     gray = cvCreateImage( sz, 8, 1 );
-    pyr = cvCreateImage( cvSize(sz.width/2, sz.height/2), 8, 3 );
+    pyr = cvCreateImage( cvSize(int(sz.width/2), int(sz.height/2)), 8, 3 );
     # create empty sequence that will contain points -
     # 4 points per square (the square's vertices)
     squares = cvCreateSeq( 0, sizeof(CvSeq), sizeof(CvPoint), storage );
