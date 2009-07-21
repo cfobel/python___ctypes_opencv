@@ -24,7 +24,7 @@ DOCLINES = __doc__.split("\n")
 from distutils.core import setup
 
 CLASSIFIERS = """\
-Development Status :: 5 - Stable
+Development Status :: 5 - Production/Stable
 Intended Audience :: Developers
 Intended Audience :: End Users/Desktop
 Intended Audience :: Information Technology
