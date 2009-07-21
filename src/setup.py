@@ -37,6 +37,7 @@ Operating System :: POSIX
 Operating System :: Unix
 Operating System :: MacOS
 Programming Language :: Python
+Programming Language :: Python :: 3
 Topic :: Multimedia :: Graphics
 Topic :: Multimedia :: Video
 Topic :: Scientific/Engineering :: Artificial Intelligence
