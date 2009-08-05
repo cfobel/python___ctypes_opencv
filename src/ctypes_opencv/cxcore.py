@@ -395,7 +395,7 @@ def cvRandReal(rng):
 #-----------------------------------------------------------------------------
 
 # Image type (IplImage)
-IPL_DEPTH_SIGN = 0x80000000
+IPL_DEPTH_SIGN = -0x80000000
 
 IPL_DEPTH_1U =  1
 IPL_DEPTH_8U =  8
@@ -484,10 +484,7 @@ class IplImage(CvArr):
         if not 0 <= x < w:
             raise IndexError("Column %d is not in [0,%d)" % (x, w))
 
-        d = self.depth
-        if d < 0:
-            d += 0x100000000
-        datatype = _iplimage_depth2ctype[d]*self.nChannels
+        datatype = _iplimage_depth2ctype[self.depth]*self.nChannels
         return datatype.from_address(addressof(self.imageData.contents)+self.widthStep*y+x*sizeof(datatype))
 
     def __getitem__(self, key):

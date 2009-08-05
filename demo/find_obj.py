@@ -98,7 +98,7 @@ if __name__ == '__main__':
         scene_filename = "box_in_scene.png"
         
     if cvVersion < 110:
-        print("You need OpenCV 1.1 installed for this demo to work. OpenCV version %d is detected." % CV_VERSION)
+        print("You need OpenCV 1.1 installed for this demo to work. OpenCV version %s is detected." % CV_VERSION)
         exit(-1)
         
     print("Warning: function findPairs() implemented in this demo is *very* slow, due to too many low-level operations. Be patient, or rewrite a faster implementation for this function (e.g. in C/C++ or SciPy).\n")
