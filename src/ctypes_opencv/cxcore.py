@@ -5177,7 +5177,7 @@ Starts the next stream
 cvWrite = cfunc('cvWrite', _cxDLL, None,
     ('fs', CvFileStorage_r, 1), # CvFileStorage* fs
     ('name', c_char_p, 1), # const char* name
-    ('ptr', c_void_p, 1), # const void* ptr
+    ('ptr', CvArr_r, 1), # const void* ptr changed to CvArr_r -- Minh-Tri
     ('attributes', CvAttrList, 1, cvAttrList()), # CvAttrList attributes
 )
 cvWrite.__doc__ = """void cvWrite(CvFileStorage fs, const char* name, const void* ptr, CvAttrList attributes=cvAttrList())
