@@ -2857,7 +2857,7 @@ if cvVersion == 110:
         if homography is None:
             homography = cvCreateMat(3, 3, CV_64FC1)
         if mask is None:
-            mask = cvCreateMat(dst_points.height, dst_points.width, CV_8U)
+            mask = cvCreateMat(1, max(dst_points.cols, dst_points.rows), CV_8U)
         result = _cvFindHomography(src_points, dst_points, homography, method, ransacReprojThreshold, mask)
         if not result:
             raise RuntimeError("Calling cvFindHomography() was not successful.")
