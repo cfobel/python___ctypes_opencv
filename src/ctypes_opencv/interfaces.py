@@ -51,14 +51,14 @@ except ImportError:
 #-----------------------------------------------------------------------------
 try:
     from PIL import Image
-    from cv import cvCvtColor, CV_RGB2BGR
+    from cv import cvCreateImage, cvCvtColor, CV_BGR2RGB
 
     def pil_to_ipl(im_pil):
         im_ipl = cvCreateImageHeader(cvSize(im_pil.size[0], im_pil.size[1]),
 IPL_DEPTH_8U, 3)
         data = im_pil.tostring('raw', 'RGB', im_pil.size[0] * 3)
         cvSetData(im_ipl, cast(data, POINTER(c_byte)), im_pil.size[0] * 3)
-        cvCvtColor(im_ipl, im_ipl, CV_RGB2BGR)
+        cvCvtColor(im_ipl, im_ipl, CV_BGR2RGB)
         im_ipl._depends = (data,)
         return im_ipl
 
@@ -221,3 +221,42 @@ try:
 except ImportError:
     pass
 
+
+#-----------------------------------------------------------------------------
+# GTK's pixbuf -- by Daniel Carvalho
+#-----------------------------------------------------------------------------
+# modified by Minh-Tri Pham
+try:
+    import pygtk
+    pygtk.require20()
+    import gtk
+    
+    def _iplimage_as_gtk_pixbuf(self, swap_r_and_b_channels=True):
+        """Converts an IPL_DEPTH_8U 3-channel IplImage into a pixbuf
+        
+        If 'swap_r_and_b_channels' is False, a reference to the image data 
+        is passed to the pixbuf for the conversion. Otherwise, a new IplImage, 
+        cloned from the original image, with the R channel and the B channel 
+        swapped, is used instead. The image must be of depth IPL_DEPTH_8U with 
+        3 channels. Otherise a TypeError is raised.
+        """
+        if self.depth != IPL_DEPTH_8U:
+            raise TypeError('The source image is not of depth IPL_DEPTH_8U.')
+        if self.nChannels != 3:
+            raise TypeError('The source image does not have exactly 3 channels.')
+            
+        if swap_r_and_b_channels:
+            img = cvCreateImage(cvGetSize(self), IPL_DEPTH_8U, 3)
+            cvCvtColor(self, img, CV_BGR2RGB)
+        else:
+            img = self
+            
+        return gtk.gdk.pixbuf_new_from_data(img.data_as_string(), gtk.gdk.COLORSPACE_RGB,
+            False, 8, img.width, img.height, img.widthStep)
+            
+    IplImage.as_gtk_pixbuf = _iplimage_as_gtk_pixbuf
+
+except ImportError:
+    pass
+except AssertionError:
+    pass
