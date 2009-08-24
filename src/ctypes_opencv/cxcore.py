@@ -628,7 +628,7 @@ CV_64FC2 = CV_MAKETYPE(CV_64F,2)
 CV_64FC3 = CV_MAKETYPE(CV_64F,3)
 CV_64FC4 = CV_MAKETYPE(CV_64F,4)
 
-CV_AUTO_STEP = 0x7fffffff
+# CV_AUTO_STEP = 0x7fffffff -- no such thing as CV_AUTO_STEP
 CV_WHOLE_ARR  = cvSlice( 0, 0x3fffffff )
 
 CV_MAT_CN_MASK = ((CV_CN_MAX - 1) << CV_CN_SHIFT)

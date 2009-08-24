@@ -231,31 +231,85 @@ try:
     pygtk.require20()
     import gtk
     
-    def _iplimage_as_gtk_pixbuf(self, swap_r_and_b_channels=True):
+    def _iplimage_as_gtk_pixbuf(self):
         """Converts an IPL_DEPTH_8U 3-channel IplImage into a pixbuf
         
-        If 'swap_r_and_b_channels' is False, a reference to the image data 
-        is passed to the pixbuf for the conversion. Otherwise, a new IplImage, 
-        cloned from the original image, with the R channel and the B channel 
-        swapped, is used instead. The image must be of depth IPL_DEPTH_8U with 
-        3 channels. Otherise a TypeError is raised.
+        The image must be of depth IPL_DEPTH_8U with 3 channels, or else a 
+        TypeError is raised. Since in gtk, a pixbuf's color space is RGB, it
+        is assumed that the image is also using this color space (i.e. you
+        may want to call cvCvtColor() to convert the color space *before*
+        invoking this function). Whether the image data is shared or copied
+        to pixbuf depends on how the function gtk.gdk.pixbuf_new_from_data()
+        handles the image data passed to it, and not on ctypes-opencv.
         """
         if self.depth != IPL_DEPTH_8U:
             raise TypeError('The source image is not of depth IPL_DEPTH_8U.')
         if self.nChannels != 3:
             raise TypeError('The source image does not have exactly 3 channels.')
             
-        if swap_r_and_b_channels:
-            img = cvCreateImage(cvGetSize(self), IPL_DEPTH_8U, 3)
-            cvCvtColor(self, img, CV_BGR2RGB)
-        else:
-            img = self
-            
-        return gtk.gdk.pixbuf_new_from_data(img.data_as_string(), gtk.gdk.COLORSPACE_RGB,
-            False, 8, img.width, img.height, img.widthStep)
+        return gtk.gdk.pixbuf_new_from_data(self.data_as_string(), gtk.gdk.COLORSPACE_RGB,
+            False, 8, self.width, self.height, self.widthStep)
             
     IplImage.as_gtk_pixbuf = _iplimage_as_gtk_pixbuf
-
+    
+    def _cvmat_as_gtk_pixbuf(self):
+        """Converts an CV_8UC3 CvMat into a pixbuf
+        
+        The CvMat must be of type CV_8UC3, or else a TypeError is raised. 
+        Since in gtk, a pixbuf's color space is RGB, it is assumed that the 
+        CvMat is also using this color space (i.e. you may want to call 
+        cvCvtColor() to convert the color space *before* invoking this 
+        function). Whether the image data is shared or copied to pixbuf 
+        depends on how the function gtk.gdk.pixbuf_new_from_data()
+        handles the image data passed to it, and not on ctypes-opencv.
+        """
+        if CV_MAT_DEPTH(self.type) != CV_8U:
+            raise TypeError('The source image is not of depth CV_8U.')
+        if CV_MAT_CN(self.type) != 3:
+            raise TypeError('The source image does not have exactly 3 channels.')
+            
+        return gtk.gdk.pixbuf_new_from_data(self.data_as_string(), gtk.gdk.COLORSPACE_RGB,
+            False, 8, self.cols, self.rows, self.step)
+            
+    CvMat.as_gtk_pixbuf = _cvmat_as_gtk_pixbuf
+    
+    def cvCreateMatFromGtkPixbuf(pixbuf):
+        """Converts a pixbuf into a CV_8UC3 CvMat
+        
+        The pixbuf must have 8 bits per sample and no alpha channel, or else
+        a TypeError is raised. Since in gtk, a pixbuf's color space is RGB,
+        the output CvMat would therefore use the same color space (i.e. you
+        may want to call cvCvtColor() to convert the color space *after*
+        invoking this function). Whether the pixbuf's data is shared or 
+        copied to the CvMat depends on whether the function 
+        gtk.gdk.get_pixels() returns its data array or a copy of the array, 
+        and not on ctypes-opencv.
+        """
+        if not isinstance(pixbuf, gtk.gdk.Pixbuf):
+            raise TypeError("The first argument 'pixbuf' is not a gtk pixbuf.")
+        if pixbuf.get_has_alpha():
+            raise TypeError('Pixbuf source with an alpha channel is currently not supported.')
+        if pixbuf.get_bits_per_sample() != 8:
+            raise TypeError('The pixbuf source does not have exactly 8 bits per sample.')
+            
+        return cvMat(pixbuf.get_height(), pixbuf.get_width(), CV_8UC3, 
+            pixbuf.get_pixels(), pixbuf.get_rowstride())
+            
+    def cvCreateImageFromGtkPixbuf(pixbuf):
+        """Converts a pixbuf into a IPL_DEPTH_8U 3-channel IplImage
+        
+        The pixbuf must have 8 bits per sample and no alpha channel, or else
+        a TypeError is raised. Since in gtk, a pixbuf's color space is RGB,
+        the output IplImage would therefore use the same color space (i.e. 
+        you may want to call cvCvtColor() to convert the color space *after*
+        invoking this function). Whether the pixbuf's data is shared or 
+        copied to the IplImage depends on whether the function 
+        gtk.gdk.get_pixels() returns its data array or a copy of the array, 
+        and not on ctypes-opencv.
+        """
+        return cvGetImage(cvCreateMatFromGtkPixbuf(pixbuf))
+            
+    __all__ += ['cvCreateMatFromGtkPixbuf', 'cvCreateImageFromGtkPixbuf']
 except ImportError:
     pass
 except AssertionError:
