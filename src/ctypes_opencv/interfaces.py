@@ -70,6 +70,24 @@ IPL_DEPTH_8U, 3)
                     'raw', "BGR", im_ipl.widthStep
         )
         return im_pil
+        
+    _ipl_depth_and_nc_to_pil_mode_and_decoder = {
+        (IPL_DEPTH_8U, 1): ("L", "L"),
+        (IPL_DEPTH_8U, 3): ("RGB", "BGR"),
+        (IPL_DEPTH_8U, 4): ("RGBA", "BGRA"),
+        (IPL_DEPTH_32S, 1): ("I", "I"),
+        (IPL_DEPTH_32F, 1): ("F", "F"),
+    }
+    
+    def _iplimage_as_pil_image(self):
+        """Converts an IplImage into a PIL Image"""
+        try:
+            mode, decoder = _ipl_depth_and_nc_to_pil_mode_and_decoder[self.depth, self.nChannels]
+        except KeyError:
+            raise TypeError("Don't know how to convert the image. Check its depth and/or its number of channels.")
+        return Image.fromstring(mode, (self.width, self.height), self.data_as_string(), 
+            "raw", decoder, self.widthStep, 1 if self.origin==0 else -1)
+    IplImage.as_pil_image = _iplimage_as_pil_image
 
     __all__ += ['ipl_to_pil', 'pil_to_ipl']
 except ImportError:
