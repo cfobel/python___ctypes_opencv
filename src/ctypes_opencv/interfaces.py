@@ -115,9 +115,11 @@ IPL_DEPTH_8U, 3)
     def cvCreateImageFromPilImage(pilimage):
         """Converts a PIL.Image into an IplImage
         
-        Right now, ctypes-opencv can only convert PIL.Images of bands ('L'), 
-        ('I'), ('F'), ('R', 'G', 'B'), or ('R', 'G', 'B', 'A'). The data
-        array is *copied* from PIL.Image to IplImage.
+        Right now, ctypes-opencv can only convert PIL.Images of band ('L'), 
+        ('I'), ('F'), ('R', 'G', 'B'), or ('R', 'G', 'B', 'A'). Whether the 
+        data array is copied from PIL.Image to IplImage or shared between
+        the two images depends on how PIL converts the PIL.Image's data into
+        a string (i.e. via function PIL.Image.tostring()).
         """
         try:
             depth, elem_size, nchannels, decoder, mode = _pil_image_bands_to_ipl_attrs[pilimage.getbands()]
