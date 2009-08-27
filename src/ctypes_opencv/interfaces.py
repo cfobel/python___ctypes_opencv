@@ -49,11 +49,16 @@ except ImportError:
 #-----------------------------------------------------------------------------
 # PIL -- by Jeremy Bethmont
 #-----------------------------------------------------------------------------
+# modified by Minh-Tri Pham
 try:
     from PIL import Image
     from cv import cvCreateImage, cvCvtColor, CV_BGR2RGB
 
     def pil_to_ipl(im_pil):
+        """Converts a PIL.Image into an IplImage
+        
+        This function may be obsolete. Use cvCreateImageFromPilImage() instead.
+        """
         im_ipl = cvCreateImageHeader(cvSize(im_pil.size[0], im_pil.size[1]),
 IPL_DEPTH_8U, 3)
         data = im_pil.tostring('raw', 'RGB', im_pil.size[0] * 3)
@@ -63,6 +68,10 @@ IPL_DEPTH_8U, 3)
         return im_ipl
 
     def ipl_to_pil(im_ipl):
+        """Converts an IplImage into a PIL.Image
+        
+        This function may be obsolete. Use IplImage.as_pil_image() instead.
+        """
         size = (im_ipl.width, im_ipl.height)
         data = im_ipl.data_as_string()
         im_pil = Image.fromstring(
@@ -80,7 +89,13 @@ IPL_DEPTH_8U, 3)
     }
     
     def _iplimage_as_pil_image(self):
-        """Converts an IplImage into a PIL Image"""
+        """Converts an IplImage into a PIL Image
+        
+        Right now, ctypes-opencv can convert 1-channel (uint8|int32|float32) 
+        IplImages or uint8 (BGR|BGRA) IplImages. Whether the image's data 
+        array is shared or copied to PIL.Image depends on how PIL decodes
+        the array (i.e. via function PIL.Image.fromstring()).
+        """
         try:
             mode, decoder = _ipl_depth_and_nc_to_pil_mode_and_decoder[self.depth, self.nChannels]
         except KeyError:
@@ -88,8 +103,35 @@ IPL_DEPTH_8U, 3)
         return Image.fromstring(mode, (self.width, self.height), self.data_as_string(), 
             "raw", decoder, self.widthStep, 1 if self.origin==0 else -1)
     IplImage.as_pil_image = _iplimage_as_pil_image
+    
+    _pil_image_bands_to_ipl_attrs = {
+        ('L',): (IPL_DEPTH_8U, 1, 1, "raw", "L"),
+        ('I',): (IPL_DEPTH_32S, 4, 1, "raw", "I"),
+        ('F',): (IPL_DEPTH_32F, 4, 1, "raw", "F"),
+        ('R', 'G', 'B'): (IPL_DEPTH_8U, 1, 3, "raw", "BGR"),
+        ('R', 'G', 'B', 'A'): (IPL_DEPTH_8U, 1, 4, "raw", "BGRA"),
+    }
+    
+    def cvCreateImageFromPilImage(pilimage):
+        """Converts a PIL.Image into an IplImage
+        
+        Right now, ctypes-opencv can only convert PIL.Images of bands ('L'), 
+        ('I'), ('F'), ('R', 'G', 'B'), or ('R', 'G', 'B', 'A'). The data
+        array is *copied* from PIL.Image to IplImage.
+        """
+        try:
+            depth, elem_size, nchannels, decoder, mode = _pil_image_bands_to_ipl_attrs[pilimage.getbands()]
+        except KeyError:
+            raise TypeError("Don't know how to convert the image. Check its bands and/or its mode.")
+        img = cvCreateImageHeader(cvSize(pilimage.size[0], pilimage.size[1]), depth, nchannels)
+        step = pilimage.size[0] * nchannels * elem_size
+        data = pilimage.tostring(decoder, mode, step)
+        cvSetData(img, data, step)
+        img._depends = (data,)
+        return img
+        
 
-    __all__ += ['ipl_to_pil', 'pil_to_ipl']
+    __all__ += ['ipl_to_pil', 'pil_to_ipl', 'cvCreateImageFromPilImage']
 except ImportError:
     pass
 
