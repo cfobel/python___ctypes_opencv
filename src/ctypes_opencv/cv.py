@@ -2862,7 +2862,81 @@ if cvVersion == 110:
         if not result:
             raise RuntimeError("Calling cvFindHomography() was not successful.")
         return (homography, mask)
+
+    # undocumented function
+    try:
+        cvRQDecomp3x3 = cfunc('cvRQDecomp3x3', _cvDLL, None,
+            ('matrixM', CvMat_r, 1), # const CvMat* maxtrixM
+            ('matrixR', CvMat_r, 1), # CvMat* maxtrixR
+            ('matrixQ', CvMat_r, 1), # CvMat* maxtrixQ
+            ('matrixQx', CvMat_r, 1, None), # CvMat* maxtrixQx
+            ('matrixQy', CvMat_r, 1, None), # CvMat* maxtrixQy
+            ('matrixQz', CvMat_r, 1, None), # CvMat* maxtrixQz
+            ('eulerAngles', CvPoint3D64f_r, 1, None), # CvPoint3D64f* eulerAngles
+        )
+        cvRQDecomp3x3.__doc__ = """void cvRQDecomp3x3( const CvMat matrixM, CvMat matrixR, CvMat matrixQ, CvMat matrixQx=None, CvMat matrixQy=None, CvMat matrixQz=None, CvPoint3D64f eulerAngles=None)
         
+        Computes RQ decomposition for 3x3 matrices"""
+    except AttributeError:
+        pass
+        
+    # undocumented function
+    try:
+        cvDecomposeProjectionMatrix = cfunc('cvDecomposeProjectionMatrix', _cvDLL, None,
+            ('projMatr', CvMat_r, 1), # const CvMat* projMatr
+            ('calibMatr', CvMat_r, 1), # CvMat* calibMatr
+            ('rotMatr', CvMat_r, 1), # CvMat* rotMatr
+            ('posVect', CvMat_r, 1), # CvMat* posVect
+            ('rotMatrX', CvMat_r, 1, None), # CvMat* rotMatrX
+            ('rotMatrY', CvMat_r, 1, None), # CvMat* rotMatrY
+            ('rotMatrZ', CvMat_r, 1, None), # CvMat* rotMatrZ
+            ('eulerAngles', CvPoint3D64f_r, 1, None), # CvPoint3D64f* eulerAngles
+        )
+        cvDecomposeProjectionMatrix.__doc__ = """void cvDecomposeProjectionMatrix( const CvMat projMatr, CvMat calibMatr, CvMat rotMatr, CvMat posVect, CvMat rotMatrX=None, CvMat rotMatrY=None, CvMat rotMatrZ=None, CvPoint3D64f eulerAngles=None)
+                                         
+        Computes projection matrix decomposition"""
+    except AttributeError:
+        pass
+
+    # undocumented function
+    try:
+        cvCalcMatMulDeriv = cfunc('cvCalcMatMulDeriv', _cvDLL, None,
+            ('A', CvMat_r, 1), # const CvMat* A
+            ('B', CvMat_r, 1), # const CvMat* B
+            ('dABdA', CvMat_r, 1), # CvMat* dABdA
+            ('dABdB', CvMat_r, 1), # CvMat* dABdB
+        )
+        cvCalcMatMulDeriv.__doc__ = """void cvCalcMatMulDeriv( const CvMat A, const CvMat B, CvMat dABdA, CvMat dABdB )
+
+        Computes d(AB)/dA and d(AB)/dB"""
+    except AttributeError:
+        pass
+
+
+    # undocumented function
+    try:
+        cvComposeRT = cfunc('cvComposeRT', _cvDLL, None,
+            ('_rvec1', CvMat_r, 1), # const CvMat* _rvec1
+            ('_tvec1', CvMat_r, 1), # const CvMat* _tvec1
+            ('_rvec2', CvMat_r, 1), # const CvMat* _rvec2
+            ('_tvec2', CvMat_r, 1), # const CvMat* _tvec2
+            ('_rvec3', CvMat_r, 1), # const CvMat* _rvec3
+            ('_tvec3', CvMat_r, 1), # const CvMat* _tvec3
+            ('dr3dr1', CvMat_r, 1, None), # const CvMat* dr3dr1
+            ('dr3dt1', CvMat_r, 1, None), # const CvMat* dr3dt1
+            ('dr3dr2', CvMat_r, 1, None), # const CvMat* dr3dr2
+            ('dr3dt2', CvMat_r, 1, None), # const CvMat* dr3dt2
+            ('dt3dr1', CvMat_r, 1, None), # const CvMat* dt3dr1
+            ('dt3dt1', CvMat_r, 1, None), # const CvMat* dt3dt1
+            ('dt3dr2', CvMat_r, 1, None), # const CvMat* dt3dr2
+            ('dt3dt2', CvMat_r, 1, None), # const CvMat* dt3dt2
+        )
+        cvComposeRT.__doc__ = """void cvComposeRT( const CvMat _rvec1, const CvMat _tvec1, const CvMat _rvec2, const CvMat _tvec2, const CvMat _rvec3, const CvMat _tvec3, CvMat dr3dr1=None, CvMat dr3dt1=None, CvMat dr3dr2=None, CvMat dr3dt2=None, CvMat dt3dr1=None, CvMat dt3dt1=None, CvMat dt3dr2=None, CvMat dt3dt2=None )
+
+        Computes r3 = rodrigues(rodrigues(r2)*rodrigues(r1)), t3 = rodrigues(r2)*t1 + t2 and the respective derivatives"""
+    except AttributeError:
+        pass
+
     CV_CALIB_FIX_FOCAL_LENGTH = 16
     CV_CALIB_FIX_K1 = 32
     CV_CALIB_FIX_K2 = 64

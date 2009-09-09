@@ -1178,7 +1178,7 @@ class CvPoint2D32f(_Structure):
     _fields_ = [("x", c_float),
                 ("y", c_float)]
 CvPoint2D32f_p = POINTER(CvPoint2D32f)
-CvPoint2D32f_r = POINTER(CvPoint2D32f)
+CvPoint2D32f_r = ByRefArg(CvPoint2D32f)
                 
 def cvPoint2D32f(x, y):
     return CvPoint2D32f(c_float(x), c_float(y))
@@ -1198,7 +1198,7 @@ class CvPoint3D32f(_Structure):
                 ("y", c_float),
                 ("z", c_float)]
 CvPoint3D32f_p = POINTER(CvPoint3D32f)
-CvPoint3D32f_r = POINTER(CvPoint3D32f)
+CvPoint3D32f_r = ByRefArg(CvPoint3D32f)
 
 def cvPoint3D32f(x, y, z):
     return CvPoint3D32f(c_float(x), c_float(y), c_float(z))
@@ -1208,8 +1208,10 @@ class CvPoint2D64f(_Structure):
     _fields_ = [("x", c_double),
                 ("y", c_double)]
 CvPoint2D64f_p = POINTER(CvPoint2D64f)
+CvPoint2D64f_r = ByRefArg(CvPoint2D64f)
 CvPoint2D64d = CvPoint2D64f
-CvPoint2D64d_p = CvPoint2D64f
+CvPoint2D64d_p = CvPoint2D64f_p
+CvPoint2D64d_r = CvPoint2D64f_r
 
 def cvPoint2D64f(x, y):
     return CvPoint2D64f(float(x), float(y))
@@ -1221,8 +1223,10 @@ class CvPoint3D64f(_Structure):
                 ("y", c_double),
                 ("z", c_double)]
 CvPoint3D64f_p = POINTER(CvPoint3D64f)
+CvPoint3D64f_r = ByRefArg(CvPoint3D64f)
 CvPoint3D64d = CvPoint3D64f
-CvPoint3D64d_p = CvPoint3D64f
+CvPoint3D64d_p = CvPoint3D64f_p
+CvPoint3D64d_r = CvPoint3D64f_r
 
 def cvPoint3D64f(x, y, z):
     return CvPoint3D64f(float(x), float(y), float(z))
