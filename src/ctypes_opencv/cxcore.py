@@ -576,7 +576,7 @@ CV_WHOLE_SEQ = CvSlice(0, CV_WHOLE_SEQ_END_INDEX)
 #-----------------------------------------------------------------------------
 
 # Matrix type (CvMat)
-CV_CN_MAX = 4
+CV_CN_MAX = 64
 CV_CN_SHIFT = 3
 CV_DEPTH_MAX = (1 << CV_CN_SHIFT)
 
@@ -2692,7 +2692,7 @@ def cvMixChannels(src, dst, from_to):
     
     Copies several channels from input arrays to certain channels of output arrays
     """
-    return _cvMixChannels(src, len(src), dst, len(dst), from_to, len(from_to))
+    return _cvMixChannels(src, len(src), dst, len(dst), from_to, len(from_to) >> 1)
 
 
 #-----------------------------------------------------------------------------
@@ -3089,7 +3089,7 @@ def cvAbs(src, dst):
     
     Calculates absolute value of every element in array
     """
-    cvAbsDiffS(src, dst, cvScalar(0))
+    cvAbsDiffS(src, dst, cvScalarAll(0))
 
     
 #-----------------------------------------------------------------------------
